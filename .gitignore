@@ -1,6 +1,7 @@
 /cmake-build-debug/
 /.idea/
-/glm/
 /build/
 /.vscode/
 SDL2-2.26.5/
+/glm/
+*.spv
