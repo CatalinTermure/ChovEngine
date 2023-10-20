@@ -10,6 +10,8 @@
 #include <iostream>
 #include <vector>
 #include <vulkan/vulkan_raii.hpp>
+#include <filesystem>
+#include <queue>
 
 #include "rendering/camera.h"
 #include "utils/logging.h"
@@ -188,6 +190,22 @@ vk::Extent2D GetSurfaceExtent(SDL_Window *window, vk::SurfaceCapabilitiesKHR &su
   return surface_extent;
 }
 
+vk::raii::ShaderModule GetShaderModule(const std::filesystem::path &shader_file_path, const vk::raii::Device &device) {
+  std::ifstream shader_file{shader_file_path, std::ios::binary};
+  shader_file.seekg(0, std::ios::end);
+  auto shader_file_size = shader_file.tellg();
+  shader_file.seekg(0, std::ios::beg);
+  std::vector<char> buffer(shader_file_size);
+  shader_file.read(buffer.data(), shader_file_size);
+  std::vector<uint32_t> shader_code(reinterpret_cast<uint32_t *>(buffer.data()),
+                                    reinterpret_cast<uint32_t *>(buffer.data() + shader_file_size));
+
+  return vk::raii::ShaderModule{device, vk::ShaderModuleCreateInfo{
+      vk::ShaderModuleCreateFlags{},
+      shader_code
+  }};
+}
+
 const std::vector<glm::vec4> triangle = {{-1.0F, 0.0F, 0.0F, 1.0F}, {1.0F, 0.0F, 0.0F, 1.0F}, {0.0F, 1.0F, 0.0F, 1.0F}};
 
 constexpr int target_frame_rate = 120;
@@ -252,6 +270,149 @@ int main() {
   vk::raii::Semaphore rendering_complete_semaphore{device, vk::SemaphoreCreateInfo{}};
   vk::raii::Fence image_presented_fence{device, vk::FenceCreateInfo{vk::FenceCreateFlagBits::eSignaled}};
 
+  vk::raii::ShaderModule vertex_shader_module = GetShaderModule("shaders/render_shader.vert.spv", device);
+  vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{
+      vk::PipelineShaderStageCreateFlags{},
+      vk::ShaderStageFlagBits::eVertex,
+      *vertex_shader_module,
+      "main"
+  };
+
+  vk::raii::ShaderModule fragment_shader_module = GetShaderModule("shaders/render_shader.frag.spv", device);
+  vk::PipelineShaderStageCreateInfo fragment_shader_stage_create_info{
+      vk::PipelineShaderStageCreateFlags{},
+      vk::ShaderStageFlagBits::eFragment,
+      *fragment_shader_module,
+      "main"
+  };
+
+  std::vector<vk::PipelineShaderStageCreateInfo>
+      shader_stages{vertex_shader_stage_create_info, fragment_shader_stage_create_info};
+
+  vk::PipelineVertexInputStateCreateInfo vertex_input_state{
+      vk::PipelineVertexInputStateCreateFlags{},
+      0,
+      nullptr,
+      0,
+      nullptr
+  };
+
+  vk::PipelineInputAssemblyStateCreateInfo pipeline_input_assembly_state{
+      vk::PipelineInputAssemblyStateCreateFlags{},
+      vk::PrimitiveTopology::eTriangleList,
+      false
+  };
+
+  vk::PipelineTessellationStateCreateInfo pipeline_tessellation_state{
+      vk::PipelineTessellationStateCreateFlags{},
+      0
+  };
+
+  vk::Viewport viewport{
+      0.0F,
+      0.0F,
+      static_cast<float>(image_size.width),
+      static_cast<float>(image_size.height),
+      0.0F,
+      1.0F
+  };
+  vk::Rect2D scissor{{0, 0}, image_size};
+  vk::PipelineViewportStateCreateInfo pipeline_viewport_state{
+      vk::PipelineViewportStateCreateFlags{},
+      viewport,
+      scissor
+  };
+
+  vk::PipelineRasterizationStateCreateInfo pipeline_rasterization_state{
+      vk::PipelineRasterizationStateCreateFlags{},
+      false,
+      false,
+      vk::PolygonMode::eFill,
+      vk::CullModeFlagBits::eNone,
+      vk::FrontFace::eCounterClockwise,
+      false,
+      0.0F,
+      0.0F,
+      0.0F,
+      1.0F,
+      nullptr
+  };
+
+  vk::PipelineColorBlendAttachmentState color_blend_attachment_state{
+      false,
+      vk::BlendFactor::eZero,
+      vk::BlendFactor::eZero,
+      vk::BlendOp::eAdd,
+      vk::BlendFactor::eZero,
+      vk::BlendFactor::eZero,
+      vk::BlendOp::eAdd,
+      vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+          vk::ColorComponentFlagBits::eA
+  };
+
+  vk::PipelineColorBlendStateCreateInfo pipeline_color_blend_state{
+      vk::PipelineColorBlendStateCreateFlags{},
+      false,
+      vk::LogicOp::eNoOp,
+      1,
+      &color_blend_attachment_state,
+      {0.0F, 0.0F, 0.0F, 0.0F}
+  };
+
+  vk::PipelineMultisampleStateCreateInfo pipeline_multisample_state{
+      vk::PipelineMultisampleStateCreateFlags{},
+      vk::SampleCountFlagBits::e1,
+      false,
+      0.0F,
+      nullptr,
+      false,
+      false,
+      nullptr
+  };
+
+  vk::raii::DescriptorSetLayout layout{device, vk::DescriptorSetLayoutCreateInfo{
+      vk::DescriptorSetLayoutCreateFlags{}
+  }};
+  std::vector<vk::DescriptorSetLayout> descriptor_set_layouts{};
+  std::vector<vk::PushConstantRange> push_constant_ranges{
+      vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2)}
+  };
+  vk::raii::PipelineLayout pipeline_layout{device, vk::PipelineLayoutCreateInfo{
+      vk::PipelineLayoutCreateFlags{},
+      descriptor_set_layouts,
+      push_constant_ranges
+  }};
+
+  vk::PipelineRenderingCreateInfo pipeline_rendering_create_info{
+      0,
+      1,
+      &surface_format.format,
+      vk::Format::eUndefined,
+      vk::Format::eUndefined,
+      nullptr
+  };
+
+  vk::raii::Pipeline graphics_pipeline{device, nullptr, vk::GraphicsPipelineCreateInfo{
+      vk::PipelineCreateFlags{},
+      shader_stages,
+      &vertex_input_state,
+      &pipeline_input_assembly_state,
+      &pipeline_tessellation_state,
+      &pipeline_viewport_state,
+      &pipeline_rasterization_state,
+      &pipeline_multisample_state,
+      nullptr,
+      &pipeline_color_blend_state,
+      nullptr,
+      *pipeline_layout,
+      nullptr,
+      0,
+      nullptr,
+      0,
+      &pipeline_rendering_create_info
+  }};
+
+  std::vector<glm::vec2> push_constants = {glm::vec2{image_size.width, image_size.height}};
   bool should_app_close = false;
   while (!should_app_close) {
     auto start_frame_time = std::chrono::high_resolution_clock::now();
@@ -321,6 +482,12 @@ int main() {
     });
 
     // bind drawing data
+    command_buffers[0].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
+    command_buffers[0].pushConstants<glm::vec2>(*pipeline_layout,
+                                                vk::ShaderStageFlagBits::eFragment,
+                                                0,
+                                                push_constants);
+
     // register draw commands
     {
       vk::ClearAttachment clear_attachment{
@@ -335,6 +502,8 @@ int main() {
       };
       command_buffers[0].clearAttachments(clear_attachment, clear_rect);
     }
+
+    command_buffers[0].draw(6, 1, 0, 0);
 
     // end rendering
     command_buffers[0].endRendering();
