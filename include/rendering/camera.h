@@ -15,10 +15,10 @@ class Camera {
         near_plane_(near_plane),
         far_plane_(far_plane) {}
 
-  [[nodiscard]] glm::vec4 position() const { return position_; }
-  [[nodiscard]] glm::vec3 look_direction() const { return look_direction_; }
+  [[nodiscard]] glm::vec4 &position() { return position_; }
+  [[nodiscard]] glm::vec3 &look_direction() { return look_direction_; }
 
-  [[nodiscard]] glm::mat4 GetTransformMatrix() const;
+  [[nodiscard]] glm::mat4 GetTransformMatrix();
  private:
   glm::vec4 position_;
   glm::vec3 look_direction_;
@@ -27,10 +27,6 @@ class Camera {
   float aspect_ratio_;
   float near_plane_;
   float far_plane_;
-
-  [[nodiscard]] glm::mat4 GetViewMatrix() const;
-
-  [[nodiscard]] glm::mat4 GetProjectionMatrix() const;
 };
 }
 

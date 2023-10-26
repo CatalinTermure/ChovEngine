@@ -40,6 +40,9 @@ add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
 
 add_dependencies(LabsExtra shaders)
 
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+target_link_libraries(LabsExtra GPUOpen::VulkanMemoryAllocator)
+
 find_package(Vulkan)
 include_directories("${Vulkan_INCLUDE_DIRS}")
 target_link_libraries(LabsExtra ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES} glm::glm)

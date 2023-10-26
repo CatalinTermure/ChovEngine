@@ -1,14 +1,10 @@
 #version 450
 
-vec2 positions[6] = vec2[](
-  vec2(-1.0f, -1.0f),
-  vec2( 1.0f, -1.0f),
-  vec2( 1.0f,  1.0f),
-  vec2( 1.0f,  1.0f),
-  vec2(-1.0f,  1.0f),
-  vec2(-1.0f, -1.0f)
-);
+layout(location = 0) in vec4 position;
+
+layout(push_constant) uniform Camera { layout(offset = 16) mat4 cameraMatrix; } camera;
 
 void main() {
-  gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+    vec4 newPoint = camera.cameraMatrix * position;
+    gl_Position = newPoint / newPoint.w;
 }

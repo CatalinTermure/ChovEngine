@@ -7,14 +7,14 @@
 
 #include <fstream>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <vector>
 #include <vulkan/vulkan_raii.hpp>
 #include <filesystem>
-#include <queue>
 
 #include "rendering/camera.h"
 #include "utils/logging.h"
+
+#include <glm/gtx/quaternion.hpp>
 
 namespace chove {
 
@@ -206,9 +206,13 @@ vk::raii::ShaderModule GetShaderModule(const std::filesystem::path &shader_file_
   }};
 }
 
-const std::vector<glm::vec4> triangle = {{-1.0F, 0.0F, 0.0F, 1.0F}, {1.0F, 0.0F, 0.0F, 1.0F}, {0.0F, 1.0F, 0.0F, 1.0F}};
+const std::vector<glm::vec4> triangle = {
+    {-1.0F, 0.0F, 1.0F, 1.0F},
+    {1.0F, 0.0F, 1.0F, 1.0F},
+    {0.0F, -1.0F, 0.0F, 1.0F}
+};
 
-constexpr int target_frame_rate = 120;
+constexpr int target_frame_rate = 60;
 constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);
 
@@ -261,10 +265,13 @@ int main() {
   const vk::raii::CommandPool command_pool = CreateCommandPool(queue_info.family_index, device);
   const std::vector<vk::raii::CommandBuffer> command_buffers = AllocateCommandBuffers(device, command_pool);
 
-  chove::Camera camera({0.0F, 0.0F, -1.0F, 1.0F}, {0.0F, 0.0F, 1.0F}, glm::radians(60.0F),
-                       static_cast<float>(image_size.width) / static_cast<float>(image_size.height), 0.1F, 10.0F);
-
-  glm::mat4 view_matrix = camera.GetTransformMatrix();
+  chove::Camera camera(
+      {0.0F, 0.0F, -1.0F, 1.0F},
+      {0.0F, 0.0F, 1.0F},
+      glm::radians(60.0F),
+      static_cast<float>(image_size.width) / static_cast<float>(image_size.height),
+      0.1F,
+      100.0F);
 
   vk::raii::Semaphore image_acquired_semaphore{device, vk::SemaphoreCreateInfo{}};
   vk::raii::Semaphore rendering_complete_semaphore{device, vk::SemaphoreCreateInfo{}};
@@ -289,12 +296,21 @@ int main() {
   std::vector<vk::PipelineShaderStageCreateInfo>
       shader_stages{vertex_shader_stage_create_info, fragment_shader_stage_create_info};
 
+  vk::VertexInputBindingDescription vertex_input_binding_description{
+      0,
+      sizeof(glm::vec4),
+      vk::VertexInputRate::eVertex
+  };
+  vk::VertexInputAttributeDescription vertex_input_attribute_description{
+      0,
+      0,
+      vk::Format::eR32G32B32A32Sfloat,
+      0
+  };
   vk::PipelineVertexInputStateCreateInfo vertex_input_state{
       vk::PipelineVertexInputStateCreateFlags{},
-      0,
-      nullptr,
-      0,
-      nullptr
+      vertex_input_binding_description,
+      vertex_input_attribute_description
   };
 
   vk::PipelineInputAssemblyStateCreateInfo pipeline_input_assembly_state{
@@ -313,7 +329,7 @@ int main() {
       0.0F,
       static_cast<float>(image_size.width),
       static_cast<float>(image_size.height),
-      0.0F,
+      0.1F,
       1.0F
   };
   vk::Rect2D scissor{{0, 0}, image_size};
@@ -375,7 +391,8 @@ int main() {
   }};
   std::vector<vk::DescriptorSetLayout> descriptor_set_layouts{};
   std::vector<vk::PushConstantRange> push_constant_ranges{
-      vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2)}
+      vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2)},
+      vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 16, sizeof(glm::mat4)},
   };
   vk::raii::PipelineLayout pipeline_layout{device, vk::PipelineLayoutCreateInfo{
       vk::PipelineLayoutCreateFlags{},
@@ -412,7 +429,46 @@ int main() {
       &pipeline_rendering_create_info
   }};
 
-  std::vector<glm::vec2> push_constants = {glm::vec2{image_size.width, image_size.height}};
+  std::vector<glm::vec2> window_size = {glm::vec2{image_size.width, image_size.height}};
+
+  vk::raii::Buffer triangle_buffer{device, vk::BufferCreateInfo{
+      vk::BufferCreateFlags{},
+      sizeof(glm::vec4) * triangle.size(),
+      vk::BufferUsageFlagBits::eVertexBuffer,
+      vk::SharingMode::eExclusive,
+      queue_info.family_index,
+      nullptr
+  }};
+
+  vk::MemoryRequirements triangle_buffer_memory_requirements = triangle_buffer.getMemoryRequirements();
+  Logging::Log(Logging::Level::kInfo,
+               std::format("These are the memory requirements for triangle buffer: {}.",
+                           to_string(vk::MemoryPropertyFlags{triangle_buffer_memory_requirements.memoryTypeBits})));
+  vk::MemoryPropertyFlags desired_memory_properties{triangle_buffer_memory_requirements.memoryTypeBits & 0x7};
+
+  uint32_t memory_type_index;
+  vk::PhysicalDeviceMemoryProperties available_memory_properties = physical_device.getMemoryProperties();
+  for (uint32_t i = 0; i < available_memory_properties.memoryTypeCount; i++) {
+    if ((available_memory_properties.memoryTypes[i].propertyFlags & desired_memory_properties)
+        == desired_memory_properties) {
+      memory_type_index = i;
+      break;
+    }
+  }
+
+  vk::raii::DeviceMemory triangle_buffer_memory = device.allocateMemory(vk::MemoryAllocateInfo{
+      triangle_buffer_memory_requirements.size,
+      memory_type_index
+  });
+  triangle_buffer.bindMemory(*triangle_buffer_memory, 0);
+
+  void *triangle_buffer_host_memory =
+      triangle_buffer_memory.mapMemory(0, triangle_buffer_memory_requirements.size, vk::MemoryMapFlags{});
+
+  memcpy(triangle_buffer_host_memory, triangle.data(), sizeof(glm::vec4) * triangle.size());
+
+  triangle_buffer_memory.unmapMemory();
+
   bool should_app_close = false;
   while (!should_app_close) {
     auto start_frame_time = std::chrono::high_resolution_clock::now();
@@ -420,8 +476,63 @@ int main() {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         should_app_close = true;
+      } else if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+          case SDLK_ESCAPE:should_app_close = true;
+            break;
+          case SDLK_w:camera.position() += glm::vec4(0.0F, 0.0F, 0.1F, 0.0F);
+            break;
+          case SDLK_a:camera.position() += glm::vec4(0.1F, 0.0F, 0.0F, 0.0F);
+            break;
+          case SDLK_s:camera.position() += glm::vec4(0.0F, 0.0F, -0.1F, 0.0F);
+            break;
+          case SDLK_d:camera.position() += glm::vec4(-0.1F, 0.0F, 0.0F, 0.0F);
+            break;
+          case SDLK_LEFT:
+            camera.look_direction() = glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F))
+                * camera.look_direction();
+            break;
+          case SDLK_RIGHT:
+            camera.look_direction() = glm::angleAxis(glm::radians(-10.0F), glm::vec3(0.0F, 1.0F, 0.0F))
+                * camera.look_direction();
+            break;
+          case SDLK_UP:
+            camera.look_direction() = glm::angleAxis(glm::radians(10.0F), glm::vec3(1.0F, 0.0F, 0.0F))
+                * camera.look_direction();
+            break;
+          case SDLK_DOWN:
+            camera.look_direction() = glm::angleAxis(glm::radians(-10.0F), glm::vec3(1.0F, 0.0F, 0.0F))
+                * camera.look_direction();
+            break;
+          default:
+            Logging::Log(Logging::Level::kInfo,
+                         std::format("Camera position is: ({},{},{},{})",
+                                     camera.position().x,
+                                     camera.position().y,
+                                     camera.position().z,
+                                     camera.position().w));
+            Logging::Log(Logging::Level::kInfo,
+                         std::format("Camera look direction is: ({},{},{})",
+                                     camera.look_direction().x,
+                                     camera.look_direction().y,
+                                     camera.look_direction().z));
+
+            for (auto point : triangle) {
+              glm::vec4 new_point = camera.GetTransformMatrix() * point;
+              new_point /= new_point.w;
+              Logging::Log(Logging::Level::kInfo,
+                           std::format("Point is: ({},{},{},{})",
+                                       new_point.x,
+                                       new_point.y,
+                                       new_point.z,
+                                       new_point.w));
+            }
+            break;
+        }
       }
     }
+
+    glm::mat4 view_matrix = camera.GetTransformMatrix();
 
     // acquire a swapchain image
     auto image_result =
@@ -486,14 +597,20 @@ int main() {
     command_buffers[0].pushConstants<glm::vec2>(*pipeline_layout,
                                                 vk::ShaderStageFlagBits::eFragment,
                                                 0,
-                                                push_constants);
+                                                window_size);
+    command_buffers[0].pushConstants<glm::mat4>(*pipeline_layout,
+                                                vk::ShaderStageFlagBits::eVertex,
+                                                16,
+                                                view_matrix);
+
+    command_buffers[0].bindVertexBuffers(0, {*triangle_buffer}, {0});
 
     // register draw commands
     {
       vk::ClearAttachment clear_attachment{
           vk::ImageAspectFlagBits::eColor,
           0,
-          vk::ClearColorValue{std::array{1.0F, 0.0F, 0.0F, 1.0F}}
+          vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 1.0F}}
       };
       vk::ClearRect clear_rect{
           vk::Rect2D{{0, 0}, image_size},
