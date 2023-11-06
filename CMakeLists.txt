@@ -8,12 +8,12 @@ find_package(SDL2 REQUIRED)
 set(glm_DIR glm/cmake/glm)
 find_package(glm REQUIRED)
 
-add_library(ProjectUtils src/utils/logging.cpp)
-target_include_directories(ProjectUtils PUBLIC include/utils)
+find_package(absl CONFIG REQUIRED)
 
-add_library(ProjectRendering src/rendering/camera.cpp)
-target_include_directories(ProjectRendering PUBLIC include/rendering)
-target_link_libraries(ProjectRendering glm::glm)
+add_library(ProjectRendering src/rendering/camera.cpp src/rendering/shader.cpp src/rendering/context.cpp
+        src/rendering/pipeline_builder.cpp)
+target_include_directories(ProjectRendering PUBLIC include/rendering include)
+target_link_libraries(ProjectRendering glm::glm absl::base absl::log absl::status)
 
 add_executable(LabsExtra src/main.cpp)
 target_include_directories(LabsExtra PUBLIC include)
@@ -45,5 +45,5 @@ target_link_libraries(LabsExtra GPUOpen::VulkanMemoryAllocator)
 
 find_package(Vulkan)
 include_directories("${Vulkan_INCLUDE_DIRS}")
-target_link_libraries(LabsExtra ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES} glm::glm)
-target_link_libraries(LabsExtra ProjectUtils ProjectRendering)
+target_link_libraries(LabsExtra ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
+target_link_libraries(LabsExtra ProjectRendering)

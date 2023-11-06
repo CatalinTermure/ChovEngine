@@ -3,25 +3,50 @@
 
 #include <glm/glm.hpp>
 
-namespace chove {
+#include <cmath>
 
+namespace chove::rendering {
 class Camera {
  public:
-  constexpr Camera(glm::vec4 position, glm::vec3 look_direction, float fov, float aspect_ratio, float near_plane, float far_plane)
+  Camera(glm::vec4 position,
+         glm::vec3 look_direction,
+         float fov,
+         float aspect_ratio,
+         float near_plane,
+         float far_plane)
       : position_(position),
-        look_direction_(look_direction),
+        look_direction_(glm::normalize(look_direction)),
         fov_(fov),
         aspect_ratio_(aspect_ratio),
         near_plane_(near_plane),
         far_plane_(far_plane) {}
 
-  [[nodiscard]] glm::vec4 &position() { return position_; }
-  [[nodiscard]] glm::vec3 &look_direction() { return look_direction_; }
+  [[nodiscard]] const glm::vec3 &position() const { return position_; }
+  [[nodiscard]] const glm::vec3 &look_direction() const { return look_direction_; }
 
   [[nodiscard]] glm::mat4 GetTransformMatrix();
+
+  enum class Direction {
+    eForward,
+    eBackward,
+    eLeft,
+    eRight
+  };
+
+  enum class RotationDirection {
+    eUpward,
+    eDownward,
+    eLeft,
+    eRight
+  };
+
+  void Move(Direction direction, float amount);
+  void Rotate(RotationDirection direction, float degrees);
+
  private:
-  glm::vec4 position_;
+  glm::vec3 position_;
   glm::vec3 look_direction_;
+  static constexpr glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
 
   float fov_;
   float aspect_ratio_;

@@ -1,134 +1,130 @@
 // Tell SDL not to mess with main()
 #define SDL_MAIN_HANDLED
 
+#include <filesystem>
+#include <vector>
+#include <fstream>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL_vulkan.h>
-
-#include <fstream>
 #include <glm/glm.hpp>
-#include <vector>
+#include <glm/gtx/quaternion.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <filesystem>
+#include <absl/log/log.h>
+#include <absl/log/check.h>
+#include <absl/log/initialize.h>
+#include <absl/log/log_sink.h>
+#include <absl/log/log_sink_registry.h>
 
 #include "rendering/camera.h"
-#include "utils/logging.h"
-
-#include <glm/gtx/quaternion.hpp>
+#include "rendering/context.h"
+#include "rendering/pipeline_builder.h"
 
 namespace chove {
 
-struct QueueInfo {
-  uint32_t family_index;
-  std::vector<float> priorities;
+// This class should store an object
+// What is an object made up of?
+// 1) It has vertices
+// 2) It has indices
+// 3) It also has a "material". Which has:
+// 3.1) A texture associated with it
+// 3.2) Also a color, which may be combined with the texture color
+// 3.3) Also a shader/pipeline!!!
+
+struct Vertex {
+  glm::vec4 position;
+  glm::vec2 uv;
+  [[nodiscard]] static constexpr std::array<vk::VertexInputAttributeDescription, 2> attributes() {
+    return {
+        vk::VertexInputAttributeDescription{
+            0,
+            0,
+            vk::Format::eR32G32B32A32Sfloat,
+            0
+        },
+        vk::VertexInputAttributeDescription{
+            0,
+            0,
+            vk::Format::eR32G32B32A32Sfloat,
+            sizeof(glm::vec4)
+        }
+    };
+  }
 };
-}  // namespace chove
 
-using chove::Logging;
+struct Texture {};
 
-SDL_Window *InitSDLWindow() {
-  // Create an SDL window that supports Vulkan rendering.
-  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-    Logging::Log(Logging::Level::kFatal, "Could not initialize SDL.");
-    return nullptr;
+struct Material {
+  Texture *texture;
+  glm::vec4 color;
+  std::shared_ptr<vk::raii::Pipeline> pipeline;
+};
+
+struct Mesh {
+  std::vector<Vertex> vertices;
+  std::vector<int> indices;
+
+  Material *material;
+};
+
+struct Transform {
+  glm::vec3 location;
+  glm::quat rotation;
+  glm::vec3 scale;
+
+  // While not necessary for the transform matrix, we also store the velocity and angular velocity of the object so that
+  // the structure is more cache friendly.
+
+  glm::vec3 velocity;
+  glm::quat angular_velocity;
+
+  [[nodiscard]] glm::mat4 GetMatrix() const {
+    return glm::translate(glm::scale(glm::toMat4(rotation), scale), location);
   }
+};
 
-  SDL_Window *window =
-      SDL_CreateWindow("Vulkan Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_VULKAN);
-  if (window == nullptr) {
-    Logging::Log(Logging::Level::kFatal, "Could not create SDL window.");
-    return nullptr;
-  }
-  return window;
-}
+class GameObject {
+ public:
+  [[nodiscard]] const Mesh &mesh() const { return *mesh_; }
+  [[nodiscard]] Transform &transform() { return *transform_; }
 
-std::vector<const char *> GetSDLRequiredExtensions(SDL_Window *window) {
-  // Get WSI extensions from SDL (we can add more if we like - we just can't
-  // remove these)
-  unsigned int extension_count = 0;
-  if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, nullptr)) {
-    Logging::Log(Logging::Level::kFatal, "Could not get number of required instance extensions from SDL.");
-    return {};
-  }
-  std::vector<const char *> extensions(extension_count);
-  if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions.data())) {
-    Logging::Log(Logging::Level::kFatal, "Could not get names of required instance extensions from SDL.");
-    return {};
-  }
-  return extensions;
-}
+ private:
+  Mesh *mesh_;
+  std::unique_ptr<Transform> transform_;
+};
 
-std::vector<const char *> GetValidationLayers() {
-  std::vector<const char *> layers;
-  layers.push_back("VK_LAYER_KHRONOS_validation");
-  return layers;
-}
+// TODO: A GameObjectBatch is a batch of game objects that are similar from a GPU point of view.
+// This means that they may be:
+// 1) The same Mesh, but multiple instances of it.
+// 2) Different Mesh, but the same Material.
+// 3) Different Material, but the same pipeline.
+class GameObjectBatch {
+ public:
+  void render();
+ private:
+  std::vector<GameObject> objects_;
+};
 
-vk::raii::Instance CreateInstance(const vk::raii::Context &context, SDL_Window *window) {
-  std::vector<const char *> extensions = GetSDLRequiredExtensions(window);
-  extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-  const std::vector<const char *> layers = GetValidationLayers();
-  const vk::ApplicationInfo app_info = vk::ApplicationInfo()
-      .setPApplicationName("Vulkan C++ Windowed Program Template")
-      .setApplicationVersion(1)
-      .setPEngineName("LunarG SDK")
-      .setEngineVersion(1)
-      .setApiVersion(VK_API_VERSION_1_3);
-
-  const vk::InstanceCreateInfo inst_info = vk::InstanceCreateInfo()
-      .setFlags(vk::InstanceCreateFlags())
-      .setPApplicationInfo(&app_info)
-      .setEnabledExtensionCount(static_cast<uint32_t>(extensions.size()))
-      .setPpEnabledExtensionNames(extensions.data())
-      .setEnabledLayerCount(static_cast<uint32_t>(layers.size()))
-      .setPpEnabledLayerNames(layers.data());
-
-  return {context, inst_info};
-}
-
-vk::raii::PhysicalDevice PickPhysicalDevice(const vk::raii::Instance &instance) {
-  vk::raii::PhysicalDevices physical_devices(instance);
-  for (const auto &physical_device : physical_devices) {
-    Logging::Log(
-        Logging::Level::kInfo,
-        std::format("Found device: {}.", static_cast<const char *>(physical_device.getProperties().deviceName)));
-  }
-  for (const auto &physical_device : physical_devices) {
-    const vk::PhysicalDeviceProperties properties = physical_device.getProperties();
-    if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
-      return physical_device;
+class Scene {
+ public:
+  void render() {
+    for (auto &batch : object_batches_) {
+      batch.render();
     }
   }
-  return physical_devices[0];
-}
+ private:
+  void acquire_image();
+  std::vector<GameObjectBatch> object_batches_;
+};
 
-chove::QueueInfo GetQueueFromCapabilities(const vk::PhysicalDevice &physical_device, vk::QueueFlags capabilities) {
-  auto queue_family_properties = physical_device.getQueueFamilyProperties();
+}  // namespace chove
 
-  // TODO: Check for surface support?
-  const uint32_t family_index = std::find_if(queue_family_properties.begin(), queue_family_properties.end(),
-                                             [capabilities](const auto &queue_properties) {
-                                               return queue_properties.queueFlags & capabilities;
-                                             }) -
-      queue_family_properties.begin();
-  return {family_index, {1.0F}};
-}
-
-vk::raii::Device CreateLogicalDevice(const vk::raii::PhysicalDevice &physical_device, chove::QueueInfo queue_info) {
-  const vk::DeviceQueueCreateInfo graphics_queue_create_info =
-      vk::DeviceQueueCreateInfo{vk::DeviceQueueCreateFlags{}, queue_info.family_index, queue_info.priorities};
-
-  std::vector<const char *> layers = {};
-  std::vector<const char *> extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
-  vk::PhysicalDeviceVulkan13Features device_features{};
-  device_features.dynamicRendering = true;
-  device_features.synchronization2 = true;
-
-  return physical_device.createDevice(vk::DeviceCreateInfo{
-      vk::DeviceCreateFlags{}, 1, &graphics_queue_create_info, static_cast<uint32_t>(layers.size()), layers.data(),
-      static_cast<uint32_t>(extensions.size()), extensions.data(), nullptr, &device_features});
-}
+class StdoutLogSink : public absl::LogSink {
+  void Send(const absl::LogEntry& entry) override {
+    std::cout << entry.text_message_with_prefix_and_newline();
+  }
+};
 
 vk::raii::CommandPool CreateCommandPool(uint32_t graphics_queue_index, const vk::raii::Device &device) {
   vk::raii::CommandPool command_pool =
@@ -153,7 +149,7 @@ vk::SurfaceFormatKHR GetBGRA8SurfaceFormat(const vk::SurfaceKHR &surface, const 
     }
   }
   if (surface_format.format == vk::Format::eUndefined) {
-    Logging::Log(Logging::Level::kFatal, "Driver does not support BGRA8 SRGB.");
+    LOG(FATAL) << "Driver does not support BGRA8 SRGB.";
   }
   return surface_format;
 }
@@ -164,7 +160,7 @@ vk::PresentModeKHR PickPresentMode(const vk::SurfaceKHR &surface, const vk::Phys
   std::vector<vk::PresentModeKHR> supported_present_modes = physical_device.getSurfacePresentModesKHR(surface);
   if (!(std::find(supported_present_modes.begin(), supported_present_modes.end(), present_mode) !=
       supported_present_modes.end())) {
-    Logging::Log(Logging::Level::kWarning, "Present mode not supported. Falling back to FIFO.");
+    LOG(ERROR) << "Present mode not supported. Falling back to FIFO.";
     present_mode = vk::PresentModeKHR::eFifo;
   }
   return present_mode;
@@ -181,35 +177,23 @@ vk::Extent2D GetSurfaceExtent(SDL_Window *window, vk::SurfaceCapabilitiesKHR &su
     surface_height = window_height;
   }
   if (surface_width != static_cast<uint32_t>(window_width) || surface_height != static_cast<uint32_t>(window_height)) {
-    Logging::Log(Logging::Level::kEsoteric,
-                 std::format("SDL and Vulkan disagree on surface size. SDL: %dx%d. Vulkan %ux%u", window_width,
-                             window_height, surface_width, surface_height));
+    LOG(FATAL) << std::format("SDL and Vulkan disagree on surface size. SDL: %dx%d. Vulkan %ux%u", window_width,
+                              window_height, surface_width, surface_height);
   }
   vk::Extent2D surface_extent = {surface_width, surface_height};
   surface_capabilities.currentExtent = surface_extent;
   return surface_extent;
 }
 
-vk::raii::ShaderModule GetShaderModule(const std::filesystem::path &shader_file_path, const vk::raii::Device &device) {
-  std::ifstream shader_file{shader_file_path, std::ios::binary};
-  shader_file.seekg(0, std::ios::end);
-  auto shader_file_size = shader_file.tellg();
-  shader_file.seekg(0, std::ios::beg);
-  std::vector<char> buffer(shader_file_size);
-  shader_file.read(buffer.data(), shader_file_size);
-  std::vector<uint32_t> shader_code(reinterpret_cast<uint32_t *>(buffer.data()),
-                                    reinterpret_cast<uint32_t *>(buffer.data() + shader_file_size));
+struct Vertex {
+  glm::vec4 position;
+  glm::vec4 color;
+};
 
-  return vk::raii::ShaderModule{device, vk::ShaderModuleCreateInfo{
-      vk::ShaderModuleCreateFlags{},
-      shader_code
-  }};
-}
-
-const std::vector<glm::vec4> triangle = {
-    {-1.0F, 0.0F, 1.0F, 1.0F},
-    {1.0F, 0.0F, 1.0F, 1.0F},
-    {0.0F, -1.0F, 0.0F, 1.0F}
+const std::vector<Vertex> triangle = {
+    {{-1.0F, 0.0F, 1.0F, 1.0F}, {1.0f, 0.0f, 0.0f, 1.0f}},
+    {{1.0F, 0.0F, 1.0F, 1.0F}, {0.0f, 1.0f, 0.0f, 1.0f}},
+    {{0.0F, -1.0F, 0.0F, 1.0F}, {0.0f, 0.0f, 1.0f, 1.0f}}
 };
 
 constexpr int target_frame_rate = 60;
@@ -217,113 +201,103 @@ constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);
 
 int main() {
-  auto window = std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(InitSDLWindow(), SDL_DestroyWindow);
+  StdoutLogSink log_sink{};
+  absl::AddLogSink(&log_sink);
+  absl::InitializeLog();
+//  auto window = std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(InitSDLWindow(), SDL_DestroyWindow);
 
-  const vk::raii::Context raii_context = vk::raii::Context{};
-  const vk::raii::Instance instance = CreateInstance(raii_context, window.get());
+//  const vk::raii::Context raii_context = vk::raii::Context{};
+//  const vk::raii::Instance instance = CreateInstance(raii_context, window.get());
 
-  VkSurfaceKHR c_surface = VK_NULL_HANDLE;
-  if (!SDL_Vulkan_CreateSurface(window.get(), *instance, &c_surface)) {
-    Logging::Log(Logging::Level::kFatal, "Could not create a Vulkan surface.");
-    return 1;
-  }
-  const vk::raii::SurfaceKHR surface(instance, c_surface);
+//  VkSurfaceKHR c_surface = VK_NULL_HANDLE;
+//  if (!SDL_Vulkan_CreateSurface(window.get(), *instance, &c_surface)) {
+//    Logging::Log(Logging::Level::kFatal, "Could not create a Vulkan surface.");
+//    return 1;
+//  }
+//  const vk::raii::SurfaceKHR surface(instance, c_surface);
 
-  const vk::raii::PhysicalDevice physical_device = PickPhysicalDevice(instance);
-  chove::QueueInfo queue_info = GetQueueFromCapabilities(*physical_device, vk::QueueFlagBits::eGraphics);
-  if (!physical_device.getSurfaceSupportKHR(queue_info.family_index, *surface)) {
-    Logging::Log(Logging::Level::kFatal, "Queue does not support drawing on this surface.");
-    return 1;
-  }
-  const vk::raii::Device device = CreateLogicalDevice(physical_device, queue_info);
-  const vk::raii::Queue graphics_queue = device.getQueue(queue_info.family_index, 0);
-  const vk::PresentModeKHR present_mode = PickPresentMode(*surface, *physical_device, vk::PresentModeKHR::eMailbox);
-  vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(*surface);
+//  const vk::raii::PhysicalDevice physical_device = PickPhysicalDevice(instance);
+//  chove::QueueInfo queue_info = GetQueueFromCapabilities(*physical_device, vk::QueueFlagBits::eGraphics);
+//  if (!physical_device.getSurfaceSupportKHR(queue_info.family_index, *surface)) {
+//    Logging::Log(Logging::Level::kFatal, "Queue does not support drawing on this surface.");
+//    return 1;
+//  }
+//  const vk::raii::Device device = CreateLogicalDevice(physical_device, queue_info);
+//  const vk::raii::Queue graphics_queue = device.getQueue(queue_info.family_index, 0);
+  chove::rendering::Context context = []() {
+    absl::StatusOr<chove::rendering::Context> context = chove::rendering::Context::CreateContext();
+    CHECK_OK(context) << "Could not create render context.";
+    return std::move(*context);
+  }();
+  const vk::PresentModeKHR
+      present_mode = PickPresentMode(context.surface(), context.physical_device(), vk::PresentModeKHR::eMailbox);
+  vk::SurfaceCapabilitiesKHR
+      surface_capabilities = context.physical_device().getSurfaceCapabilitiesKHR(context.surface());
 
   uint32_t image_count = surface_capabilities.minImageCount + 1;
   if (image_count > surface_capabilities.maxImageCount && surface_capabilities.maxImageCount == 0) {
     image_count = surface_capabilities.maxImageCount;
   }
-  const vk::Extent2D image_size = GetSurfaceExtent(window.get(), surface_capabilities);
-  const vk::SurfaceFormatKHR surface_format = GetBGRA8SurfaceFormat(*surface, *physical_device);
+  const vk::Extent2D image_size = GetSurfaceExtent(context.window(), surface_capabilities);
+  const vk::SurfaceFormatKHR surface_format = GetBGRA8SurfaceFormat(context.surface(), context.physical_device());
   const vk::raii::SwapchainKHR swapchain_khr{
-      device, vk::SwapchainCreateInfoKHR{vk::SwapchainCreateFlagsKHR{}, *surface, image_count, surface_format.format,
-                                         surface_format.colorSpace, image_size, 1,
-                                         vk::ImageUsageFlagBits::eColorAttachment, vk::SharingMode::eExclusive,
-                                         queue_info.family_index, surface_capabilities.currentTransform,
-                                         vk::CompositeAlphaFlagBitsKHR::eOpaque, present_mode, true, nullptr}};
+      context.device(),
+      vk::SwapchainCreateInfoKHR{vk::SwapchainCreateFlagsKHR{}, context.surface(), image_count, surface_format.format,
+                                 surface_format.colorSpace, image_size, 1,
+                                 vk::ImageUsageFlagBits::eColorAttachment, vk::SharingMode::eExclusive,
+                                 context.graphics_queue().family_index, surface_capabilities.currentTransform,
+                                 vk::CompositeAlphaFlagBitsKHR::eOpaque, present_mode, true, nullptr}};
   image_count = swapchain_khr.getImages().size();
-  Logging::Log(Logging::Level::kInfo, std::format("Created swapchain with {} images.", image_count));
+  LOG(INFO) << "Created swapchain with " << image_count << "images.";
   std::vector<vk::Image> swapchain_images = swapchain_khr.getImages();
   std::vector<vk::raii::ImageView> swapchain_image_views;
+  swapchain_image_views.reserve(swapchain_images.size());
   for (auto image : swapchain_images) {
-    swapchain_image_views.emplace_back(device, vk::ImageViewCreateInfo{
+    swapchain_image_views.emplace_back(context.device(), vk::ImageViewCreateInfo{
         vk::ImageViewCreateFlags{}, image, vk::ImageViewType::e2D, surface_format.format, vk::ComponentMapping{},
         vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}});
   }
 
-  const vk::raii::CommandPool command_pool = CreateCommandPool(queue_info.family_index, device);
-  const std::vector<vk::raii::CommandBuffer> command_buffers = AllocateCommandBuffers(device, command_pool);
+  const vk::raii::CommandPool command_pool = CreateCommandPool(context.graphics_queue().family_index, context.device());
+  const std::vector<vk::raii::CommandBuffer> command_buffers = AllocateCommandBuffers(context.device(), command_pool);
 
-  chove::Camera camera(
+  chove::rendering::Camera camera(
       {0.0F, 0.0F, -1.0F, 1.0F},
       {0.0F, 0.0F, 1.0F},
-      glm::radians(60.0F),
+      glm::radians(45.0F),
       static_cast<float>(image_size.width) / static_cast<float>(image_size.height),
       0.1F,
-      100.0F);
+      10.0F);
 
-  vk::raii::Semaphore image_acquired_semaphore{device, vk::SemaphoreCreateInfo{}};
-  vk::raii::Semaphore rendering_complete_semaphore{device, vk::SemaphoreCreateInfo{}};
-  vk::raii::Fence image_presented_fence{device, vk::FenceCreateInfo{vk::FenceCreateFlagBits::eSignaled}};
-
-  vk::raii::ShaderModule vertex_shader_module = GetShaderModule("shaders/render_shader.vert.spv", device);
-  vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{
-      vk::PipelineShaderStageCreateFlags{},
-      vk::ShaderStageFlagBits::eVertex,
-      *vertex_shader_module,
-      "main"
-  };
-
-  vk::raii::ShaderModule fragment_shader_module = GetShaderModule("shaders/render_shader.frag.spv", device);
-  vk::PipelineShaderStageCreateInfo fragment_shader_stage_create_info{
-      vk::PipelineShaderStageCreateFlags{},
-      vk::ShaderStageFlagBits::eFragment,
-      *fragment_shader_module,
-      "main"
-  };
-
-  std::vector<vk::PipelineShaderStageCreateInfo>
-      shader_stages{vertex_shader_stage_create_info, fragment_shader_stage_create_info};
+  vk::raii::Semaphore image_acquired_semaphore{context.device(), vk::SemaphoreCreateInfo{}};
+  vk::raii::Semaphore rendering_complete_semaphore{context.device(), vk::SemaphoreCreateInfo{}};
+  vk::raii::Fence image_presented_fence{context.device(), vk::FenceCreateInfo{vk::FenceCreateFlagBits::eSignaled}};
 
   vk::VertexInputBindingDescription vertex_input_binding_description{
       0,
-      sizeof(glm::vec4),
+      sizeof(Vertex),
       vk::VertexInputRate::eVertex
   };
-  vk::VertexInputAttributeDescription vertex_input_attribute_description{
+  vk::VertexInputAttributeDescription vertex_input_position_description{
       0,
       0,
       vk::Format::eR32G32B32A32Sfloat,
-      0
+      static_cast<uint32_t>(offsetof(Vertex, position))
   };
+  vk::VertexInputAttributeDescription vertex_input_color_description{
+      1,
+      0,
+      vk::Format::eR32G32B32A32Sfloat,
+      static_cast<uint32_t>(offsetof(Vertex, color))
+  };
+
+  std::vector<vk::VertexInputAttributeDescription>
+      vertex_input_attributes{vertex_input_position_description, vertex_input_color_description};
   vk::PipelineVertexInputStateCreateInfo vertex_input_state{
       vk::PipelineVertexInputStateCreateFlags{},
       vertex_input_binding_description,
-      vertex_input_attribute_description
+      vertex_input_attributes
   };
-
-  vk::PipelineInputAssemblyStateCreateInfo pipeline_input_assembly_state{
-      vk::PipelineInputAssemblyStateCreateFlags{},
-      vk::PrimitiveTopology::eTriangleList,
-      false
-  };
-
-  vk::PipelineTessellationStateCreateInfo pipeline_tessellation_state{
-      vk::PipelineTessellationStateCreateFlags{},
-      0
-  };
-
   vk::Viewport viewport{
       0.0F,
       0.0F,
@@ -333,121 +307,44 @@ int main() {
       1.0F
   };
   vk::Rect2D scissor{{0, 0}, image_size};
-  vk::PipelineViewportStateCreateInfo pipeline_viewport_state{
-      vk::PipelineViewportStateCreateFlags{},
-      viewport,
-      scissor
-  };
 
-  vk::PipelineRasterizationStateCreateInfo pipeline_rasterization_state{
-      vk::PipelineRasterizationStateCreateFlags{},
-      false,
-      false,
-      vk::PolygonMode::eFill,
-      vk::CullModeFlagBits::eNone,
-      vk::FrontFace::eCounterClockwise,
-      false,
-      0.0F,
-      0.0F,
-      0.0F,
-      1.0F,
-      nullptr
-  };
+  auto vertex_shader = std::make_unique<chove::rendering::Shader>("shaders/render_shader.vert.spv", context);
+  auto fragment_shader = std::make_unique<chove::rendering::Shader>("shaders/render_shader.frag.spv", context);
+  vertex_shader->AddPushConstantRanges({vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 16,
+                                                              sizeof(glm::mat4)}});
+  fragment_shader->AddPushConstantRanges({vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
+                                                                sizeof(glm::vec2)}});
 
-  vk::PipelineColorBlendAttachmentState color_blend_attachment_state{
-      false,
-      vk::BlendFactor::eZero,
-      vk::BlendFactor::eZero,
-      vk::BlendOp::eAdd,
-      vk::BlendFactor::eZero,
-      vk::BlendFactor::eZero,
-      vk::BlendOp::eAdd,
-      vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-          vk::ColorComponentFlagBits::eA
-  };
-
-  vk::PipelineColorBlendStateCreateInfo pipeline_color_blend_state{
-      vk::PipelineColorBlendStateCreateFlags{},
-      false,
-      vk::LogicOp::eNoOp,
-      1,
-      &color_blend_attachment_state,
-      {0.0F, 0.0F, 0.0F, 0.0F}
-  };
-
-  vk::PipelineMultisampleStateCreateInfo pipeline_multisample_state{
-      vk::PipelineMultisampleStateCreateFlags{},
-      vk::SampleCountFlagBits::e1,
-      false,
-      0.0F,
-      nullptr,
-      false,
-      false,
-      nullptr
-  };
-
-  vk::raii::DescriptorSetLayout layout{device, vk::DescriptorSetLayoutCreateInfo{
-      vk::DescriptorSetLayoutCreateFlags{}
-  }};
-  std::vector<vk::DescriptorSetLayout> descriptor_set_layouts{};
-  std::vector<vk::PushConstantRange> push_constant_ranges{
-      vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2)},
-      vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 16, sizeof(glm::mat4)},
-  };
-  vk::raii::PipelineLayout pipeline_layout{device, vk::PipelineLayoutCreateInfo{
-      vk::PipelineLayoutCreateFlags{},
-      descriptor_set_layouts,
-      push_constant_ranges
-  }};
-
-  vk::PipelineRenderingCreateInfo pipeline_rendering_create_info{
-      0,
-      1,
-      &surface_format.format,
-      vk::Format::eUndefined,
-      vk::Format::eUndefined,
-      nullptr
-  };
-
-  vk::raii::Pipeline graphics_pipeline{device, nullptr, vk::GraphicsPipelineCreateInfo{
-      vk::PipelineCreateFlags{},
-      shader_stages,
-      &vertex_input_state,
-      &pipeline_input_assembly_state,
-      &pipeline_tessellation_state,
-      &pipeline_viewport_state,
-      &pipeline_rasterization_state,
-      &pipeline_multisample_state,
-      nullptr,
-      &pipeline_color_blend_state,
-      nullptr,
-      *pipeline_layout,
-      nullptr,
-      0,
-      nullptr,
-      0,
-      &pipeline_rendering_create_info
-  }};
+  auto [graphics_pipeline, pipeline_layout] =
+      chove::rendering::PipelineBuilder(context)
+          .SetVertexShader(std::move(vertex_shader))
+          .SetFragmentShader(std::move(fragment_shader))
+          .AddInputBufferDescription(vertex_input_binding_description, vertex_input_attributes)
+          .SetInputTopology(vk::PrimitiveTopology::eTriangleList)
+          .SetViewport(viewport)
+          .SetScissor(scissor)
+          .SetFillMode(vk::PolygonMode::eFill)
+          .SetColorBlendEnable(false)
+          .build(surface_format.format);
 
   std::vector<glm::vec2> window_size = {glm::vec2{image_size.width, image_size.height}};
 
-  vk::raii::Buffer triangle_buffer{device, vk::BufferCreateInfo{
+  vk::raii::Buffer triangle_buffer{context.device(), vk::BufferCreateInfo{
       vk::BufferCreateFlags{},
-      sizeof(glm::vec4) * triangle.size(),
+      sizeof(Vertex) * triangle.size(),
       vk::BufferUsageFlagBits::eVertexBuffer,
       vk::SharingMode::eExclusive,
-      queue_info.family_index,
+      context.graphics_queue().family_index,
       nullptr
   }};
 
   vk::MemoryRequirements triangle_buffer_memory_requirements = triangle_buffer.getMemoryRequirements();
-  Logging::Log(Logging::Level::kInfo,
-               std::format("These are the memory requirements for triangle buffer: {}.",
-                           to_string(vk::MemoryPropertyFlags{triangle_buffer_memory_requirements.memoryTypeBits})));
+  LOG(INFO) << std::format("These are the memory requirements for triangle buffer: {}.",
+                           to_string(vk::MemoryPropertyFlags{triangle_buffer_memory_requirements.memoryTypeBits}));
   vk::MemoryPropertyFlags desired_memory_properties{triangle_buffer_memory_requirements.memoryTypeBits & 0x7};
 
   uint32_t memory_type_index;
-  vk::PhysicalDeviceMemoryProperties available_memory_properties = physical_device.getMemoryProperties();
+  vk::PhysicalDeviceMemoryProperties available_memory_properties = context.physical_device().getMemoryProperties();
   for (uint32_t i = 0; i < available_memory_properties.memoryTypeCount; i++) {
     if ((available_memory_properties.memoryTypes[i].propertyFlags & desired_memory_properties)
         == desired_memory_properties) {
@@ -456,7 +353,7 @@ int main() {
     }
   }
 
-  vk::raii::DeviceMemory triangle_buffer_memory = device.allocateMemory(vk::MemoryAllocateInfo{
+  vk::raii::DeviceMemory triangle_buffer_memory = context.device().allocateMemory(vk::MemoryAllocateInfo{
       triangle_buffer_memory_requirements.size,
       memory_type_index
   });
@@ -465,7 +362,7 @@ int main() {
   void *triangle_buffer_host_memory =
       triangle_buffer_memory.mapMemory(0, triangle_buffer_memory_requirements.size, vk::MemoryMapFlags{});
 
-  memcpy(triangle_buffer_host_memory, triangle.data(), sizeof(glm::vec4) * triangle.size());
+  memcpy(triangle_buffer_host_memory, triangle.data(), sizeof(Vertex) * triangle.size());
 
   triangle_buffer_memory.unmapMemory();
 
@@ -480,52 +377,39 @@ int main() {
         switch (event.key.keysym.sym) {
           case SDLK_ESCAPE:should_app_close = true;
             break;
-          case SDLK_w:camera.position() += glm::vec4(0.0F, 0.0F, 0.1F, 0.0F);
+          case SDLK_w:camera.Move(chove::rendering::Camera::Direction::eForward, 0.1F);
             break;
-          case SDLK_a:camera.position() += glm::vec4(0.1F, 0.0F, 0.0F, 0.0F);
+          case SDLK_a:camera.Move(chove::rendering::Camera::Direction::eLeft, 0.1F);
             break;
-          case SDLK_s:camera.position() += glm::vec4(0.0F, 0.0F, -0.1F, 0.0F);
+          case SDLK_s:camera.Move(chove::rendering::Camera::Direction::eBackward, 0.1F);
             break;
-          case SDLK_d:camera.position() += glm::vec4(-0.1F, 0.0F, 0.0F, 0.0F);
+          case SDLK_d:camera.Move(chove::rendering::Camera::Direction::eRight, 0.1F);
             break;
-          case SDLK_LEFT:
-            camera.look_direction() = glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F))
-                * camera.look_direction();
+          case SDLK_LEFT:camera.Rotate(chove::rendering::Camera::RotationDirection::eLeft, 10.0F);
             break;
-          case SDLK_RIGHT:
-            camera.look_direction() = glm::angleAxis(glm::radians(-10.0F), glm::vec3(0.0F, 1.0F, 0.0F))
-                * camera.look_direction();
+          case SDLK_RIGHT:camera.Rotate(chove::rendering::Camera::RotationDirection::eRight, 10.0F);
             break;
-          case SDLK_UP:
-            camera.look_direction() = glm::angleAxis(glm::radians(10.0F), glm::vec3(1.0F, 0.0F, 0.0F))
-                * camera.look_direction();
+          case SDLK_UP:camera.Rotate(chove::rendering::Camera::RotationDirection::eUpward, 10.0F);
             break;
-          case SDLK_DOWN:
-            camera.look_direction() = glm::angleAxis(glm::radians(-10.0F), glm::vec3(1.0F, 0.0F, 0.0F))
-                * camera.look_direction();
+          case SDLK_DOWN:camera.Rotate(chove::rendering::Camera::RotationDirection::eDownward, 10.0F);
             break;
-          default:
-            Logging::Log(Logging::Level::kInfo,
-                         std::format("Camera position is: ({},{},{},{})",
-                                     camera.position().x,
-                                     camera.position().y,
-                                     camera.position().z,
-                                     camera.position().w));
-            Logging::Log(Logging::Level::kInfo,
-                         std::format("Camera look direction is: ({},{},{})",
+          default:LOG(INFO) << std::format("Camera position is: ({},{},{})",
+                                           camera.position().x,
+                                           camera.position().y,
+                                           camera.position().z);
+            LOG(INFO) << std::format("Camera look direction is: ({},{},{})",
                                      camera.look_direction().x,
                                      camera.look_direction().y,
-                                     camera.look_direction().z));
+                                     camera.look_direction().z);
 
             for (auto point : triangle) {
-              glm::vec4 new_point = camera.GetTransformMatrix() * point;
+              glm::vec4 new_point = camera.GetTransformMatrix() * point.position;
               new_point /= new_point.w;
-              Logging::Log(Logging::Level::kInfo,
-                           std::format("Point is: ({},{},{},{})",
+              LOG(INFO) << std::format("Point is: ({},{},{},{})",
                                        new_point.x,
                                        new_point.y,
                                        new_point.z,
-                                       new_point.w));
+                                       new_point.w);
             }
             break;
         }
@@ -538,7 +422,8 @@ int main() {
     auto image_result =
         swapchain_khr.acquireNextImage(target_frame_time_ns, *image_acquired_semaphore, nullptr);
     if (image_result.first == vk::Result::eTimeout) {
-      Logging::Log(Logging::Level::kWarning, "Acquire next image timed out.");
+      if (present_mode == vk::PresentModeKHR::eMailbox)
+        LOG(WARNING) << "Acquire next image timed out.";
       continue;
     }
     uint32_t image_index = image_result.second;
@@ -555,12 +440,12 @@ int main() {
         nullptr
     };
 
-    auto result = device.waitForFences(*image_presented_fence, true, target_frame_time_ns);
+    auto result = context.device().waitForFences(*image_presented_fence, true, target_frame_time_ns);
     if (result == vk::Result::eTimeout) {
-      Logging::Log(Logging::Level::kWarning, "Waiting for image presented fence timed out.");
+      LOG(WARNING) << "Waiting for image presented fence timed out.";
       continue;
     }
-    device.resetFences(*image_presented_fence);
+    context.device().resetFences(*image_presented_fence);
     command_buffers[0].begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 
     // transition image to a format that can be rendered to
@@ -570,8 +455,8 @@ int main() {
            vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
            vk::ImageLayout::eUndefined,
            vk::ImageLayout::eColorAttachmentOptimal,
-           queue_info.family_index,
-           queue_info.family_index,
+           context.graphics_queue().family_index,
+           context.graphics_queue().family_index,
            swapchain_images[image_index],
            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
            nullptr};
@@ -632,8 +517,8 @@ int main() {
            vk::PipelineStageFlagBits2::eBottomOfPipe, {},
            vk::ImageLayout::eColorAttachmentOptimal,
            vk::ImageLayout::ePresentSrcKHR,
-           queue_info.family_index,
-           queue_info.family_index,
+           context.graphics_queue().family_index,
+           context.graphics_queue().family_index,
            swapchain_images[image_index],
            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
            nullptr};
@@ -655,7 +540,7 @@ int main() {
           {*rendering_complete_semaphore, 1,
            vk::PipelineStageFlagBits2::eBottomOfPipe, 0, nullptr};
       vk::CommandBufferSubmitInfo command_buffer_submit_info{*command_buffers[0], 0, nullptr};
-      graphics_queue.submit2(vk::SubmitInfo2{
+      context.graphics_queue().queue.submit2(vk::SubmitInfo2{
           vk::SubmitFlags{},
           wait_semaphore_submit_info,
           command_buffer_submit_info,
@@ -665,23 +550,23 @@ int main() {
     }
 
     // present the swapchain image
-    result =
-        graphics_queue.presentKHR(vk::PresentInfoKHR{*rendering_complete_semaphore, *swapchain_khr, image_index,
-                                                     nullptr});
+    result = context.graphics_queue().queue.presentKHR(vk::PresentInfoKHR{*rendering_complete_semaphore, *swapchain_khr,
+                                                                          image_index,
+                                                                          nullptr});
     if (result != vk::Result::eSuccess) {
-      Logging::Log(Logging::Level::kWarning, "Presenting swapchain image failed.");
+      LOG(WARNING) << "Presenting swapchain image failed.";
       break;
     }
 
     auto end_frame_time = std::chrono::high_resolution_clock::now();
     if (end_frame_time - start_frame_time > target_frame_time) {
-      Logging::Log(Logging::Level::kInfo,
-                   std::format("Frame time: {} ns.",
-                               duration_cast<std::chrono::nanoseconds>(end_frame_time - start_frame_time).count()));
+      LOG(INFO) <<
+                std::format("Frame time: {} ns.",
+                            duration_cast<std::chrono::nanoseconds>(end_frame_time - start_frame_time).count());
     }
   }
 
-  device.waitIdle();
+  context.device().waitIdle();
   SDL_Quit();
   return 0;
 }
