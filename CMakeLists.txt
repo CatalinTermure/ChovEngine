@@ -11,7 +11,8 @@ find_package(glm REQUIRED)
 find_package(absl CONFIG REQUIRED)
 
 add_library(ProjectRendering src/rendering/camera.cpp src/rendering/shader.cpp src/rendering/context.cpp
-        src/rendering/pipeline_builder.cpp)
+        src/rendering/pipeline_builder.cpp
+        src/rendering/swapchain.cpp)
 target_include_directories(ProjectRendering PUBLIC include/rendering include)
 target_link_libraries(ProjectRendering glm::glm absl::base absl::log absl::status)
 

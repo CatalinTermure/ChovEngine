@@ -20,6 +20,7 @@
 #include "rendering/camera.h"
 #include "rendering/context.h"
 #include "rendering/pipeline_builder.h"
+#include "rendering/swapchain.h"
 
 namespace chove {
 
@@ -118,10 +119,14 @@ class Scene {
   std::vector<GameObjectBatch> object_batches_;
 };
 
+class Application {
+  //
+};
+
 }  // namespace chove
 
 class StdoutLogSink : public absl::LogSink {
-  void Send(const absl::LogEntry& entry) override {
+  void Send(const absl::LogEntry &entry) override {
     std::cout << entry.text_message_with_prefix_and_newline();
   }
 };
@@ -137,52 +142,6 @@ std::vector<vk::raii::CommandBuffer> AllocateCommandBuffers(const vk::raii::Devi
   auto command_buffer_allocate_info = vk::CommandBufferAllocateInfo{*command_pool, vk::CommandBufferLevel::ePrimary, 1};
   std::vector<vk::raii::CommandBuffer> command_buffers = device.allocateCommandBuffers(command_buffer_allocate_info);
   return command_buffers;
-}
-
-vk::SurfaceFormatKHR GetBGRA8SurfaceFormat(const vk::SurfaceKHR &surface, const vk::PhysicalDevice &physical_device) {
-  const std::vector<vk::SurfaceFormatKHR> surface_formats = physical_device.getSurfaceFormatsKHR(surface);
-  vk::SurfaceFormatKHR surface_format;
-  for (const auto &format : surface_formats) {
-    if (format.format == vk::Format::eB8G8R8A8Srgb) {
-      surface_format = format;
-      break;
-    }
-  }
-  if (surface_format.format == vk::Format::eUndefined) {
-    LOG(FATAL) << "Driver does not support BGRA8 SRGB.";
-  }
-  return surface_format;
-}
-
-vk::PresentModeKHR PickPresentMode(const vk::SurfaceKHR &surface, const vk::PhysicalDevice &physical_device,
-                                   vk::PresentModeKHR preferred_present_mode) {
-  vk::PresentModeKHR present_mode = preferred_present_mode;
-  std::vector<vk::PresentModeKHR> supported_present_modes = physical_device.getSurfacePresentModesKHR(surface);
-  if (!(std::find(supported_present_modes.begin(), supported_present_modes.end(), present_mode) !=
-      supported_present_modes.end())) {
-    LOG(ERROR) << "Present mode not supported. Falling back to FIFO.";
-    present_mode = vk::PresentModeKHR::eFifo;
-  }
-  return present_mode;
-}
-
-vk::Extent2D GetSurfaceExtent(SDL_Window *window, vk::SurfaceCapabilitiesKHR &surface_capabilities) {
-  int window_width = 0;
-  int window_height = 0;
-  SDL_Vulkan_GetDrawableSize(window, &window_width, &window_height);
-  uint32_t surface_width = surface_capabilities.currentExtent.width;
-  uint32_t surface_height = surface_capabilities.currentExtent.height;
-  if (surface_width == 0xFFFFFFFFU || surface_height == 0xFFFFFFFFU) {
-    surface_width = window_width;
-    surface_height = window_height;
-  }
-  if (surface_width != static_cast<uint32_t>(window_width) || surface_height != static_cast<uint32_t>(window_height)) {
-    LOG(FATAL) << std::format("SDL and Vulkan disagree on surface size. SDL: %dx%d. Vulkan %ux%u", window_width,
-                              window_height, surface_width, surface_height);
-  }
-  vk::Extent2D surface_extent = {surface_width, surface_height};
-  surface_capabilities.currentExtent = surface_extent;
-  return surface_extent;
 }
 
 struct Vertex {
@@ -204,59 +163,18 @@ int main() {
   StdoutLogSink log_sink{};
   absl::AddLogSink(&log_sink);
   absl::InitializeLog();
-//  auto window = std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(InitSDLWindow(), SDL_DestroyWindow);
 
-//  const vk::raii::Context raii_context = vk::raii::Context{};
-//  const vk::raii::Instance instance = CreateInstance(raii_context, window.get());
-
-//  VkSurfaceKHR c_surface = VK_NULL_HANDLE;
-//  if (!SDL_Vulkan_CreateSurface(window.get(), *instance, &c_surface)) {
-//    Logging::Log(Logging::Level::kFatal, "Could not create a Vulkan surface.");
-//    return 1;
-//  }
-//  const vk::raii::SurfaceKHR surface(instance, c_surface);
-
-//  const vk::raii::PhysicalDevice physical_device = PickPhysicalDevice(instance);
-//  chove::QueueInfo queue_info = GetQueueFromCapabilities(*physical_device, vk::QueueFlagBits::eGraphics);
-//  if (!physical_device.getSurfaceSupportKHR(queue_info.family_index, *surface)) {
-//    Logging::Log(Logging::Level::kFatal, "Queue does not support drawing on this surface.");
-//    return 1;
-//  }
-//  const vk::raii::Device device = CreateLogicalDevice(physical_device, queue_info);
-//  const vk::raii::Queue graphics_queue = device.getQueue(queue_info.family_index, 0);
   chove::rendering::Context context = []() {
     absl::StatusOr<chove::rendering::Context> context = chove::rendering::Context::CreateContext();
     CHECK_OK(context) << "Could not create render context.";
     return std::move(*context);
   }();
-  const vk::PresentModeKHR
-      present_mode = PickPresentMode(context.surface(), context.physical_device(), vk::PresentModeKHR::eMailbox);
-  vk::SurfaceCapabilitiesKHR
-      surface_capabilities = context.physical_device().getSurfaceCapabilitiesKHR(context.surface());
 
-  uint32_t image_count = surface_capabilities.minImageCount + 1;
-  if (image_count > surface_capabilities.maxImageCount && surface_capabilities.maxImageCount == 0) {
-    image_count = surface_capabilities.maxImageCount;
-  }
-  const vk::Extent2D image_size = GetSurfaceExtent(context.window(), surface_capabilities);
-  const vk::SurfaceFormatKHR surface_format = GetBGRA8SurfaceFormat(context.surface(), context.physical_device());
-  const vk::raii::SwapchainKHR swapchain_khr{
-      context.device(),
-      vk::SwapchainCreateInfoKHR{vk::SwapchainCreateFlagsKHR{}, context.surface(), image_count, surface_format.format,
-                                 surface_format.colorSpace, image_size, 1,
-                                 vk::ImageUsageFlagBits::eColorAttachment, vk::SharingMode::eExclusive,
-                                 context.graphics_queue().family_index, surface_capabilities.currentTransform,
-                                 vk::CompositeAlphaFlagBitsKHR::eOpaque, present_mode, true, nullptr}};
-  image_count = swapchain_khr.getImages().size();
-  LOG(INFO) << "Created swapchain with " << image_count << "images.";
-  std::vector<vk::Image> swapchain_images = swapchain_khr.getImages();
-  std::vector<vk::raii::ImageView> swapchain_image_views;
-  swapchain_image_views.reserve(swapchain_images.size());
-  for (auto image : swapchain_images) {
-    swapchain_image_views.emplace_back(context.device(), vk::ImageViewCreateInfo{
-        vk::ImageViewCreateFlags{}, image, vk::ImageViewType::e2D, surface_format.format, vk::ComponentMapping{},
-        vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}});
-  }
+  const chove::rendering::Swapchain swapchain = [&context]() {
+    absl::StatusOr<chove::rendering::Swapchain> swapchain = chove::rendering::Swapchain::CreateSwapchain(context, 2);
+    CHECK_OK(swapchain) << "Could not create swapchain.";
+    return std::move(*swapchain);
+  }();
 
   const vk::raii::CommandPool command_pool = CreateCommandPool(context.graphics_queue().family_index, context.device());
   const std::vector<vk::raii::CommandBuffer> command_buffers = AllocateCommandBuffers(context.device(), command_pool);
@@ -265,7 +183,7 @@ int main() {
       {0.0F, 0.0F, -1.0F, 1.0F},
       {0.0F, 0.0F, 1.0F},
       glm::radians(45.0F),
-      static_cast<float>(image_size.width) / static_cast<float>(image_size.height),
+      static_cast<float>(swapchain.image_size().width) / static_cast<float>(swapchain.image_size().height),
       0.1F,
       10.0F);
 
@@ -301,12 +219,12 @@ int main() {
   vk::Viewport viewport{
       0.0F,
       0.0F,
-      static_cast<float>(image_size.width),
-      static_cast<float>(image_size.height),
+      static_cast<float>(swapchain.image_size().width),
+      static_cast<float>(swapchain.image_size().height),
       0.1F,
       1.0F
   };
-  vk::Rect2D scissor{{0, 0}, image_size};
+  vk::Rect2D scissor{{0, 0}, swapchain.image_size()};
 
   auto vertex_shader = std::make_unique<chove::rendering::Shader>("shaders/render_shader.vert.spv", context);
   auto fragment_shader = std::make_unique<chove::rendering::Shader>("shaders/render_shader.frag.spv", context);
@@ -325,9 +243,9 @@ int main() {
           .SetScissor(scissor)
           .SetFillMode(vk::PolygonMode::eFill)
           .SetColorBlendEnable(false)
-          .build(surface_format.format);
+          .build(swapchain.surface_format().format);
 
-  std::vector<glm::vec2> window_size = {glm::vec2{image_size.width, image_size.height}};
+  std::vector<glm::vec2> window_size = {glm::vec2{swapchain.image_size().width, swapchain.image_size().height}};
 
   vk::raii::Buffer triangle_buffer{context.device(), vk::BufferCreateInfo{
       vk::BufferCreateFlags{},
@@ -419,30 +337,27 @@ int main() {
     glm::mat4 view_matrix = camera.GetTransformMatrix();
 
     // acquire a swapchain image
-    auto image_result =
-        swapchain_khr.acquireNextImage(target_frame_time_ns, *image_acquired_semaphore, nullptr);
-    if (image_result.first == vk::Result::eTimeout) {
-      if (present_mode == vk::PresentModeKHR::eMailbox)
-        LOG(WARNING) << "Acquire next image timed out.";
+    auto [image_result, next_image] =
+        swapchain.AcquireNextImage(target_frame_time_ns, *image_acquired_semaphore, nullptr);
+    if (image_result == vk::Result::eTimeout) {
       continue;
     }
-    uint32_t image_index = image_result.second;
 
     vk::RenderingAttachmentInfo color_attachment_info{
-        *swapchain_image_views[image_index],
+        next_image.view,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ResolveModeFlagBits::eNone,
-        *swapchain_image_views[image_index],
+        next_image.view,
         vk::ImageLayout::ePresentSrcKHR,
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eStore,
-        vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 1.0F}},
+        vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 0.0F}},
         nullptr
     };
 
     auto result = context.device().waitForFences(*image_presented_fence, true, target_frame_time_ns);
     if (result == vk::Result::eTimeout) {
-      LOG(WARNING) << "Waiting for image presented fence timed out.";
+      LOG(WARNING) << "Previous frame did not present in time.";
       continue;
     }
     context.device().resetFences(*image_presented_fence);
@@ -457,7 +372,7 @@ int main() {
            vk::ImageLayout::eColorAttachmentOptimal,
            context.graphics_queue().family_index,
            context.graphics_queue().family_index,
-           swapchain_images[image_index],
+           next_image.image,
            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
            nullptr};
       command_buffers[0].pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
@@ -470,7 +385,7 @@ int main() {
     // begin rendering
     command_buffers[0].beginRendering(vk::RenderingInfo{
         vk::RenderingFlags{},
-        vk::Rect2D{{0, 0}, image_size},
+        vk::Rect2D{{0, 0}, swapchain.image_size()},
         1,
         0,
         color_attachment_info,
@@ -495,10 +410,10 @@ int main() {
       vk::ClearAttachment clear_attachment{
           vk::ImageAspectFlagBits::eColor,
           0,
-          vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 1.0F}}
+          vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 0.0F}}
       };
       vk::ClearRect clear_rect{
-          vk::Rect2D{{0, 0}, image_size},
+          vk::Rect2D{{0, 0}, swapchain.image_size()},
           0,
           1
       };
@@ -519,7 +434,7 @@ int main() {
            vk::ImageLayout::ePresentSrcKHR,
            context.graphics_queue().family_index,
            context.graphics_queue().family_index,
-           swapchain_images[image_index],
+           next_image.image,
            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
            nullptr};
       command_buffers[0].pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
@@ -550,12 +465,16 @@ int main() {
     }
 
     // present the swapchain image
-    result = context.graphics_queue().queue.presentKHR(vk::PresentInfoKHR{*rendering_complete_semaphore, *swapchain_khr,
-                                                                          image_index,
-                                                                          nullptr});
-    if (result != vk::Result::eSuccess) {
-      LOG(WARNING) << "Presenting swapchain image failed.";
-      break;
+    {
+      const vk::SwapchainKHR swapchain_khr = swapchain.swapchain_khr();
+      result = context.graphics_queue().queue.presentKHR(vk::PresentInfoKHR{*rendering_complete_semaphore,
+                                                                            swapchain_khr,
+                                                                            next_image.index,
+                                                                            nullptr});
+      if (result != vk::Result::eSuccess) {
+        LOG(WARNING) << "Presenting swapchain image failed.";
+        break;
+      }
     }
 
     auto end_frame_time = std::chrono::high_resolution_clock::now();
