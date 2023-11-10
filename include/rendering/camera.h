@@ -8,6 +8,8 @@
 namespace chove::rendering {
 class Camera {
  public:
+  Camera() = default;
+
   Camera(glm::vec4 position,
          glm::vec3 look_direction,
          float fov,
@@ -24,7 +26,7 @@ class Camera {
   [[nodiscard]] const glm::vec3 &position() const { return position_; }
   [[nodiscard]] const glm::vec3 &look_direction() const { return look_direction_; }
 
-  [[nodiscard]] glm::mat4 GetTransformMatrix();
+  [[nodiscard]] glm::mat4 GetTransformMatrix() const;
 
   enum class Direction {
     eForward,

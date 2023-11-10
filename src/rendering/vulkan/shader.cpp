@@ -1,8 +1,8 @@
-#include "shader.h"
+#include "rendering/vulkan/shader.h"
 
 #include <fstream>
 
-namespace chove::rendering {
+namespace chove::rendering::vulkan {
 
 namespace {
 

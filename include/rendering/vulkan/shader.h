@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_RENDERING_SHADER_H_
-#define LABSEXTRA_INCLUDE_RENDERING_SHADER_H_
+#ifndef LABSEXTRA_INCLUDE_RENDERING_VULKAN_SHADER_H_
+#define LABSEXTRA_INCLUDE_RENDERING_VULKAN_SHADER_H_
 
 #include <memory>
 #include <vulkan/vulkan_raii.hpp>
@@ -9,7 +9,7 @@
 
 #include "context.h"
 
-namespace chove::rendering {
+namespace chove::rendering::vulkan {
 class Shader {
  public:
   Shader(const std::filesystem::path &path, const Context &context);
@@ -34,4 +34,4 @@ class Shader {
 };
 } // namespace chove::rendering
 
-#endif //LABSEXTRA_INCLUDE_RENDERING_SHADER_H_
+#endif //LABSEXTRA_INCLUDE_RENDERING_VULKAN_SHADER_H_

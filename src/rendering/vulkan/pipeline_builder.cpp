@@ -1,6 +1,6 @@
-#include "pipeline_builder.h"
+#include "rendering/vulkan/pipeline_builder.h"
 
-namespace chove::rendering {
+namespace chove::rendering::vulkan {
 
 PipelineBuilder::PipelineBuilder(const Context &context) {
   context_ = &context;

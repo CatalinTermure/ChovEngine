@@ -1,32 +1,16 @@
-#include "context.h"
+#include "rendering/vulkan/context.h"
 
 #include <memory>
 
 #include <vulkan/vulkan_raii.hpp>
-#include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 #include <absl/log/log.h>
 #include <absl/status/statusor.h>
 
-namespace chove::rendering {
+namespace chove::rendering::vulkan {
 
 namespace {
 
-SDL_Window *InitSDLWindow() {
-  // Create an SDL window that supports Vulkan rendering.
-  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-    LOG(FATAL) << "Could not initialize SDL.";
-    return nullptr;
-  }
-
-  SDL_Window *window =
-      SDL_CreateWindow("Vulkan Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_VULKAN);
-  if (window == nullptr) {
-    LOG(FATAL) << "Could not create SDL window.";
-    return nullptr;
-  }
-  return window;
-}
 
 std::vector<const char *> GetSDLRequiredExtensions(SDL_Window *window) {
   // Get WSI extensions from SDL (we can add more if we like - we just can't
@@ -124,13 +108,12 @@ vk::raii::Device CreateLogicalDevice(const vk::raii::PhysicalDevice &physical_de
 }
 }
 
-absl::StatusOr<Context> Context::CreateContext() {
+absl::StatusOr<Context> Context::CreateContext(Window &window) {
   vk::raii::Context vulkan_context{};
-  auto window = std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(InitSDLWindow(), SDL_DestroyWindow);
-  vk::raii::Instance instance = CreateInstance(vulkan_context, window.get());
+  vk::raii::Instance instance = CreateInstance(vulkan_context, window);
 
   VkSurfaceKHR c_surface = VK_NULL_HANDLE;
-  if (!SDL_Vulkan_CreateSurface(window.get(), *instance, &c_surface)) {
+  if (!SDL_Vulkan_CreateSurface(window, *instance, &c_surface)) {
     LOG(FATAL) << "SDL could not create Vulkan surface.";
     return absl::Status(absl::StatusCode::kInternal, "SDL could not create Vulkan surface.");
   }
@@ -150,7 +133,6 @@ absl::StatusOr<Context> Context::CreateContext() {
 
   return Context{std::move(vulkan_context),
                  std::move(instance),
-                 std::move(window),
                  std::move(surface),
                  std::move(device),
                  std::move(physical_device),

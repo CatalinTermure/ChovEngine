@@ -1,9 +1,9 @@
-#include "swapchain.h"
+#include "rendering/vulkan/swapchain.h"
 
 #include <absl/log/log.h>
 #include <SDL2/SDL_vulkan.h>
 
-namespace chove::rendering {
+namespace chove::rendering::vulkan {
 
 namespace {
 
@@ -50,8 +50,7 @@ std::pair<vk::Result, SwapchainImage> Swapchain::AcquireNextImage(uint64_t timeo
   return {result, SwapchainImage{*swapchain_image_views_[index], swapchain_images_[index], index}};
 }
 
-absl::StatusOr<Swapchain> Swapchain::CreateSwapchain(Context &context,
-                                                     uint32_t image_count) {
+absl::StatusOr<Swapchain> Swapchain::CreateSwapchain(Context &context, Window &window, uint32_t image_count) {
   const vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;  // no checks needed for FIFO mode
   vk::SurfaceCapabilitiesKHR
       surface_capabilities = context.physical_device().getSurfaceCapabilitiesKHR(context.surface());
@@ -60,7 +59,7 @@ absl::StatusOr<Swapchain> Swapchain::CreateSwapchain(Context &context,
       || (image_count > surface_capabilities.maxImageCount && surface_capabilities.maxImageCount != 0)) {
     return absl::InvalidArgumentError("Desired image count is not supported.");
   }
-  vk::Extent2D image_size = GetSurfaceExtent(context.window(), surface_capabilities);
+  vk::Extent2D image_size = GetSurfaceExtent(window, surface_capabilities);
   vk::SurfaceFormatKHR surface_format = GetBGRA8SurfaceFormat(context.surface(), context.physical_device());
   vk::raii::SwapchainKHR swapchain_khr{
       context.device(),

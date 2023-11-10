@@ -1,12 +1,13 @@
-#ifndef LABSEXTRA_INCLUDE_RENDERING_SWAPCHAIN_H_
-#define LABSEXTRA_INCLUDE_RENDERING_SWAPCHAIN_H_
+#ifndef LABSEXTRA_INCLUDE_RENDERING_VULKAN_SWAPCHAIN_H_
+#define LABSEXTRA_INCLUDE_RENDERING_VULKAN_SWAPCHAIN_H_
 
-#include <vulkan/vulkan_raii.hpp>
 #include <absl/status/statusor.h>
-#include <xtr1common>
-#include "context.h"
+#include <vulkan/vulkan_raii.hpp>
 
-namespace chove::rendering {
+#include "context.h"
+#include "rendering/window.h"
+
+namespace chove::rendering::vulkan {
 
 struct SwapchainImage {
   vk::ImageView view;
@@ -21,7 +22,7 @@ class Swapchain {
   Swapchain(Swapchain &&) noexcept = default;
   Swapchain &operator=(Swapchain &&) noexcept = default;
 
-  static absl::StatusOr<Swapchain> CreateSwapchain(Context &context, uint32_t image_count);
+  static absl::StatusOr<Swapchain> CreateSwapchain(Context &context, Window &window, uint32_t image_count);
 
   [[nodiscard]] std::pair<vk::Result, SwapchainImage> AcquireNextImage(uint64_t timeout,
                                                                        vk::Semaphore semaphore,
@@ -48,4 +49,4 @@ class Swapchain {
 };
 }
 
-#endif //LABSEXTRA_INCLUDE_RENDERING_SWAPCHAIN_H_
+#endif //LABSEXTRA_INCLUDE_RENDERING_VULKAN_SWAPCHAIN_H_

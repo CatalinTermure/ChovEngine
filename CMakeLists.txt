@@ -10,11 +10,19 @@ find_package(glm REQUIRED)
 
 find_package(absl CONFIG REQUIRED)
 
-add_library(ProjectRendering src/rendering/camera.cpp src/rendering/shader.cpp src/rendering/context.cpp
-        src/rendering/pipeline_builder.cpp
-        src/rendering/swapchain.cpp)
-target_include_directories(ProjectRendering PUBLIC include/rendering include)
+add_library(ProjectRendering src/rendering/camera.cpp src/rendering/vulkan/shader.cpp src/rendering/vulkan/context.cpp
+        src/rendering/vulkan/pipeline_builder.cpp
+        src/rendering/vulkan/swapchain.cpp
+        src/rendering/vulkan/vulkan_renderer.cpp
+        src/rendering/mesh.cpp
+        src/rendering/window.cpp
+        src/objects/scene.cpp)
+target_include_directories(ProjectRendering PUBLIC include)
 target_link_libraries(ProjectRendering glm::glm absl::base absl::log absl::status)
+
+#add_library(ProjectObjects)
+#target_include_directories(ProjectObjects PUBLIC include/objects)
+#target_link_libraries(ProjectObjects glm::glm)
 
 add_executable(LabsExtra src/main.cpp)
 target_include_directories(LabsExtra PUBLIC include)

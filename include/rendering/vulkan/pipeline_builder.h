@@ -1,11 +1,11 @@
-#ifndef LABSEXTRA_INCLUDE_RENDERING_PIPELINE_BUILDER_H_
-#define LABSEXTRA_INCLUDE_RENDERING_PIPELINE_BUILDER_H_
+#ifndef LABSEXTRA_INCLUDE_RENDERING_VULKAN_PIPELINE_BUILDER_H_
+#define LABSEXTRA_INCLUDE_RENDERING_VULKAN_PIPELINE_BUILDER_H_
 
 #include <vulkan/vulkan_raii.hpp>
 
 #include "shader.h"
 
-namespace chove::rendering {
+namespace chove::rendering::vulkan {
 class PipelineBuilder {
  public:
   explicit PipelineBuilder(const Context &context);
@@ -45,4 +45,4 @@ class PipelineBuilder {
 };
 } // namespace chove::rendering
 
-#endif //LABSEXTRA_INCLUDE_RENDERING_PIPELINE_BUILDER_H_
+#endif //LABSEXTRA_INCLUDE_RENDERING_VULKAN_PIPELINE_BUILDER_H_
