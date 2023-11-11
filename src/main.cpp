@@ -34,11 +34,6 @@ class StdoutLogSink : public absl::LogSink {
   }
 };
 
-struct Vertex {
-  glm::vec4 position;
-  glm::vec4 color;
-};
-
 constexpr int target_frame_rate = 60;
 constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);

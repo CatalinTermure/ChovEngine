@@ -24,6 +24,8 @@ class Context {
   [[nodiscard]] vk::PhysicalDevice physical_device() { return *physical_device_; }
   [[nodiscard]] QueueInfo &transfer_queue() { return transfer_queue_; }
   [[nodiscard]] QueueInfo &graphics_queue() { return graphics_queue_; }
+  [[nodiscard]] vk::Instance instance() { return *instance_; }
+  [[nodiscard]] static constexpr uint32_t GetVulkanVersion() { return VK_API_VERSION_1_3; }
 
   [[nodiscard]] static absl::StatusOr<Context> CreateContext(Window &window);
 

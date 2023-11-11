@@ -5,10 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(SDL2_DIR "SDL2-2.26.5/cmake") # Set this to the directory containing SDL2Config.cmake
 find_package(SDL2 REQUIRED)
 
-set(glm_DIR glm/cmake/glm)
 find_package(glm REQUIRED)
-
 find_package(absl CONFIG REQUIRED)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 add_library(ProjectRendering src/rendering/camera.cpp src/rendering/vulkan/shader.cpp src/rendering/vulkan/context.cpp
         src/rendering/vulkan/pipeline_builder.cpp
@@ -16,9 +15,11 @@ add_library(ProjectRendering src/rendering/camera.cpp src/rendering/vulkan/shade
         src/rendering/vulkan/vulkan_renderer.cpp
         src/rendering/mesh.cpp
         src/rendering/window.cpp
-        src/objects/scene.cpp)
+        src/objects/scene.cpp
+        src/rendering/vulkan/libraries_initializer.cpp
+        src/rendering/vulkan/buffer.cpp)
 target_include_directories(ProjectRendering PUBLIC include)
-target_link_libraries(ProjectRendering glm::glm absl::base absl::log absl::status)
+target_link_libraries(ProjectRendering GPUOpen::VulkanMemoryAllocator glm::glm absl::base absl::log absl::status)
 
 #add_library(ProjectObjects)
 #target_include_directories(ProjectObjects PUBLIC include/objects)

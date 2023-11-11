@@ -43,7 +43,7 @@ vk::raii::Instance CreateInstance(const vk::raii::Context &context, SDL_Window *
       .setApplicationVersion(1)
       .setPEngineName("LunarG SDK")
       .setEngineVersion(1)
-      .setApiVersion(VK_API_VERSION_1_3);
+      .setApiVersion(Context::GetVulkanVersion());
 
   const vk::InstanceCreateInfo inst_info = vk::InstanceCreateInfo()
       .setFlags(vk::InstanceCreateFlags())

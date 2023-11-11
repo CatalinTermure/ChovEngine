@@ -5,10 +5,13 @@
 #include "rendering/window.h"
 #include "context.h"
 #include "swapchain.h"
+#include "buffer.h"
 
 #include <absl/status/statusor.h>
 
 #include <vulkan/vulkan_raii.hpp>
+
+#include <vma/vk_mem_alloc.h>
 
 namespace chove::rendering::vulkan {
 
@@ -16,13 +19,15 @@ class VulkanRenderer : public Renderer {
  public:
   VulkanRenderer(const VulkanRenderer &) = delete;
   VulkanRenderer &operator=(const VulkanRenderer &) = delete;
-  VulkanRenderer(VulkanRenderer &&) = default;
-  VulkanRenderer &operator=(VulkanRenderer &&) = default;
+  VulkanRenderer(VulkanRenderer &&) noexcept;
+  VulkanRenderer &operator=(VulkanRenderer &&) noexcept;
 
   static absl::StatusOr<VulkanRenderer> Create(Window &window);
 
   void Render(const objects::Scene &scene) override;
   void SetupScene(const objects::Scene &scene) override;
+
+  ~VulkanRenderer() override;
 
  private:
   VulkanRenderer(Context context, Swapchain swapchain);
@@ -32,21 +37,28 @@ class VulkanRenderer : public Renderer {
 
   vk::raii::Semaphore image_acquired_semaphore_;
   vk::raii::Semaphore rendering_complete_semaphore_;
-  vk::raii::Fence image_presented_fence_;
-  vk::raii::CommandPool command_pool_;
+  vk::raii::Semaphore transfer_complete_semaphore_;
+  vk::raii::Fence rendering_complete_fence_;
+  vk::raii::Fence transfer_complete_fence_;
+
+  vk::raii::CommandPool rendering_command_pool_;
+  vk::raii::CommandPool transfer_command_pool_;
   std::vector<vk::raii::CommandBuffer> command_buffers_;
 
-  struct Buffer {
+  [[nodiscard]] vk::raii::CommandBuffer &drawing_command_buffer() { return command_buffers_[0]; }
+  [[nodiscard]] vk::raii::CommandBuffer &transfer_command_buffer() { return command_buffers_[1]; }
+
+  struct VertexBufferInfo {
     const Mesh *mesh;
-    vk::raii::Buffer buffer;
-    vk::raii::DeviceMemory memory;
-    vk::DeviceSize offset;
-    vk::DeviceSize size;
+    Buffer buffer;
   };
-  std::vector<Buffer> vertex_buffers_;
+  std::vector<VertexBufferInfo> vertex_buffers_;
+  std::vector<Buffer> staging_buffers_;
 
   std::vector<vk::raii::Pipeline> pipelines_;
   std::vector<vk::raii::PipelineLayout> pipeline_layouts_;
+
+  VmaAllocator gpu_memory_allocator_{};
 };
 
 }

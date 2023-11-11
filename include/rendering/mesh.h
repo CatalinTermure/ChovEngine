@@ -24,17 +24,6 @@ struct Mesh {
         vk::VertexInputRate::eVertex
     };
   }
-
-  [[nodiscard]] vk::raii::Buffer CreateVertexBuffer(const vk::raii::Device &device,
-                                                    std::vector<uint32_t> queue_family_indices) const {
-    return {device, vk::BufferCreateInfo{
-        vk::BufferCreateFlags{},
-        sizeof(Vertex) * vertices.size(),
-        vk::BufferUsageFlagBits::eVertexBuffer,
-        vk::SharingMode::eExclusive,
-        queue_family_indices
-    }};
-  }
 };
 }  // namespace chove::rendering
 

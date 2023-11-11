@@ -8,8 +8,9 @@
 namespace chove::rendering::vulkan {
 namespace {
 
-constexpr int target_frame_rate = 60;
-constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
+constexpr int kTargetFrameRate = 60;
+constexpr long long kTargetFrameTimeNs = 1'000'000'000 / kTargetFrameRate;
+constexpr int kPreferredNvidiaBlockSize = 1048576;
 
 vk::raii::CommandPool CreateCommandPool(uint32_t graphics_queue_index, const vk::raii::Device &device) {
   vk::raii::CommandPool command_pool =
@@ -27,22 +28,74 @@ std::vector<vk::raii::CommandBuffer> AllocateCommandBuffers(const vk::raii::Devi
 }
 
 void VulkanRenderer::Render(const objects::Scene &scene) {
-  std::vector<vk::Buffer> vertex_buffers;
-  for (const auto &buffer : vertex_buffers_) {
-    void *buffer_host_memory = buffer.memory.mapMemory(buffer.offset, buffer.size, vk::MemoryMapFlags{});
+  auto result = context_.device().waitForFences(*rendering_complete_fence_, true, kTargetFrameTimeNs);
+  if (result == vk::Result::eTimeout) {
+    LOG(WARNING) << "Previous frame did not present in time.";
+    return;
+  }
+  rendering_command_pool_.reset(vk::CommandPoolResetFlags{});
+  context_.device().resetFences(*rendering_complete_fence_);
 
-    memcpy(buffer_host_memory, buffer.mesh->vertices.data(), buffer.size);
+  result = context_.device().waitForFences(*transfer_complete_fence_, true, kTargetFrameTimeNs);
+  if (result == vk::Result::eTimeout) {
+    LOG(WARNING) << "Previous frame did not transfer in time.";
+    return;
+  }
+  transfer_command_pool_.reset(vk::CommandPoolResetFlags{});
+  context_.device().resetFences(*transfer_complete_fence_);
 
-    buffer.memory.unmapMemory();
+  transfer_command_buffer().begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+  for (int buffer_index = 0; buffer_index < vertex_buffers_.size(); ++buffer_index) {
+    void *buffer_host_memory = staging_buffers_[buffer_index].GetMappedMemory();
+    memcpy(buffer_host_memory,
+           vertex_buffers_[buffer_index].mesh->vertices.data(),
+           staging_buffers_[buffer_index].size());
 
-    vertex_buffers.push_back(*buffer.buffer);
+    transfer_command_buffer().copyBuffer(staging_buffers_[buffer_index].buffer(),
+                                         vertex_buffers_[buffer_index].buffer.buffer(),
+                                         vk::BufferCopy{0, 0, staging_buffers_[buffer_index].size()});
+
+    vk::BufferMemoryBarrier2 buffer_memory_barrier{
+        vk::PipelineStageFlagBits2::eTransfer,
+        vk::AccessFlagBits2::eMemoryWrite,
+        vk::PipelineStageFlagBits2::eBottomOfPipe,
+        vk::AccessFlagBits2::eMemoryRead,
+        context_.transfer_queue().family_index,
+        context_.graphics_queue().family_index,
+        vertex_buffers_[buffer_index].buffer.buffer(),
+        0,
+        vertex_buffers_[buffer_index].buffer.size()
+    };
+
+    transfer_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
+                                                                  nullptr, buffer_memory_barrier,
+                                                                  nullptr});
+  }
+  transfer_command_buffer().end();
+
+  // submit transfer command buffer
+  {
+    vk::SemaphoreSubmitInfo signal_semaphore_info{
+        *transfer_complete_semaphore_,
+        1,
+        vk::PipelineStageFlagBits2::eBottomOfPipe,
+        0,
+        nullptr
+    };
+    vk::CommandBufferSubmitInfo command_buffer_submit_info{*transfer_command_buffer(), 0};
+    context_.transfer_queue().queue.submit2(vk::SubmitInfo2{
+        vk::SubmitFlags{},
+        nullptr,
+        command_buffer_submit_info,
+        signal_semaphore_info,
+    }, *transfer_complete_fence_);
   }
 
   glm::mat4 view_matrix = scene.camera().GetTransformMatrix();
 
   // acquire a swapchain image
   auto [image_result, next_image] =
-      swapchain_.AcquireNextImage(target_frame_time_ns, *image_acquired_semaphore_, nullptr);
+      swapchain_.AcquireNextImage(kTargetFrameTimeNs, *image_acquired_semaphore_, nullptr);
   if (image_result == vk::Result::eTimeout) {
     return;
   }
@@ -59,15 +112,28 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
       nullptr
   };
 
-  auto result = context_.device().waitForFences(*image_presented_fence_, true, target_frame_time_ns);
-  if (result == vk::Result::eTimeout) {
-    LOG(WARNING) << "Previous frame did not present in time.";
-    return;
+  drawing_command_buffer().begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+
+  // wait for transfers to complete
+  {
+    for (const auto &buffer_info : vertex_buffers_) {
+      vk::BufferMemoryBarrier2 buffer_memory_barrier{
+          vk::PipelineStageFlagBits2::eTransfer,
+          vk::AccessFlagBits2::eMemoryWrite,
+          vk::PipelineStageFlagBits2::eVertexAttributeInput,
+          vk::AccessFlagBits2::eMemoryRead,
+          context_.transfer_queue().family_index,
+          context_.graphics_queue().family_index,
+          buffer_info.buffer.buffer(),
+          0,
+          buffer_info.buffer.size()
+      };
+
+      drawing_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
+                                                                   nullptr, buffer_memory_barrier,
+                                                                   nullptr});
+    }
   }
-  context_.device().resetFences(*image_presented_fence_);
-  
-  command_pool_.reset(vk::CommandPoolResetFlags{});
-  command_buffers_[0].begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 
   // transition image to a format that can be rendered to
   {
@@ -81,15 +147,15 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
          next_image.image,
          vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
          nullptr};
-    command_buffers_[0].pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
-                                                            nullptr,
-                                                            nullptr,
-                                                            image_memory_barrier,
-                                                            nullptr});
+    drawing_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
+                                                                 nullptr,
+                                                                 nullptr,
+                                                                 image_memory_barrier,
+                                                                 nullptr});
   }
 
   // begin rendering
-  command_buffers_[0].beginRendering(vk::RenderingInfo{
+  drawing_command_buffer().beginRendering(vk::RenderingInfo{
       vk::RenderingFlags{},
       vk::Rect2D{{0, 0}, swapchain_.image_size()},
       1,
@@ -99,11 +165,11 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
   });
 
   // bind drawing data
-  command_buffers_[0].bindPipeline(vk::PipelineBindPoint::eGraphics, *pipelines_[0]);
-  command_buffers_[0].pushConstants<glm::mat4>(*pipeline_layouts_[0],
-                                               vk::ShaderStageFlagBits::eVertex,
-                                               0,
-                                               view_matrix);
+  drawing_command_buffer().bindPipeline(vk::PipelineBindPoint::eGraphics, *pipelines_[0]);
+  drawing_command_buffer().pushConstants<glm::mat4>(*pipeline_layouts_[0],
+                                                    vk::ShaderStageFlagBits::eVertex,
+                                                    0,
+                                                    view_matrix);
 
   // register draw commands
   {
@@ -117,15 +183,15 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
         0,
         1
     };
-    command_buffers_[0].clearAttachments(clear_attachment, clear_rect);
+    drawing_command_buffer().clearAttachments(clear_attachment, clear_rect);
   }
-  for (const auto &vertex_buffer : vertex_buffers_) {
-    command_buffers_[0].bindVertexBuffers(0, *vertex_buffer.buffer, vertex_buffer.offset);
-    command_buffers_[0].draw(vertex_buffer.mesh->vertices.size(), 1, 0, 0);
+  for (const auto &buffer_info : vertex_buffers_) {
+    drawing_command_buffer().bindVertexBuffers(0, buffer_info.buffer.buffer(), {0});
+    drawing_command_buffer().draw(buffer_info.mesh->vertices.size(), 1, 0, 0);
   }
 
   // end rendering
-  command_buffers_[0].endRendering();
+  drawing_command_buffer().endRendering();
 
   // transition image to a format that can be presented
   {
@@ -139,31 +205,33 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
          next_image.image,
          vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
          nullptr};
-    command_buffers_[0].pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
-                                                            nullptr,
-                                                            nullptr,
-                                                            image_memory_barrier,
-                                                            nullptr});
+    drawing_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
+                                                                 nullptr,
+                                                                 nullptr,
+                                                                 image_memory_barrier,
+                                                                 nullptr});
   }
 
-  command_buffers_[0].end();
+  drawing_command_buffer().end();
 
   // submit command buffer
   {
-    vk::SemaphoreSubmitInfo wait_semaphore_submit_info
-        {*image_acquired_semaphore_, 1,
-         vk::PipelineStageFlagBits2::eTopOfPipe, 0, nullptr};
+    std::vector<vk::SemaphoreSubmitInfo> wait_semaphore_infos =
+        {{*image_acquired_semaphore_, 1,
+          vk::PipelineStageFlagBits2::eTopOfPipe, 0, nullptr},
+         {*transfer_complete_semaphore_, 1,
+          vk::PipelineStageFlagBits2::eTransfer, 0, nullptr}};
     vk::SemaphoreSubmitInfo signal_semaphore_submit_info
         {*rendering_complete_semaphore_, 1,
          vk::PipelineStageFlagBits2::eBottomOfPipe, 0, nullptr};
-    vk::CommandBufferSubmitInfo command_buffer_submit_info{*command_buffers_[0], 0, nullptr};
+    vk::CommandBufferSubmitInfo command_buffer_submit_info{*drawing_command_buffer(), 0, nullptr};
     context_.graphics_queue().queue.submit2(vk::SubmitInfo2{
         vk::SubmitFlags{},
-        wait_semaphore_submit_info,
+        wait_semaphore_infos,
         command_buffer_submit_info,
         signal_semaphore_submit_info,
         nullptr
-    }, *image_presented_fence_);
+    }, *rendering_complete_fence_);
   }
 
   // present the swapchain image
@@ -187,11 +255,40 @@ VulkanRenderer::VulkanRenderer(Context context, Swapchain swapchain) :
                               vk::SemaphoreCreateInfo{}),
     rendering_complete_semaphore_(context_.device(),
                                   vk::SemaphoreCreateInfo{}),
-    image_presented_fence_(context_.device(),
-                           vk::FenceCreateInfo{
-                               vk::FenceCreateFlagBits::eSignaled}),
-    command_pool_(CreateCommandPool(context_.graphics_queue().family_index, context_.device())) {
-  command_buffers_ = AllocateCommandBuffers(context_.device(), command_pool_);
+    transfer_complete_semaphore_(context_.device(),
+                                 vk::SemaphoreCreateInfo{}),
+    rendering_complete_fence_(context_.device(),
+                              vk::FenceCreateInfo{
+                                  vk::FenceCreateFlagBits::eSignaled}),
+    transfer_complete_fence_(context_.device(),
+                             vk::FenceCreateInfo{
+                                 vk::FenceCreateFlagBits::eSignaled}),
+    rendering_command_pool_(CreateCommandPool(context_.graphics_queue().family_index, context_.device())),
+    transfer_command_pool_(CreateCommandPool(context_.transfer_queue().family_index, context_.device())) {
+
+  auto rendering_command_buffers = AllocateCommandBuffers(context_.device(), rendering_command_pool_);
+  auto transfer_command_buffers = AllocateCommandBuffers(context_.device(), transfer_command_pool_);
+  command_buffers_.insert(command_buffers_.end(),
+                          std::make_move_iterator(rendering_command_buffers.begin()),
+                          std::make_move_iterator(rendering_command_buffers.end()));
+  command_buffers_.insert(command_buffers_.end(),
+                          std::make_move_iterator(transfer_command_buffers.begin()),
+                          std::make_move_iterator(transfer_command_buffers.end()));
+
+  VmaAllocatorCreateInfo allocator_create_info = {
+      0,
+      context_.physical_device(),
+      *context_.device(),
+      kPreferredNvidiaBlockSize,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      context_.instance(),
+      Context::GetVulkanVersion(),
+      nullptr
+  };
+  vmaCreateAllocator(&allocator_create_info, &gpu_memory_allocator_);
 }
 
 absl::StatusOr<VulkanRenderer> VulkanRenderer::Create(Window &window) {
@@ -209,33 +306,26 @@ absl::StatusOr<VulkanRenderer> VulkanRenderer::Create(Window &window) {
 }
 
 void VulkanRenderer::SetupScene(const objects::Scene &scene) {
+  vertex_buffers_.clear();
+  pipelines_.clear();
+  pipeline_layouts_.clear();
+
   // Create buffers
   for (const auto &object : scene.objects()) {
-    vk::raii::Buffer
-        vertex_buffer = object.mesh->CreateVertexBuffer(context_.device(), {context_.graphics_queue().family_index});
+    Buffer vertex_buffer{gpu_memory_allocator_,
+                         object.mesh->vertices.size() * sizeof(Mesh::Vertex),
+                         vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+                         vk::MemoryPropertyFlagBits::eDeviceLocal,
+                         context_.graphics_queue().family_index};
 
-    vk::MemoryRequirements buffer_memory_requirements = vertex_buffer.getMemoryRequirements();
-    vk::MemoryPropertyFlags desired_memory_properties{buffer_memory_requirements.memoryTypeBits & 0x7};
+    Buffer staging_buffer{gpu_memory_allocator_,
+                          object.mesh->vertices.size() * sizeof(Mesh::Vertex),
+                          vk::BufferUsageFlagBits::eTransferSrc,
+                          vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                          context_.transfer_queue().family_index};
 
-    uint32_t memory_type_index;
-    vk::PhysicalDeviceMemoryProperties available_memory_properties = context_.physical_device().getMemoryProperties();
-    for (uint32_t i = 0; i < available_memory_properties.memoryTypeCount; i++) {
-      if ((available_memory_properties.memoryTypes[i].propertyFlags & desired_memory_properties)
-          == desired_memory_properties) {
-        memory_type_index = i;
-        break;
-      }
-    }
-
-    vk::raii::DeviceMemory vertex_buffer_memory = context_.device().allocateMemory(vk::MemoryAllocateInfo{
-        buffer_memory_requirements.size,
-        memory_type_index
-    });
-
-    vertex_buffer.bindMemory(*vertex_buffer_memory, 0);
-
-    vertex_buffers_.push_back({object.mesh, std::move(vertex_buffer), std::move(vertex_buffer_memory), 0,
-                               buffer_memory_requirements.size});
+    vertex_buffers_.push_back({object.mesh, std::move(vertex_buffer)});
+    staging_buffers_.push_back(std::move(staging_buffer));
   }
 
   // Create pipelines
@@ -296,4 +386,56 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
     pipeline_layouts_.push_back(std::move(pipeline_layout));
   }
 }
+
+VulkanRenderer::~VulkanRenderer() {
+  if ((VkDevice) *context_.device() != VK_NULL_HANDLE) {
+    context_.device().waitIdle();
+  }
+  if (!staging_buffers_.empty()) {
+    staging_buffers_.clear();
+  }
+  if (!vertex_buffers_.empty()) {
+    vertex_buffers_.clear();
+  }
+  if (gpu_memory_allocator_ != nullptr) {
+    vmaDestroyAllocator(gpu_memory_allocator_);
+  }
+}
+
+VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept\
+: context_(std::move(other.context_)),
+  swapchain_(std::move(other.swapchain_)),
+  image_acquired_semaphore_(std::move(other.image_acquired_semaphore_)),
+  rendering_complete_semaphore_(std::move(other.rendering_complete_semaphore_)),
+  transfer_complete_semaphore_(std::move(other.transfer_complete_semaphore_)),
+  rendering_complete_fence_(std::move(other.rendering_complete_fence_)),
+  transfer_complete_fence_(std::move(other.transfer_complete_fence_)),
+  rendering_command_pool_(std::move(other.rendering_command_pool_)),
+  transfer_command_pool_(std::move(other.transfer_command_pool_)),
+  command_buffers_(std::move(other.command_buffers_)),
+  vertex_buffers_(std::move(other.vertex_buffers_)),
+  pipelines_(std::move(other.pipelines_)),
+  pipeline_layouts_(std::move(other.pipeline_layouts_)) {
+  gpu_memory_allocator_ = other.gpu_memory_allocator_;
+  other.gpu_memory_allocator_ = nullptr;
+}
+VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
+  context_ = std::move(other.context_);
+  swapchain_ = std::move(other.swapchain_);
+  image_acquired_semaphore_ = std::move(other.image_acquired_semaphore_);
+  rendering_complete_semaphore_ = std::move(other.rendering_complete_semaphore_);
+  transfer_complete_semaphore_ = std::move(other.transfer_complete_semaphore_);
+  rendering_complete_fence_ = std::move(other.rendering_complete_fence_);
+  transfer_complete_fence_ = std::move(other.transfer_complete_fence_);
+  rendering_command_pool_ = std::move(other.rendering_command_pool_);
+  transfer_command_pool_ = std::move(other.transfer_command_pool_);
+  command_buffers_ = std::move(other.command_buffers_);
+  vertex_buffers_ = std::move(other.vertex_buffers_);
+  pipelines_ = std::move(other.pipelines_);
+  pipeline_layouts_ = std::move(other.pipeline_layouts_);
+  gpu_memory_allocator_ = other.gpu_memory_allocator_;
+  other.gpu_memory_allocator_ = nullptr;
+  return *this;
+}
+
 }
