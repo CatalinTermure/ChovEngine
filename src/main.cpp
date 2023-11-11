@@ -38,6 +38,8 @@ constexpr int target_frame_rate = 60;
 constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);
 
+constexpr float camera_rotation_speed = 0.1F;
+
 int main() {
   StdoutLogSink log_sink{};
   absl::AddLogSink(&log_sink);
@@ -67,6 +69,7 @@ int main() {
       static_cast<float>(window.width()) / static_cast<float>(window.height()),
       0.1F,
       10.0F);
+  glm::vec2 camera_velocity = {0.0F, 0.0F};
 
   scene.AddObject(mesh1, Transform{
       glm::vec3(0.0f, 0.0f, 0.0f),
@@ -85,6 +88,7 @@ int main() {
   renderer.SetupScene(scene);
 
   bool should_app_close = false;
+  auto time = std::chrono::high_resolution_clock::now();
   while (!should_app_close) {
     auto start_frame_time = std::chrono::high_resolution_clock::now();
     SDL_Event event;
@@ -95,47 +99,43 @@ int main() {
         switch (event.key.keysym.sym) {
           case SDLK_ESCAPE:should_app_close = true;
             break;
-          case SDLK_w:scene.camera().Move(chove::rendering::Camera::Direction::eForward, 0.1F);
+          case SDLK_w:camera_velocity.y = 0.1F;
             break;
-          case SDLK_a:scene.camera().Move(chove::rendering::Camera::Direction::eLeft, 0.1F);
+          case SDLK_a:camera_velocity.x = -0.1F;
             break;
-          case SDLK_s:scene.camera().Move(chove::rendering::Camera::Direction::eBackward, 0.1F);
+          case SDLK_s:camera_velocity.y = -0.1F;
             break;
-          case SDLK_d:scene.camera().Move(chove::rendering::Camera::Direction::eRight, 0.1F);
+          case SDLK_d:camera_velocity.x = 0.1F;
             break;
           case SDLK_r:
             scene.objects()[0].transform->rotation *= glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F));
             break;
-          case SDLK_LEFT:scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eLeft, 10.0F);
-            break;
-          case SDLK_RIGHT:scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eRight, 10.0F);
-            break;
-          case SDLK_UP:scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eUpward, 10.0F);
-            break;
-          case SDLK_DOWN:scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eDownward, 10.0F);
-            break;
-          default:LOG(INFO) << std::format("Camera position is: ({},{},{})",
-                                           scene.camera().position().x,
-                                           scene.camera().position().y,
-                                           scene.camera().position().z);
-            LOG(INFO) << std::format("Camera look direction is: ({},{},{})",
-                                     scene.camera().look_direction().x,
-                                     scene.camera().look_direction().y,
-                                     scene.camera().look_direction().z);
-
-            for (auto point : mesh1.vertices) {
-              glm::vec4 new_point = scene.camera().GetTransformMatrix() * point.position;
-              new_point /= new_point.w;
-              LOG(INFO) << std::format("Point is: ({},{},{},{})",
-                                       new_point.x,
-                                       new_point.y,
-                                       new_point.z,
-                                       new_point.w);
-            }
-            break;
+          default:break;
         }
+      } else if (event.type == SDL_KEYUP) {
+        switch (event.key.keysym.sym) {
+          case SDLK_s:
+          case SDLK_w:camera_velocity.y = 0.0F;
+            break;
+          case SDLK_d:
+          case SDLK_a:camera_velocity.x = 0.0F;
+            break;
+          default:break;
+        }
+      } else if (event.type == SDL_MOUSEMOTION) {
+        scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eRight,
+                              camera_rotation_speed * static_cast<float>(event.motion.xrel));
+        scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eDownward,
+                              camera_rotation_speed * static_cast<float>(event.motion.yrel));
       }
     }
+
+    auto deltaTime = std::chrono::high_resolution_clock::now() - time;
+
+    scene.camera().Move(Camera::Direction::eForward, camera_velocity.y * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
+    scene.camera().Move(Camera::Direction::eRight, camera_velocity.x * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
+
+    time += deltaTime;
 
     renderer.Render(scene);
 
