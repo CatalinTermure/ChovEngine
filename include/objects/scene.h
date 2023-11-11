@@ -10,17 +10,23 @@ namespace chove::objects {
 
 class Scene {
  public:
+  Scene();
+  Scene(const Scene &) = delete;
+  Scene &operator=(const Scene &) = delete;
+  Scene(Scene &&) noexcept = default;
+  Scene &operator=(Scene &&) noexcept = default;
+
   [[nodiscard]] const std::vector<GameObject> &objects() const { return objects_; };
   [[nodiscard]] rendering::Camera &camera() { return camera_; };
   [[nodiscard]] const rendering::Camera &camera() const { return camera_; };
 
   void AddObject(const rendering::Mesh &mesh, Transform transform);
  private:
-  std::vector<GameObject> objects_;
-  rendering::Camera camera_;
+  std::vector<GameObject> objects_{};
+  rendering::Camera camera_{};
 
   // store all transforms here for cache coherency
-  std::vector<Transform> transforms_;
+  std::vector<Transform> transforms_{};
 };
 
 } // namespace chove::objects

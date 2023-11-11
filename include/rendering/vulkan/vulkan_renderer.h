@@ -48,12 +48,13 @@ class VulkanRenderer : public Renderer {
   [[nodiscard]] vk::raii::CommandBuffer &drawing_command_buffer() { return command_buffers_[0]; }
   [[nodiscard]] vk::raii::CommandBuffer &transfer_command_buffer() { return command_buffers_[1]; }
 
-  struct VertexBufferInfo {
+  struct RenderObject {
     const Mesh *mesh;
-    Buffer buffer;
+    Buffer vertex_buffer;
+    Buffer staging_buffer;
+    const objects::Transform *transform;
   };
-  std::vector<VertexBufferInfo> vertex_buffers_;
-  std::vector<Buffer> staging_buffers_;
+  std::vector<RenderObject> objects_;
 
   std::vector<vk::raii::Pipeline> pipelines_;
   std::vector<vk::raii::PipelineLayout> pipeline_layouts_;

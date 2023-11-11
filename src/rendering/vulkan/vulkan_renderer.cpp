@@ -45,15 +45,15 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
   context_.device().resetFences(*transfer_complete_fence_);
 
   transfer_command_buffer().begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-  for (int buffer_index = 0; buffer_index < vertex_buffers_.size(); ++buffer_index) {
-    void *buffer_host_memory = staging_buffers_[buffer_index].GetMappedMemory();
+  for (const auto &object : objects_) {
+    void *buffer_host_memory = object.staging_buffer.GetMappedMemory();
     memcpy(buffer_host_memory,
-           vertex_buffers_[buffer_index].mesh->vertices.data(),
-           staging_buffers_[buffer_index].size());
+           object.mesh->vertices.data(),
+           object.staging_buffer.size());
 
-    transfer_command_buffer().copyBuffer(staging_buffers_[buffer_index].buffer(),
-                                         vertex_buffers_[buffer_index].buffer.buffer(),
-                                         vk::BufferCopy{0, 0, staging_buffers_[buffer_index].size()});
+    transfer_command_buffer().copyBuffer(object.staging_buffer.buffer(),
+                                         object.vertex_buffer.buffer(),
+                                         vk::BufferCopy{0, 0, object.vertex_buffer.size()});
 
     vk::BufferMemoryBarrier2 buffer_memory_barrier{
         vk::PipelineStageFlagBits2::eTransfer,
@@ -62,9 +62,9 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
         vk::AccessFlagBits2::eMemoryRead,
         context_.transfer_queue().family_index,
         context_.graphics_queue().family_index,
-        vertex_buffers_[buffer_index].buffer.buffer(),
+        object.vertex_buffer.buffer(),
         0,
-        vertex_buffers_[buffer_index].buffer.size()
+        object.vertex_buffer.size()
     };
 
     transfer_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
@@ -116,7 +116,7 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
 
   // wait for transfers to complete
   {
-    for (const auto &buffer_info : vertex_buffers_) {
+    for (const auto &object : objects_) {
       vk::BufferMemoryBarrier2 buffer_memory_barrier{
           vk::PipelineStageFlagBits2::eTransfer,
           vk::AccessFlagBits2::eMemoryWrite,
@@ -124,9 +124,9 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
           vk::AccessFlagBits2::eMemoryRead,
           context_.transfer_queue().family_index,
           context_.graphics_queue().family_index,
-          buffer_info.buffer.buffer(),
+          object.vertex_buffer.buffer(),
           0,
-          buffer_info.buffer.size()
+          object.vertex_buffer.size()
       };
 
       drawing_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
@@ -166,10 +166,6 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
 
   // bind drawing data
   drawing_command_buffer().bindPipeline(vk::PipelineBindPoint::eGraphics, *pipelines_[0]);
-  drawing_command_buffer().pushConstants<glm::mat4>(*pipeline_layouts_[0],
-                                                    vk::ShaderStageFlagBits::eVertex,
-                                                    0,
-                                                    view_matrix);
 
   // register draw commands
   {
@@ -185,9 +181,13 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
     };
     drawing_command_buffer().clearAttachments(clear_attachment, clear_rect);
   }
-  for (const auto &buffer_info : vertex_buffers_) {
-    drawing_command_buffer().bindVertexBuffers(0, buffer_info.buffer.buffer(), {0});
-    drawing_command_buffer().draw(buffer_info.mesh->vertices.size(), 1, 0, 0);
+  for (const auto &object : objects_) {
+    drawing_command_buffer().pushConstants<glm::mat4>(*pipeline_layouts_[0],
+                                                      vk::ShaderStageFlagBits::eVertex,
+                                                      0,
+                                                      view_matrix * object.transform->GetMatrix());
+    drawing_command_buffer().bindVertexBuffers(0, object.vertex_buffer.buffer(), {0});
+    drawing_command_buffer().draw(object.mesh->vertices.size(), 1, 0, 0);
   }
 
   // end rendering
@@ -306,7 +306,7 @@ absl::StatusOr<VulkanRenderer> VulkanRenderer::Create(Window &window) {
 }
 
 void VulkanRenderer::SetupScene(const objects::Scene &scene) {
-  vertex_buffers_.clear();
+  objects_.clear();
   pipelines_.clear();
   pipeline_layouts_.clear();
 
@@ -324,8 +324,7 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
                           vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                           context_.transfer_queue().family_index};
 
-    vertex_buffers_.push_back({object.mesh, std::move(vertex_buffer)});
-    staging_buffers_.push_back(std::move(staging_buffer));
+    objects_.push_back({object.mesh, std::move(vertex_buffer), std::move(staging_buffer), object.transform});
   }
 
   // Create pipelines
@@ -391,11 +390,8 @@ VulkanRenderer::~VulkanRenderer() {
   if ((VkDevice) *context_.device() != VK_NULL_HANDLE) {
     context_.device().waitIdle();
   }
-  if (!staging_buffers_.empty()) {
-    staging_buffers_.clear();
-  }
-  if (!vertex_buffers_.empty()) {
-    vertex_buffers_.clear();
+  if (!objects_.empty()) {
+    objects_.clear();
   }
   if (gpu_memory_allocator_ != nullptr) {
     vmaDestroyAllocator(gpu_memory_allocator_);
@@ -413,7 +409,7 @@ VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept\
   rendering_command_pool_(std::move(other.rendering_command_pool_)),
   transfer_command_pool_(std::move(other.transfer_command_pool_)),
   command_buffers_(std::move(other.command_buffers_)),
-  vertex_buffers_(std::move(other.vertex_buffers_)),
+  objects_(std::move(other.objects_)),
   pipelines_(std::move(other.pipelines_)),
   pipeline_layouts_(std::move(other.pipeline_layouts_)) {
   gpu_memory_allocator_ = other.gpu_memory_allocator_;
@@ -430,7 +426,7 @@ VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
   rendering_command_pool_ = std::move(other.rendering_command_pool_);
   transfer_command_pool_ = std::move(other.transfer_command_pool_);
   command_buffers_ = std::move(other.command_buffers_);
-  vertex_buffers_ = std::move(other.vertex_buffers_);
+  objects_ = std::move(other.objects_);
   pipelines_ = std::move(other.pipelines_);
   pipeline_layouts_ = std::move(other.pipeline_layouts_);
   gpu_memory_allocator_ = other.gpu_memory_allocator_;

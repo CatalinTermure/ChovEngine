@@ -57,6 +57,7 @@ int main() {
   mesh1.vertices.push_back({{-1.0F, 0.0F, 1.0F, 1.0F}, {1.0f, 0.0f, 0.0f, 1.0f}});
   mesh1.vertices.push_back({{1.0F, 0.0F, 1.0F, 1.0F}, {0.0f, 1.0f, 0.0f, 1.0f}});
   mesh1.vertices.push_back({{0.0F, -1.0F, 0.0F, 1.0F}, {0.0f, 0.0f, 1.0f, 1.0f}});
+  mesh1.indices = {0, 1, 2};
 
   Scene scene;
   scene.camera() = Camera(
@@ -101,6 +102,9 @@ int main() {
           case SDLK_s:scene.camera().Move(chove::rendering::Camera::Direction::eBackward, 0.1F);
             break;
           case SDLK_d:scene.camera().Move(chove::rendering::Camera::Direction::eRight, 0.1F);
+            break;
+          case SDLK_r:
+            scene.objects()[0].transform->rotation *= glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F));
             break;
           case SDLK_LEFT:scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eLeft, 10.0F);
             break;
