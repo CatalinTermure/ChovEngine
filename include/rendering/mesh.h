@@ -17,6 +17,7 @@ struct Mesh {
     glm::vec4 color;
   };
   std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
 
   static Mesh ImportFromObj(std::filesystem::path path);
 

@@ -79,6 +79,8 @@ int main() {
 
   Mesh mesh2 = mesh1;
   mesh2.vertices[2].position = {0.0F, 1.0F, 0.0F, 1.0F};
+  mesh2.vertices.push_back({{-2.0F, 1.0F, 0.0F, 1.0F}, {0.0f, 1.0f, 0.0f, 1.0f}});
+  mesh2.indices = {0, 1, 2, 0, 2, 3};
   scene.AddObject(mesh2, Transform{
       glm::vec3(0.0f, 0.0f, 0.0f),
       glm::identity<glm::quat>(),
@@ -132,8 +134,10 @@ int main() {
 
     auto deltaTime = std::chrono::high_resolution_clock::now() - time;
 
-    scene.camera().Move(Camera::Direction::eForward, camera_velocity.y * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
-    scene.camera().Move(Camera::Direction::eRight, camera_velocity.x * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
+    scene.camera().Move(Camera::Direction::eForward,
+                        camera_velocity.y * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
+    scene.camera().Move(Camera::Direction::eRight,
+                        camera_velocity.x * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
 
     time += deltaTime;
 

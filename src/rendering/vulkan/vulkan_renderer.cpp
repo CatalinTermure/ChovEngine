@@ -49,13 +49,20 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
     void *buffer_host_memory = object.staging_buffer.GetMappedMemory();
     memcpy(buffer_host_memory,
            object.mesh->vertices.data(),
-           object.staging_buffer.size());
+           object.vertex_buffer.size());
+    memcpy(static_cast<char *>(buffer_host_memory) + object.vertex_buffer.size(),
+           object.mesh->indices.data(),
+           object.index_buffer.size());
 
     transfer_command_buffer().copyBuffer(object.staging_buffer.buffer(),
                                          object.vertex_buffer.buffer(),
                                          vk::BufferCopy{0, 0, object.vertex_buffer.size()});
 
-    vk::BufferMemoryBarrier2 buffer_memory_barrier{
+    transfer_command_buffer().copyBuffer(object.staging_buffer.buffer(),
+                                         object.index_buffer.buffer(),
+                                         vk::BufferCopy{object.vertex_buffer.size(), 0, object.index_buffer.size()});
+
+    vk::BufferMemoryBarrier2 vertex_buffer_memory_barrier{
         vk::PipelineStageFlagBits2::eTransfer,
         vk::AccessFlagBits2::eMemoryWrite,
         vk::PipelineStageFlagBits2::eBottomOfPipe,
@@ -66,9 +73,22 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
         0,
         object.vertex_buffer.size()
     };
+    vk::BufferMemoryBarrier2 index_buffer_memory_barrier{
+        vk::PipelineStageFlagBits2::eTransfer,
+        vk::AccessFlagBits2::eMemoryWrite,
+        vk::PipelineStageFlagBits2::eBottomOfPipe,
+        vk::AccessFlagBits2::eMemoryRead,
+        context_.transfer_queue().family_index,
+        context_.graphics_queue().family_index,
+        object.index_buffer.buffer(),
+        0,
+        object.index_buffer.size()
+    };
+    std::vector<vk::BufferMemoryBarrier2> buffer_memory_barriers{vertex_buffer_memory_barrier,
+                                                                 index_buffer_memory_barrier};
 
     transfer_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
-                                                                  nullptr, buffer_memory_barrier,
+                                                                  nullptr, buffer_memory_barriers,
                                                                   nullptr});
   }
   transfer_command_buffer().end();
@@ -117,7 +137,7 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
   // wait for transfers to complete
   {
     for (const auto &object : objects_) {
-      vk::BufferMemoryBarrier2 buffer_memory_barrier{
+      vk::BufferMemoryBarrier2 vertex_buffer_memory_barrier{
           vk::PipelineStageFlagBits2::eTransfer,
           vk::AccessFlagBits2::eMemoryWrite,
           vk::PipelineStageFlagBits2::eVertexAttributeInput,
@@ -128,9 +148,22 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
           0,
           object.vertex_buffer.size()
       };
+      vk::BufferMemoryBarrier2 index_buffer_memory_barrier{
+          vk::PipelineStageFlagBits2::eTransfer,
+          vk::AccessFlagBits2::eMemoryWrite,
+          vk::PipelineStageFlagBits2::eIndexInput,
+          vk::AccessFlagBits2::eMemoryRead,
+          context_.transfer_queue().family_index,
+          context_.graphics_queue().family_index,
+          object.index_buffer.buffer(),
+          0,
+          object.index_buffer.size()
+      };
+      std::vector<vk::BufferMemoryBarrier2> buffer_memory_barriers{vertex_buffer_memory_barrier,
+                                                                   index_buffer_memory_barrier};
 
       drawing_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
-                                                                   nullptr, buffer_memory_barrier,
+                                                                   nullptr, buffer_memory_barriers,
                                                                    nullptr});
     }
   }
@@ -187,7 +220,8 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
                                                       0,
                                                       view_matrix * object.transform->GetMatrix());
     drawing_command_buffer().bindVertexBuffers(0, object.vertex_buffer.buffer(), {0});
-    drawing_command_buffer().draw(object.mesh->vertices.size(), 1, 0, 0);
+    drawing_command_buffer().bindIndexBuffer(object.index_buffer.buffer(), 0, vk::IndexType::eUint32);
+    drawing_command_buffer().drawIndexed(object.mesh->indices.size(), 1, 0, 0, 0);
   }
 
   // end rendering
@@ -318,13 +352,20 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
                          vk::MemoryPropertyFlagBits::eDeviceLocal,
                          context_.graphics_queue().family_index};
 
+    Buffer index_buffer{gpu_memory_allocator_,
+                        object.mesh->indices.size() * sizeof(uint32_t),
+                        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+                        vk::MemoryPropertyFlagBits::eDeviceLocal,
+                        context_.graphics_queue().family_index};
+
     Buffer staging_buffer{gpu_memory_allocator_,
-                          object.mesh->vertices.size() * sizeof(Mesh::Vertex),
+                          vertex_buffer.size() + index_buffer.size(),
                           vk::BufferUsageFlagBits::eTransferSrc,
                           vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                           context_.transfer_queue().family_index};
 
-    objects_.push_back({object.mesh, std::move(vertex_buffer), std::move(staging_buffer), object.transform});
+    objects_.push_back({object.mesh, std::move(vertex_buffer), std::move(staging_buffer), std::move(index_buffer),
+                        object.transform});
   }
 
   // Create pipelines

@@ -52,6 +52,7 @@ class VulkanRenderer : public Renderer {
     const Mesh *mesh;
     Buffer vertex_buffer;
     Buffer staging_buffer;
+    Buffer index_buffer;
     const objects::Transform *transform;
   };
   std::vector<RenderObject> objects_;
