@@ -70,7 +70,7 @@ absl::StatusOr<Swapchain> Swapchain::CreateSwapchain(Context &context, Window &w
                                  context.graphics_queue().family_index, surface_capabilities.currentTransform,
                                  vk::CompositeAlphaFlagBitsKHR::eOpaque, present_mode, true, nullptr}};
   image_count = swapchain_khr.getImages().size();
-  LOG(INFO) << "Created swapchain with " << image_count << "images.";
+  LOG(INFO) << "Created swapchain with " << image_count << " images.";
   std::vector<vk::Image> swapchain_images = swapchain_khr.getImages();
   std::vector<vk::raii::ImageView> swapchain_image_views;
   swapchain_image_views.reserve(swapchain_images.size());

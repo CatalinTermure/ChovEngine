@@ -1,5 +1,7 @@
 #include "rendering/mesh.h"
 
+#include <tiny_obj_loader.h>
+
 namespace chove::rendering {
 
 constexpr std::vector<vk::VertexInputAttributeDescription> Mesh::attributes() {
@@ -17,5 +19,8 @@ constexpr std::vector<vk::VertexInputAttributeDescription> Mesh::attributes() {
           sizeof(glm::vec4)
       }
   };
+}
+Mesh Mesh::ImportFromObj(std::filesystem::path path) {
+  return Mesh();
 }
 }  // namespace chove::rendering

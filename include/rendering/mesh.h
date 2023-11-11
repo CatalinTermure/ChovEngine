@@ -2,6 +2,8 @@
 #define LABSEXTRA_INCLUDE_RENDERING_MESH_H_
 
 #include <vector>
+#include <filesystem>
+
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -15,6 +17,8 @@ struct Mesh {
     glm::vec4 color;
   };
   std::vector<Vertex> vertices;
+
+  static Mesh ImportFromObj(std::filesystem::path path);
 
   [[nodiscard]] static constexpr std::vector<vk::VertexInputAttributeDescription> attributes();
   [[nodiscard]] static constexpr vk::VertexInputBindingDescription binding() {

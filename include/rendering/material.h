@@ -8,7 +8,6 @@
 namespace chove::rendering {
 
 struct Material {
-  glm::vec4 color;
 };
 
 
