@@ -98,13 +98,19 @@ vk::raii::Device CreateLogicalDevice(const vk::raii::PhysicalDevice &physical_de
   std::vector<const char *> layers = {};
   std::vector<const char *> extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-  vk::PhysicalDeviceVulkan13Features device_features{};
-  device_features.dynamicRendering = true;
-  device_features.synchronization2 = true;
+  vk::PhysicalDeviceVulkan13Features device_features13{};
+  device_features13.dynamicRendering = true;
+  device_features13.synchronization2 = true;
+
+  vk::PhysicalDeviceFeatures possible_features = physical_device.getFeatures();
+  assert(possible_features.depthBounds);
+
+  vk::PhysicalDeviceFeatures device_features;
+  device_features.depthBounds = true;
 
   return physical_device.createDevice(vk::DeviceCreateInfo{
       vk::DeviceCreateFlags{}, queue_create_infos, layers,
-      extensions, nullptr, &device_features});
+      extensions, &device_features, &device_features13});
 }
 }
 

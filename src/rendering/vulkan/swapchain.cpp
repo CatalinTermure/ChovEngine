@@ -11,13 +11,13 @@ vk::SurfaceFormatKHR GetBGRA8SurfaceFormat(const vk::SurfaceKHR &surface, const 
   const std::vector<vk::SurfaceFormatKHR> surface_formats = physical_device.getSurfaceFormatsKHR(surface);
   vk::SurfaceFormatKHR surface_format;
   for (const auto &format : surface_formats) {
-    if (format.format == vk::Format::eB8G8R8A8Srgb) {
+    if (format.format == vk::Format::eB8G8R8A8Unorm) {
       surface_format = format;
       break;
     }
   }
   if (surface_format.format == vk::Format::eUndefined) {
-    LOG(FATAL) << "Driver does not support BGRA8 SRGB.";
+    LOG(FATAL) << "Driver does not support BGRA8 Unorm.";
   }
   return surface_format;
 }

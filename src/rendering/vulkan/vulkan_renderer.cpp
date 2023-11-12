@@ -10,7 +10,6 @@ namespace {
 
 constexpr int kTargetFrameRate = 60;
 constexpr long long kTargetFrameTimeNs = 1'000'000'000 / kTargetFrameRate;
-constexpr int kPreferredNvidiaBlockSize = 1048576;
 
 vk::raii::CommandPool CreateCommandPool(uint32_t graphics_queue_index, const vk::raii::Device &device) {
   vk::raii::CommandPool command_pool =
@@ -128,8 +127,18 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
       vk::ImageLayout::ePresentSrcKHR,
       vk::AttachmentLoadOp::eClear,
       vk::AttachmentStoreOp::eStore,
-      vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 0.0F}},
-      nullptr
+      vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 0.0F}}
+  };
+
+  vk::RenderingAttachmentInfo depth_attachment_info{
+      depth_buffer_.view(),
+      vk::ImageLayout::eDepthAttachmentOptimal,
+      vk::ResolveModeFlagBits::eNone,
+      depth_buffer_.view(),
+      vk::ImageLayout::eDepthAttachmentOptimal,
+      vk::AttachmentLoadOp::eClear,
+      vk::AttachmentStoreOp::eStore,
+      vk::ClearDepthStencilValue{1.0F, 0}
   };
 
   drawing_command_buffer().begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
@@ -168,9 +177,9 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
     }
   }
 
-  // transition image to a format that can be rendered to
+  // transition images to proper formats
   {
-    vk::ImageMemoryBarrier2 image_memory_barrier
+    vk::ImageMemoryBarrier2 color_attachment_memory_barrier
         {vk::PipelineStageFlagBits2::eTopOfPipe, {},
          vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
          vk::ImageLayout::eUndefined,
@@ -180,10 +189,26 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
          next_image.image,
          vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
          nullptr};
+
+    vk::ImageMemoryBarrier2 depth_buffer_memory_barrier
+        {vk::PipelineStageFlagBits2::eTopOfPipe, {},
+         vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+         vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+         vk::ImageLayout::eUndefined,
+         vk::ImageLayout::eDepthAttachmentOptimal,
+         context_.graphics_queue().family_index,
+         context_.graphics_queue().family_index,
+         depth_buffer_.image(),
+         vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1},
+         nullptr};
+
+    std::vector<vk::ImageMemoryBarrier2> image_memory_barriers{color_attachment_memory_barrier,
+                                                               depth_buffer_memory_barrier};
+
     drawing_command_buffer().pipelineBarrier2(vk::DependencyInfo{vk::DependencyFlags{},
                                                                  nullptr,
                                                                  nullptr,
-                                                                 image_memory_barrier,
+                                                                 image_memory_barriers,
                                                                  nullptr});
   }
 
@@ -194,7 +219,8 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
       1,
       0,
       color_attachment_info,
-      nullptr, nullptr, nullptr
+      &depth_attachment_info,
+      nullptr, nullptr
   });
 
   // bind drawing data
@@ -202,7 +228,7 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
 
   // register draw commands
   {
-    vk::ClearAttachment clear_attachment{
+    vk::ClearAttachment clear_color_attachment{
         vk::ImageAspectFlagBits::eColor,
         0,
         vk::ClearColorValue{std::array{0.0F, 0.0F, 0.0F, 0.0F}}
@@ -212,7 +238,7 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
         0,
         1
     };
-    drawing_command_buffer().clearAttachments(clear_attachment, clear_rect);
+    drawing_command_buffer().clearAttachments(clear_color_attachment, clear_rect);
   }
   for (const auto &object : objects_) {
     drawing_command_buffer().pushConstants<glm::mat4>(*pipeline_layouts_[0],
@@ -282,48 +308,28 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
   }
 }
 
-VulkanRenderer::VulkanRenderer(Context context, Swapchain swapchain) :
+VulkanRenderer::VulkanRenderer(Context context, Swapchain swapchain, Image depth_buffer,
+                               vk::raii::Semaphore image_acquired_semaphore,
+                               vk::raii::Semaphore rendering_complete_semaphore,
+                               vk::raii::Semaphore transfer_complete_semaphore,
+                               vk::raii::Fence rendering_complete_fence,
+                               vk::raii::Fence transfer_complete_fence,
+                               vk::raii::CommandPool rendering_command_pool,
+                               vk::raii::CommandPool transfer_command_pool,
+                               std::vector<vk::raii::CommandBuffer> command_buffers,
+                               Allocator gpu_memory_allocator) :
     context_(std::move(context)),
     swapchain_(std::move(swapchain)),
-    image_acquired_semaphore_(context_.device(),
-                              vk::SemaphoreCreateInfo{}),
-    rendering_complete_semaphore_(context_.device(),
-                                  vk::SemaphoreCreateInfo{}),
-    transfer_complete_semaphore_(context_.device(),
-                                 vk::SemaphoreCreateInfo{}),
-    rendering_complete_fence_(context_.device(),
-                              vk::FenceCreateInfo{
-                                  vk::FenceCreateFlagBits::eSignaled}),
-    transfer_complete_fence_(context_.device(),
-                             vk::FenceCreateInfo{
-                                 vk::FenceCreateFlagBits::eSignaled}),
-    rendering_command_pool_(CreateCommandPool(context_.graphics_queue().family_index, context_.device())),
-    transfer_command_pool_(CreateCommandPool(context_.transfer_queue().family_index, context_.device())) {
-
-  auto rendering_command_buffers = AllocateCommandBuffers(context_.device(), rendering_command_pool_);
-  auto transfer_command_buffers = AllocateCommandBuffers(context_.device(), transfer_command_pool_);
-  command_buffers_.insert(command_buffers_.end(),
-                          std::make_move_iterator(rendering_command_buffers.begin()),
-                          std::make_move_iterator(rendering_command_buffers.end()));
-  command_buffers_.insert(command_buffers_.end(),
-                          std::make_move_iterator(transfer_command_buffers.begin()),
-                          std::make_move_iterator(transfer_command_buffers.end()));
-
-  VmaAllocatorCreateInfo allocator_create_info = {
-      0,
-      context_.physical_device(),
-      *context_.device(),
-      kPreferredNvidiaBlockSize,
-      nullptr,
-      nullptr,
-      nullptr,
-      nullptr,
-      context_.instance(),
-      Context::GetVulkanVersion(),
-      nullptr
-  };
-  vmaCreateAllocator(&allocator_create_info, &gpu_memory_allocator_);
-}
+    depth_buffer_(std::move(depth_buffer)),
+    image_acquired_semaphore_(std::move(image_acquired_semaphore)),
+    rendering_complete_semaphore_(std::move(rendering_complete_semaphore)),
+    transfer_complete_semaphore_(std::move(transfer_complete_semaphore)),
+    rendering_complete_fence_(std::move(rendering_complete_fence)),
+    transfer_complete_fence_(std::move(transfer_complete_fence)),
+    rendering_command_pool_(std::move(rendering_command_pool)),
+    transfer_command_pool_(std::move(transfer_command_pool)),
+    command_buffers_(std::move(command_buffers)),
+    gpu_memory_allocator_(std::move(gpu_memory_allocator)) {}
 
 absl::StatusOr<VulkanRenderer> VulkanRenderer::Create(Window &window) {
   absl::StatusOr<Context> context = Context::CreateContext(window);
@@ -336,7 +342,54 @@ absl::StatusOr<VulkanRenderer> VulkanRenderer::Create(Window &window) {
     return swapchain.status();
   }
 
-  return VulkanRenderer{*std::move(context), *std::move(swapchain)};
+  vk::raii::Semaphore image_acquired_semaphore(context->device(), vk::SemaphoreCreateInfo{});
+  vk::raii::Semaphore rendering_complete_semaphore(context->device(), vk::SemaphoreCreateInfo{});
+  vk::raii::Semaphore transfer_complete_semaphore(context->device(), vk::SemaphoreCreateInfo{});
+  vk::raii::Fence rendering_complete_fence(context->device(),
+                                           vk::FenceCreateInfo{
+                                               vk::FenceCreateFlagBits::eSignaled});
+  vk::raii::Fence transfer_complete_fence(context->device(),
+                                          vk::FenceCreateInfo{
+                                              vk::FenceCreateFlagBits::eSignaled});
+  vk::raii::CommandPool
+      rendering_command_pool(CreateCommandPool(context->graphics_queue().family_index, context->device()));
+  vk::raii::CommandPool
+      transfer_command_pool(CreateCommandPool(context->transfer_queue().family_index, context->device()));
+
+  std::vector<vk::raii::CommandBuffer>
+      rendering_command_buffers = AllocateCommandBuffers(context->device(), rendering_command_pool);
+  std::vector<vk::raii::CommandBuffer>
+      transfer_command_buffers = AllocateCommandBuffers(context->device(), transfer_command_pool);
+
+  std::vector<vk::raii::CommandBuffer> command_buffers;
+  command_buffers.insert(command_buffers.end(),
+                         std::make_move_iterator(rendering_command_buffers.begin()),
+                         std::make_move_iterator(rendering_command_buffers.end()));
+  command_buffers.insert(command_buffers.end(),
+                         std::make_move_iterator(transfer_command_buffers.begin()),
+                         std::make_move_iterator(transfer_command_buffers.end()));
+
+  Allocator gpu_memory_allocator{*context};
+
+  Image depth_buffer = Image::CreateImage(*context,
+                                          gpu_memory_allocator.allocator(),
+                                          vk::Format::eD32Sfloat,
+                                          vk::ImageAspectFlagBits::eDepth,
+                                          vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                                          swapchain->image_size(),
+                                          context->graphics_queue().family_index);
+
+  return VulkanRenderer{*std::move(context), *std::move(swapchain),
+                        std::move(depth_buffer),
+                        std::move(image_acquired_semaphore),
+                        std::move(rendering_complete_semaphore),
+                        std::move(transfer_complete_semaphore),
+                        std::move(rendering_complete_fence),
+                        std::move(transfer_complete_fence),
+                        std::move(rendering_command_pool),
+                        std::move(transfer_command_pool),
+                        std::move(command_buffers),
+                        std::move(gpu_memory_allocator)};
 }
 
 void VulkanRenderer::SetupScene(const objects::Scene &scene) {
@@ -346,19 +399,19 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
 
   // Create buffers
   for (const auto &object : scene.objects()) {
-    Buffer vertex_buffer{gpu_memory_allocator_,
+    Buffer vertex_buffer{gpu_memory_allocator_.allocator(),
                          object.mesh->vertices.size() * sizeof(Mesh::Vertex),
                          vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
                          vk::MemoryPropertyFlagBits::eDeviceLocal,
                          context_.graphics_queue().family_index};
 
-    Buffer index_buffer{gpu_memory_allocator_,
+    Buffer index_buffer{gpu_memory_allocator_.allocator(),
                         object.mesh->indices.size() * sizeof(uint32_t),
                         vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
                         vk::MemoryPropertyFlagBits::eDeviceLocal,
                         context_.graphics_queue().family_index};
 
-    Buffer staging_buffer{gpu_memory_allocator_,
+    Buffer staging_buffer{gpu_memory_allocator_.allocator(),
                           vertex_buffer.size() + index_buffer.size(),
                           vk::BufferUsageFlagBits::eTransferSrc,
                           vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
@@ -400,7 +453,7 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
         0.0F,
         static_cast<float>(swapchain_.image_size().width),
         static_cast<float>(swapchain_.image_size().height),
-        0.1F,
+        0.0F,
         1.0F
     };
     vk::Rect2D scissor{{0, 0}, swapchain_.image_size()};
@@ -420,7 +473,7 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
             .SetScissor(scissor)
             .SetFillMode(vk::PolygonMode::eFill)
             .SetColorBlendEnable(false)
-            .build(swapchain_.surface_format().format);
+            .build(swapchain_.surface_format().format, depth_buffer_.format());
 
     pipelines_.push_back(std::move(pipeline));
     pipeline_layouts_.push_back(std::move(pipeline_layout));
@@ -431,17 +484,12 @@ VulkanRenderer::~VulkanRenderer() {
   if ((VkDevice) *context_.device() != VK_NULL_HANDLE) {
     context_.device().waitIdle();
   }
-  if (!objects_.empty()) {
-    objects_.clear();
-  }
-  if (gpu_memory_allocator_ != nullptr) {
-    vmaDestroyAllocator(gpu_memory_allocator_);
-  }
 }
 
 VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept\
 : context_(std::move(other.context_)),
   swapchain_(std::move(other.swapchain_)),
+  depth_buffer_(std::move(other.depth_buffer_)),
   image_acquired_semaphore_(std::move(other.image_acquired_semaphore_)),
   rendering_complete_semaphore_(std::move(other.rendering_complete_semaphore_)),
   transfer_complete_semaphore_(std::move(other.transfer_complete_semaphore_)),
@@ -452,13 +500,14 @@ VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept\
   command_buffers_(std::move(other.command_buffers_)),
   objects_(std::move(other.objects_)),
   pipelines_(std::move(other.pipelines_)),
-  pipeline_layouts_(std::move(other.pipeline_layouts_)) {
-  gpu_memory_allocator_ = other.gpu_memory_allocator_;
-  other.gpu_memory_allocator_ = nullptr;
+  pipeline_layouts_(std::move(other.pipeline_layouts_)),
+  gpu_memory_allocator_(std::move(other.gpu_memory_allocator_)) {
 }
+
 VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
   context_ = std::move(other.context_);
   swapchain_ = std::move(other.swapchain_);
+  depth_buffer_ = std::move(other.depth_buffer_);
   image_acquired_semaphore_ = std::move(other.image_acquired_semaphore_);
   rendering_complete_semaphore_ = std::move(other.rendering_complete_semaphore_);
   transfer_complete_semaphore_ = std::move(other.transfer_complete_semaphore_);
@@ -470,8 +519,7 @@ VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
   objects_ = std::move(other.objects_);
   pipelines_ = std::move(other.pipelines_);
   pipeline_layouts_ = std::move(other.pipeline_layouts_);
-  gpu_memory_allocator_ = other.gpu_memory_allocator_;
-  other.gpu_memory_allocator_ = nullptr;
+  gpu_memory_allocator_ = std::move(other.gpu_memory_allocator_);
   return *this;
 }
 

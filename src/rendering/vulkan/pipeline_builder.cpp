@@ -4,8 +4,19 @@ namespace chove::rendering::vulkan {
 
 PipelineBuilder::PipelineBuilder(const Context &context) {
   context_ = &context;
-  pipeline_rasterization_state_ = vk::PipelineRasterizationStateCreateInfo{}
-      .setLineWidth(1.0f);
+  pipeline_rasterization_state_ = vk::PipelineRasterizationStateCreateInfo{
+    vk::PipelineRasterizationStateCreateFlags{},
+    false,
+    false,
+    vk::PolygonMode::eFill,
+    vk::CullModeFlagBits::eNone,
+    vk::FrontFace::eCounterClockwise,
+    false,
+    0.0f,
+    0.0f,
+    0.0f,
+    1.0f
+  };
   pipeline_color_attachment_blend_state_ = vk::PipelineColorBlendAttachmentState{
       false,
       vk::BlendFactor::eSrcAlpha,
@@ -16,6 +27,18 @@ PipelineBuilder::PipelineBuilder(const Context &context) {
       vk::BlendOp::eAdd,
       vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
           vk::ColorComponentFlagBits::eA
+  };
+  pipeline_depth_stencil_state_ = vk::PipelineDepthStencilStateCreateInfo{
+      vk::PipelineDepthStencilStateCreateFlags{},
+      true,
+      true,
+      vk::CompareOp::eLess,
+      true,
+      false,
+      vk::StencilOpState{},
+      vk::StencilOpState{},
+      0.0f,
+      1.0f
   };
 }
 
@@ -41,7 +64,9 @@ PipelineBuilder &PipelineBuilder::SetFragmentShader(std::unique_ptr<Shader> shad
   return *this;
 }
 
-std::pair<vk::raii::Pipeline, vk::raii::PipelineLayout> PipelineBuilder::build(vk::Format color_attachment_format, vk::PipelineCreateFlags flags) {
+std::pair<vk::raii::Pipeline, vk::raii::PipelineLayout> PipelineBuilder::build(vk::Format color_attachment_format,
+                                                                               vk::Format depth_attachment_format,
+                                                                               vk::PipelineCreateFlags flags) {
   std::vector<vk::PipelineShaderStageCreateInfo> shader_stages{vertex_shader_stage_, fragment_shader_stage_};
   vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{
       vk::PipelineVertexInputStateCreateFlags{},
@@ -87,9 +112,10 @@ std::pair<vk::raii::Pipeline, vk::raii::PipelineLayout> PipelineBuilder::build(v
   vk::PipelineRenderingCreateInfo pipeline_rendering_create_info{
       0,
       color_attachment_format,
-      vk::Format::eUndefined,
+      depth_attachment_format,
       vk::Format::eUndefined
   };
+
   return {vk::raii::Pipeline{context_->device(), nullptr, vk::GraphicsPipelineCreateInfo{
       flags,
       shader_stages,
@@ -99,7 +125,7 @@ std::pair<vk::raii::Pipeline, vk::raii::PipelineLayout> PipelineBuilder::build(v
       &viewport_state_create_info,
       &pipeline_rasterization_state_,
       &pipeline_multisample_state_,
-      nullptr,
+      &pipeline_depth_stencil_state_,
       &pipeline_color_blend_state,
       nullptr,
       *layout,
@@ -142,6 +168,12 @@ PipelineBuilder &PipelineBuilder::SetFillMode(vk::PolygonMode mode) {
 }
 PipelineBuilder &PipelineBuilder::SetColorBlendEnable(bool enable) {
   pipeline_color_attachment_blend_state_.blendEnable = enable;
+  return *this;
+}
+PipelineBuilder &PipelineBuilder::SetDepthTestEnable(bool enable) {
+  pipeline_depth_stencil_state_.depthTestEnable = enable;
+  pipeline_depth_stencil_state_.depthWriteEnable = enable;
+  pipeline_depth_stencil_state_.depthBoundsTestEnable = enable;
   return *this;
 }
 

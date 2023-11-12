@@ -35,15 +35,14 @@ Buffer::Buffer(VmaAllocator allocator,
       .pUserData = nullptr,
       .priority = 0 // TODO: investigate potential performance gains from this
   };
+  VmaAllocationInfo allocation_info{};
 
   VkResult result = vmaCreateBuffer(allocator_, &buffer_create_info,
-                                    &allocation_create_info, &buffer_, &allocation_, nullptr);
+                                    &allocation_create_info, &buffer_, &allocation_, &allocation_info);
   if (result != VK_SUCCESS) {
     throw std::runtime_error("Failed to create buffer");
   }
 
-  VmaAllocationInfo allocation_info{};
-  vmaGetAllocationInfo(allocator_, allocation_, &allocation_info);
   mapped_data_ = allocation_info.pMappedData;
 }
 

@@ -6,6 +6,8 @@
 #include "context.h"
 #include "swapchain.h"
 #include "buffer.h"
+#include "image.h"
+#include "allocator.h"
 
 #include <absl/status/statusor.h>
 
@@ -30,10 +32,22 @@ class VulkanRenderer : public Renderer {
   ~VulkanRenderer() override;
 
  private:
-  VulkanRenderer(Context context, Swapchain swapchain);
+  VulkanRenderer(Context context, Swapchain swapchain, Image depth_buffer,
+                 vk::raii::Semaphore image_acquired_semaphore,
+                 vk::raii::Semaphore rendering_complete_semaphore,
+                 vk::raii::Semaphore transfer_complete_semaphore,
+                 vk::raii::Fence rendering_complete_fence,
+                 vk::raii::Fence transfer_complete_fence,
+                 vk::raii::CommandPool rendering_command_pool,
+                 vk::raii::CommandPool transfer_command_pool,
+                 std::vector<vk::raii::CommandBuffer> command_buffers,
+                 Allocator gpu_memory_allocator);
 
   Context context_;
+  Allocator gpu_memory_allocator_;
+
   Swapchain swapchain_;
+  Image depth_buffer_;
 
   vk::raii::Semaphore image_acquired_semaphore_;
   vk::raii::Semaphore rendering_complete_semaphore_;
@@ -59,8 +73,6 @@ class VulkanRenderer : public Renderer {
 
   std::vector<vk::raii::Pipeline> pipelines_;
   std::vector<vk::raii::PipelineLayout> pipeline_layouts_;
-
-  VmaAllocator gpu_memory_allocator_{};
 };
 
 }

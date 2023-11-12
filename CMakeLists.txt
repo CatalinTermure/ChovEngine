@@ -17,7 +17,9 @@ add_library(ProjectRendering src/rendering/camera.cpp src/rendering/vulkan/shade
         src/rendering/window.cpp
         src/objects/scene.cpp
         src/rendering/vulkan/libraries_initializer.cpp
-        src/rendering/vulkan/buffer.cpp)
+        src/rendering/vulkan/buffer.cpp
+        src/rendering/vulkan/image.cpp
+        src/rendering/vulkan/allocator.cpp)
 target_include_directories(ProjectRendering PUBLIC include)
 target_link_libraries(ProjectRendering GPUOpen::VulkanMemoryAllocator glm::glm absl::base absl::log absl::status)
 

@@ -15,13 +15,7 @@ class Camera {
          float fov,
          float aspect_ratio,
          float near_plane,
-         float far_plane)
-      : position_(position),
-        look_direction_(glm::normalize(look_direction)),
-        fov_(fov),
-        aspect_ratio_(aspect_ratio),
-        near_plane_(near_plane),
-        far_plane_(far_plane) {}
+         float far_plane);
 
   [[nodiscard]] const glm::vec3 &position() const { return position_; }
   [[nodiscard]] const glm::vec3 &look_direction() const { return look_direction_; }
@@ -32,7 +26,8 @@ class Camera {
     eForward,
     eBackward,
     eLeft,
-    eRight
+    eRight,
+    eUp
   };
 
   enum class RotationDirection {

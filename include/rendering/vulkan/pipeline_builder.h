@@ -20,9 +20,11 @@ class PipelineBuilder {
   PipelineBuilder &SetScissor(const vk::Rect2D &scissor);
   PipelineBuilder &SetFillMode(vk::PolygonMode mode);
   PipelineBuilder &SetColorBlendEnable(bool enable);
+  PipelineBuilder &SetDepthTestEnable(bool enable);
 
   std::pair<vk::raii::Pipeline, vk::raii::PipelineLayout> build(vk::Format color_attachment_format,
-                           vk::PipelineCreateFlags flags = vk::PipelineCreateFlags{});
+                                                                vk::Format depth_attachment_format,
+                                                                vk::PipelineCreateFlags flags = vk::PipelineCreateFlags{});
  private:
   const Context *context_;
 
@@ -42,6 +44,7 @@ class PipelineBuilder {
   vk::PipelineRasterizationStateCreateInfo pipeline_rasterization_state_;
   vk::PipelineColorBlendAttachmentState pipeline_color_attachment_blend_state_;
   vk::PipelineMultisampleStateCreateInfo pipeline_multisample_state_;
+  vk::PipelineDepthStencilStateCreateInfo pipeline_depth_stencil_state_;
 };
 } // namespace chove::rendering
 

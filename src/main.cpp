@@ -59,17 +59,17 @@ int main() {
   mesh1.vertices.push_back({{-1.0F, 0.0F, 1.0F, 1.0F}, {1.0f, 0.0f, 0.0f, 1.0f}});
   mesh1.vertices.push_back({{1.0F, 0.0F, 1.0F, 1.0F}, {0.0f, 1.0f, 0.0f, 1.0f}});
   mesh1.vertices.push_back({{0.0F, -1.0F, 0.0F, 1.0F}, {0.0f, 0.0f, 1.0f, 1.0f}});
-  mesh1.indices = {0, 1, 2};
+  mesh1.indices = {2, 1, 0};
 
   Scene scene;
   scene.camera() = Camera(
       {0.0F, 0.0F, -1.0F, 1.0F},
       {0.0F, 0.0F, 1.0F},
-      glm::radians(45.0F),
+      glm::radians(55.0F),
       static_cast<float>(window.width()) / static_cast<float>(window.height()),
       0.1F,
-      10.0F);
-  glm::vec2 camera_velocity = {0.0F, 0.0F};
+      1000.0F);
+  glm::vec3 camera_velocity = {0.0F, 0.0F, 0.0F};
 
   scene.AddObject(mesh1, Transform{
       glm::vec3(0.0f, 0.0f, 0.0f),
@@ -109,6 +109,10 @@ int main() {
             break;
           case SDLK_d:camera_velocity.x = 0.1F;
             break;
+          case SDLK_SPACE: camera_velocity.z = -0.1F;
+            break;
+          case SDLK_LSHIFT: camera_velocity.z = 0.1F;
+            break;
           case SDLK_r:
             scene.objects()[0].transform->rotation *= glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F));
             break;
@@ -122,7 +126,37 @@ int main() {
           case SDLK_d:
           case SDLK_a:camera_velocity.x = 0.0F;
             break;
-          default:break;
+          case SDLK_SPACE:
+          case SDLK_LSHIFT: camera_velocity.z = 0.0F;
+            break;
+          default:LOG(INFO) << std::format("Camera position is: ({},{},{})",
+                                           scene.camera().position().x,
+                                           scene.camera().position().y,
+                                           scene.camera().position().z);
+            LOG(INFO) << std::format("Camera look direction is: ({},{},{})",
+                                     scene.camera().look_direction().x,
+                                     scene.camera().look_direction().y,
+                                     scene.camera().look_direction().z);
+
+            for (auto point : mesh1.vertices) {
+              glm::vec4 new_point = scene.camera().GetTransformMatrix() * point.position;
+              new_point /= new_point.w;
+              LOG(INFO) << std::format("Point is: ({},{},{},{})",
+                                       new_point.x,
+                                       new_point.y,
+                                       new_point.z,
+                                       new_point.w);
+            }
+            for (auto point : mesh2.vertices) {
+              glm::vec4 new_point = scene.camera().GetTransformMatrix() * point.position;
+              new_point /= new_point.w;
+              LOG(INFO) << std::format("Point is: ({},{},{},{})",
+                                       new_point.x,
+                                       new_point.y,
+                                       new_point.z,
+                                       new_point.w);
+            }
+            break;
         }
       } else if (event.type == SDL_MOUSEMOTION) {
         scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eRight,
@@ -138,6 +172,8 @@ int main() {
                         camera_velocity.y * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
     scene.camera().Move(Camera::Direction::eRight,
                         camera_velocity.x * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
+    scene.camera().Move(Camera::Direction::eUp,
+                        camera_velocity.z * static_cast<float>(std::chrono::nanoseconds(deltaTime).count()) / 4e7f);
 
     time += deltaTime;
 

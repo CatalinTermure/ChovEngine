@@ -1,5 +1,7 @@
 #include "rendering/camera.h"
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -29,6 +31,8 @@ void Camera::Move(Camera::Direction direction, float amount) {
     case Direction::eLeft:position_ -= glm::normalize(glm::cross(look_direction_, up_direction)) * amount;
       break;
     case Direction::eRight:position_ += glm::normalize(glm::cross(look_direction_, up_direction)) * amount;
+      break;
+    case Direction::eUp:position_ += up_direction * amount;
       break;
   }
 }
@@ -62,4 +66,17 @@ void Camera::Rotate(Camera::RotationDirection direction, float degrees) {
       break;
   }
 }
+
+Camera::Camera(glm::vec4 position,
+               glm::vec3 look_direction,
+               float fov,
+               float aspect_ratio,
+               float near_plane,
+               float far_plane)
+    : position_(position),
+      look_direction_(glm::normalize(look_direction)),
+      fov_(fov),
+      aspect_ratio_(aspect_ratio),
+      near_plane_(near_plane),
+      far_plane_(far_plane) {}
 }
