@@ -51,7 +51,7 @@ Image Image::CreateImage(const Context &context,
                          uint32_t queue_family_index) {
   VmaAllocation allocation;
   VkImage c_image;
-  VkImageCreateInfo image_create_info{
+  const VkImageCreateInfo image_create_info{
       .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
       .pNext = nullptr,
       .flags = 0,
@@ -69,7 +69,7 @@ Image Image::CreateImage(const Context &context,
       .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
   };
 
-  VmaAllocationCreateInfo allocation_create_info{
+  constexpr VmaAllocationCreateInfo allocation_create_info{
       .flags = 0,
       .usage = VMA_MEMORY_USAGE_AUTO,
       .requiredFlags = 0,

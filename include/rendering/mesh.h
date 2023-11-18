@@ -6,20 +6,26 @@
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include <vulkan/vulkan_raii.hpp>
 
 #include "material.h"
+#include "rendering/vulkan/vulkan_renderer.h"
 
 namespace chove::rendering {
 struct Mesh {
   struct Vertex {
-    glm::vec4 position;
-    glm::vec4 color;
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 texcoord;
   };
+
   std::vector<Vertex> vertices;
+  std::vector<glm::vec3> color;
+
   std::vector<uint32_t> indices;
 
-  static Mesh ImportFromObj(std::filesystem::path path);
+  std::shared_ptr<Material> material;
+
+  static std::vector<Mesh> ImportFromObj(const vulkan::VulkanRenderer& renderer, const std::filesystem::path& path);
 
   [[nodiscard]] static constexpr std::vector<vk::VertexInputAttributeDescription> attributes();
   [[nodiscard]] static constexpr vk::VertexInputBindingDescription binding() {
@@ -30,6 +36,6 @@ struct Mesh {
     };
   }
 };
-}  // namespace chove::rendering
+} // namespace chove::rendering
 
 #endif //LABSEXTRA_INCLUDE_RENDERING_MESH_H_

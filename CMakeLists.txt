@@ -19,9 +19,10 @@ add_library(ProjectRendering src/rendering/camera.cpp src/rendering/vulkan/shade
         src/rendering/vulkan/libraries_initializer.cpp
         src/rendering/vulkan/buffer.cpp
         src/rendering/vulkan/image.cpp
-        src/rendering/vulkan/allocator.cpp)
+        src/rendering/vulkan/allocator.cpp
+        src/rendering/vulkan/texture.cpp)
 target_include_directories(ProjectRendering PUBLIC include)
-target_link_libraries(ProjectRendering GPUOpen::VulkanMemoryAllocator glm::glm absl::base absl::log absl::status)
+target_link_libraries(ProjectRendering GPUOpen::VulkanMemoryAllocator glm::glm absl::base absl absl::log absl::status)
 
 #add_library(ProjectObjects)
 #target_include_directories(ProjectObjects PUBLIC include/objects)
@@ -58,4 +59,4 @@ target_link_libraries(LabsExtra GPUOpen::VulkanMemoryAllocator)
 find_package(Vulkan)
 include_directories("${Vulkan_INCLUDE_DIRS}")
 target_link_libraries(LabsExtra ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
-target_link_libraries(LabsExtra ProjectRendering)
+target_link_libraries(LabsExtra ProjectRendering ProjectObjects)

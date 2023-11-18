@@ -6,7 +6,6 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
-#include <SDL2/SDL_vulkan.h>
 #include <glm/glm.hpp>
 #include <absl/log/log.h>
 #include <absl/log/initialize.h>
@@ -28,8 +27,8 @@ using chove::rendering::Mesh;
 using chove::rendering::Renderer;
 using chove::rendering::vulkan::VulkanRenderer;
 
-class StdoutLogSink : public absl::LogSink {
-  void Send(const absl::LogEntry &entry) override {
+class StdoutLogSink final : public absl::LogSink {
+  void Send(const absl::LogEntry& entry) override {
     std::cout << entry.text_message_with_prefix_and_newline();
   }
 };
@@ -48,18 +47,14 @@ int main() {
   Window window;
 
   VulkanRenderer renderer = [&window]() {
-    absl::StatusOr<VulkanRenderer> renderer = VulkanRenderer::Create(window);
-    if (!renderer.ok()) {
-      LOG(FATAL) << renderer.status();
+    absl::StatusOr<VulkanRenderer> renderer_or = VulkanRenderer::Create(window);
+    if (!renderer_or.ok()) {
+      LOG(FATAL) << renderer_or.status();
     }
-    return *std::move(renderer);
+    return *std::move(renderer_or);
   }();
 
-  Mesh mesh1;
-  mesh1.vertices.push_back({{-1.0F, 0.0F, 1.0F, 1.0F}, {1.0f, 0.0f, 0.0f, 1.0f}});
-  mesh1.vertices.push_back({{1.0F, 0.0F, 1.0F, 1.0F}, {0.0f, 1.0f, 0.0f, 1.0f}});
-  mesh1.vertices.push_back({{0.0F, -1.0F, 0.0F, 1.0F}, {0.0f, 0.0f, 1.0f, 1.0f}});
-  mesh1.indices = {2, 1, 0};
+  std::vector<Mesh> meshes = Mesh::ImportFromObj(renderer, std::filesystem::current_path() / "models" / "sponza.obj");
 
   Scene scene;
   scene.camera() = Camera(
@@ -71,22 +66,6 @@ int main() {
       1000.0F);
   glm::vec3 camera_velocity = {0.0F, 0.0F, 0.0F};
 
-  scene.AddObject(mesh1, Transform{
-      glm::vec3(0.0f, 0.0f, 0.0f),
-      glm::identity<glm::quat>(),
-      glm::vec3(1.0f, 1.0f, 1.0f)
-  });
-
-  Mesh mesh2 = mesh1;
-  mesh2.vertices[2].position = {0.0F, 1.0F, 0.0F, 1.0F};
-  mesh2.vertices.push_back({{-2.0F, 1.0F, 0.0F, 1.0F}, {0.0f, 1.0f, 0.0f, 1.0f}});
-  mesh2.indices = {0, 1, 2, 0, 2, 3};
-  scene.AddObject(mesh2, Transform{
-      glm::vec3(0.0f, 0.0f, 0.0f),
-      glm::identity<glm::quat>(),
-      glm::vec3(1.0f, 1.0f, 1.0f)
-  });
-
   renderer.SetupScene(scene);
 
   bool should_app_close = false;
@@ -97,71 +76,67 @@ int main() {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         should_app_close = true;
-      } else if (event.type == SDL_KEYDOWN) {
+      }
+      else if (event.type == SDL_KEYDOWN) {
         switch (event.key.keysym.sym) {
-          case SDLK_ESCAPE:should_app_close = true;
+          case SDLK_ESCAPE:
+            should_app_close = true;
             break;
-          case SDLK_w:camera_velocity.y = 0.1F;
+          case SDLK_w:
+            camera_velocity.y = 0.1F;
             break;
-          case SDLK_a:camera_velocity.x = -0.1F;
+          case SDLK_a:
+            camera_velocity.x = -0.1F;
             break;
-          case SDLK_s:camera_velocity.y = -0.1F;
+          case SDLK_s:
+            camera_velocity.y = -0.1F;
             break;
-          case SDLK_d:camera_velocity.x = 0.1F;
+          case SDLK_d:
+            camera_velocity.x = 0.1F;
             break;
-          case SDLK_SPACE: camera_velocity.z = -0.1F;
+          case SDLK_SPACE:
+            camera_velocity.z = -0.1F;
             break;
-          case SDLK_LSHIFT: camera_velocity.z = 0.1F;
+          case SDLK_LSHIFT:
+            camera_velocity.z = 0.1F;
             break;
           case SDLK_r:
             scene.objects()[0].transform->rotation *= glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F));
             break;
-          default:break;
+          default:
+            break;
         }
-      } else if (event.type == SDL_KEYUP) {
+      }
+      else if (event.type == SDL_KEYUP) {
         switch (event.key.keysym.sym) {
           case SDLK_s:
-          case SDLK_w:camera_velocity.y = 0.0F;
+          case SDLK_w:
+            camera_velocity.y = 0.0F;
             break;
           case SDLK_d:
-          case SDLK_a:camera_velocity.x = 0.0F;
+          case SDLK_a:
+            camera_velocity.x = 0.0F;
             break;
           case SDLK_SPACE:
-          case SDLK_LSHIFT: camera_velocity.z = 0.0F;
+          case SDLK_LSHIFT:
+            camera_velocity.z = 0.0F;
             break;
-          default:LOG(INFO) << std::format("Camera position is: ({},{},{})",
-                                           scene.camera().position().x,
-                                           scene.camera().position().y,
-                                           scene.camera().position().z);
+          default: LOG(INFO) << std::format("Camera position is: ({},{},{})",
+                                            scene.camera().position().x,
+                                            scene.camera().position().y,
+                                            scene.camera().position().z);
             LOG(INFO) << std::format("Camera look direction is: ({},{},{})",
                                      scene.camera().look_direction().x,
                                      scene.camera().look_direction().y,
                                      scene.camera().look_direction().z);
 
-            for (auto point : mesh1.vertices) {
-              glm::vec4 new_point = scene.camera().GetTransformMatrix() * point.position;
-              new_point /= new_point.w;
-              LOG(INFO) << std::format("Point is: ({},{},{},{})",
-                                       new_point.x,
-                                       new_point.y,
-                                       new_point.z,
-                                       new_point.w);
-            }
-            for (auto point : mesh2.vertices) {
-              glm::vec4 new_point = scene.camera().GetTransformMatrix() * point.position;
-              new_point /= new_point.w;
-              LOG(INFO) << std::format("Point is: ({},{},{},{})",
-                                       new_point.x,
-                                       new_point.y,
-                                       new_point.z,
-                                       new_point.w);
-            }
             break;
         }
-      } else if (event.type == SDL_MOUSEMOTION) {
-        scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eRight,
+      }
+      else if (event.type == SDL_MOUSEMOTION) {
+        scene.camera().Rotate(Camera::RotationDirection::eRight,
                               camera_rotation_speed * static_cast<float>(event.motion.xrel));
-        scene.camera().Rotate(chove::rendering::Camera::RotationDirection::eDownward,
+        scene.camera().Rotate(Camera::RotationDirection::eDownward,
                               camera_rotation_speed * static_cast<float>(event.motion.yrel));
       }
     }

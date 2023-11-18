@@ -16,8 +16,7 @@
 #include <vma/vk_mem_alloc.h>
 
 namespace chove::rendering::vulkan {
-
-class VulkanRenderer : public Renderer {
+class VulkanRenderer : public chove::rendering::Renderer {
  public:
   VulkanRenderer(const VulkanRenderer &) = delete;
   VulkanRenderer &operator=(const VulkanRenderer &) = delete;
@@ -29,10 +28,15 @@ class VulkanRenderer : public Renderer {
   void Render(const objects::Scene &scene) override;
   void SetupScene(const objects::Scene &scene) override;
 
+  [[nodiscard]] const Context &context() const { return context_; }
+  [[nodiscard]] VmaAllocator gpu_memory_allocator() const { return gpu_memory_allocator_.allocator(); }
+
   ~VulkanRenderer() override;
 
  private:
-  VulkanRenderer(Context context, Swapchain swapchain, Image depth_buffer,
+  VulkanRenderer(Context context,
+                 Swapchain swapchain,
+                 Image depth_buffer,
                  vk::raii::Semaphore image_acquired_semaphore,
                  vk::raii::Semaphore rendering_complete_semaphore,
                  vk::raii::Semaphore transfer_complete_semaphore,
@@ -74,7 +78,6 @@ class VulkanRenderer : public Renderer {
   std::vector<vk::raii::Pipeline> pipelines_;
   std::vector<vk::raii::PipelineLayout> pipeline_layouts_;
 };
-
-}
+} // namespace chove::rendering::vulkan
 
 #endif //LABSEXTRA_INCLUDE_RENDERING_VULKAN_VULKAN_RENDERER_H_
