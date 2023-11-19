@@ -8,7 +8,6 @@
 #include <glm/glm.hpp>
 
 #include "material.h"
-#include "rendering/vulkan/vulkan_renderer.h"
 
 namespace chove::rendering {
 struct Mesh {
@@ -25,7 +24,7 @@ struct Mesh {
 
   std::shared_ptr<Material> material;
 
-  static std::vector<Mesh> ImportFromObj(const vulkan::VulkanRenderer& renderer, const std::filesystem::path& path);
+  static std::vector<Mesh> ImportFromObj(const std::filesystem::path& path);
 
   [[nodiscard]] static constexpr std::vector<vk::VertexInputAttributeDescription> attributes();
   [[nodiscard]] static constexpr vk::VertexInputBindingDescription binding() {

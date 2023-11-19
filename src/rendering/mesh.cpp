@@ -39,7 +39,7 @@ constexpr std::vector<vk::VertexInputAttributeDescription> Mesh::attributes() {
               sizeof(glm::vec4)}};
 }
 
-std::vector<Mesh> Mesh::ImportFromObj(const vulkan::VulkanRenderer& renderer, const std::filesystem::path& path) {
+std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path& path) {
   tinyobj::ObjReaderConfig reader_config;
   reader_config.mtl_search_path = path.parent_path().string();
 
@@ -68,57 +68,57 @@ std::vector<Mesh> Mesh::ImportFromObj(const vulkan::VulkanRenderer& renderer, co
 
   std::vector<Material> mesh_materials;
   absl::flat_hash_map<std::string, std::shared_ptr<Texture>> textures;
-  for (const auto& material : obj_materials) {
-    if (!textures.contains(material.ambient_texname)) {
-      textures[material.ambient_texname] = std::shared_ptr<Texture>(
-          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
-              renderer.context(),
-              renderer.gpu_memory_allocator(),
-              path / material.ambient_texname)));
-    }
-    if (!textures.contains(material.diffuse_texname)) {
-      textures[material.diffuse_texname] = std::shared_ptr<Texture>(
-          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
-              renderer.context(),
-              renderer.gpu_memory_allocator(),
-              path / material.diffuse_texname)));
-    }
-    if (!textures.contains(material.specular_texname)) {
-      textures[material.specular_texname] = std::shared_ptr<Texture>(
-          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
-              renderer.context(),
-              renderer.gpu_memory_allocator(),
-              path / material.specular_texname)));
-    }
-    if (!textures.contains(material.specular_highlight_texname)) {
-      textures[material.specular_highlight_texname] = std::shared_ptr<Texture>(
-          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
-              renderer.context(),
-              renderer.gpu_memory_allocator(),
-              path / material.specular_highlight_texname)));
-    }
-    if (!textures.contains(material.alpha_texname)) {
-      textures[material.alpha_texname] = std::shared_ptr<Texture>(
-          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
-              renderer.context(),
-              renderer.gpu_memory_allocator(),
-              path / material.alpha_texname)));
-    }
-    if (!textures.contains(material.bump_texname)) {
-      textures[material.bump_texname] = std::shared_ptr<Texture>(
-          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
-              renderer.context(),
-              renderer.gpu_memory_allocator(),
-              path / material.bump_texname)));
-    }
-    if (!textures.contains(material.displacement_texname)) {
-      textures[material.displacement_texname] = std::shared_ptr<Texture>(
-          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
-              renderer.context(),
-              renderer.gpu_memory_allocator(),
-              path / material.displacement_texname)));
-    }
-  }
+//  for (const auto& material : obj_materials) {
+//    if (!textures.contains(material.ambient_texname)) {
+//      textures[material.ambient_texname] = std::shared_ptr<Texture>(
+//          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
+//              renderer.context(),
+//              renderer.gpu_memory_allocator(),
+//              path / material.ambient_texname)));
+//    }
+//    if (!textures.contains(material.diffuse_texname)) {
+//      textures[material.diffuse_texname] = std::shared_ptr<Texture>(
+//          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
+//              renderer.context(),
+//              renderer.gpu_memory_allocator(),
+//              path / material.diffuse_texname)));
+//    }
+//    if (!textures.contains(material.specular_texname)) {
+//      textures[material.specular_texname] = std::shared_ptr<Texture>(
+//          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
+//              renderer.context(),
+//              renderer.gpu_memory_allocator(),
+//              path / material.specular_texname)));
+//    }
+//    if (!textures.contains(material.specular_highlight_texname)) {
+//      textures[material.specular_highlight_texname] = std::shared_ptr<Texture>(
+//          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
+//              renderer.context(),
+//              renderer.gpu_memory_allocator(),
+//              path / material.specular_highlight_texname)));
+//    }
+//    if (!textures.contains(material.alpha_texname)) {
+//      textures[material.alpha_texname] = std::shared_ptr<Texture>(
+//          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
+//              renderer.context(),
+//              renderer.gpu_memory_allocator(),
+//              path / material.alpha_texname)));
+//    }
+//    if (!textures.contains(material.bump_texname)) {
+//      textures[material.bump_texname] = std::shared_ptr<Texture>(
+//          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
+//              renderer.context(),
+//              renderer.gpu_memory_allocator(),
+//              path / material.bump_texname)));
+//    }
+//    if (!textures.contains(material.displacement_texname)) {
+//      textures[material.displacement_texname] = std::shared_ptr<Texture>(
+//          reinterpret_cast<Texture*>(vulkan::Texture::CreateTexture(
+//              renderer.context(),
+//              renderer.gpu_memory_allocator(),
+//              path / material.displacement_texname)));
+//    }
+//  }
   for (const auto& material : obj_materials) {
     mesh_materials.push_back(Material{
         .specular_exponent = material.shininess,

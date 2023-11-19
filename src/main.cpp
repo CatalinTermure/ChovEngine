@@ -54,7 +54,7 @@ int main() {
     return *std::move(renderer_or);
   }();
 
-  std::vector<Mesh> meshes = Mesh::ImportFromObj(renderer, std::filesystem::current_path() / "models" / "sponza.obj");
+  std::vector<Mesh> meshes = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "sponza.obj");
 
   Scene scene;
   scene.camera() = Camera(
