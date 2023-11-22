@@ -8,6 +8,7 @@
 #include "buffer.h"
 #include "image.h"
 #include "allocator.h"
+#include "texture.h"
 
 #include <absl/status/statusor.h>
 
@@ -16,7 +17,7 @@
 #include <vma/vk_mem_alloc.h>
 
 namespace chove::rendering::vulkan {
-class VulkanRenderer : public chove::rendering::Renderer {
+class VulkanRenderer : public Renderer {
  public:
   VulkanRenderer(const VulkanRenderer &) = delete;
   VulkanRenderer &operator=(const VulkanRenderer &) = delete;
@@ -29,7 +30,7 @@ class VulkanRenderer : public chove::rendering::Renderer {
   void SetupScene(const objects::Scene &scene) override;
 
   [[nodiscard]] const Context &context() const { return context_; }
-  [[nodiscard]] VmaAllocator gpu_memory_allocator() const { return gpu_memory_allocator_.allocator(); }
+  [[nodiscard]] VmaAllocator allocator() const { return gpu_memory_allocator_.allocator(); }
 
   ~VulkanRenderer() override;
 
@@ -71,12 +72,18 @@ class VulkanRenderer : public chove::rendering::Renderer {
     Buffer vertex_buffer;
     Buffer staging_buffer;
     Buffer index_buffer;
+    Buffer uniform_buffer;
+    std::unique_ptr<Texture> diffuse_texture;
     const objects::Transform *transform;
+    int pipeline_index;
   };
   std::vector<RenderObject> objects_;
 
   std::vector<vk::raii::Pipeline> pipelines_;
   std::vector<vk::raii::PipelineLayout> pipeline_layouts_;
+  std::vector<vk::raii::DescriptorPool> descriptor_pools_;
+  std::vector<vk::DescriptorSetLayout> descriptor_set_layouts_;
+  std::vector<vk::raii::DescriptorSet> descriptor_sets_;
 };
 } // namespace chove::rendering::vulkan
 

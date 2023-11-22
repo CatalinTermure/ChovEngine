@@ -15,16 +15,17 @@ class Shader {
   Shader(const std::filesystem::path &path, const Context &context);
   Shader(const Shader &) = delete;
   Shader &operator=(const Shader &) = delete;
-  Shader(Shader &&) = default;
-  Shader &operator=(Shader &&) = default;
+  Shader(Shader &&);
+  Shader &operator=(Shader &&);
 
   [[nodiscard]] vk::raii::ShaderModule &module() { return shader_; }
   [[nodiscard]] std::span<vk::raii::DescriptorSetLayout> descriptor_set_layouts() { return descriptor_set_layouts_; }
   [[nodiscard]] std::span<vk::PushConstantRange> push_constant_ranges() { return push_constant_ranges_; }
 
-  void AddDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &bindings);
+  vk::DescriptorSetLayout AddDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &bindings);
   void AddPushConstantRanges(const std::vector<vk::PushConstantRange> &ranges);
 
+  virtual ~Shader() = default;
  private:
   const Context *context_;
   vk::raii::ShaderModule shader_;

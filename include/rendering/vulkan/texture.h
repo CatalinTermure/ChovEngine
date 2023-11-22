@@ -5,29 +5,30 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "rendering/texture.h"
 #include "rendering/vulkan/image.h"
 
 namespace chove::rendering::vulkan {
-class Texture : rendering::Texture {
-  public:
-  Texture(const Texture&) = delete;
-  Texture& operator=(const Texture&) = delete;
-  Texture(Texture&&) noexcept = default;
-  Texture& operator=(Texture&&) noexcept = default;
+class Texture {
+ public:
+  Texture(Image image, vk::raii::Sampler sampler);
+  Texture(const Texture &) = delete;
+  Texture &operator=(const Texture &) = delete;
+  Texture(Texture &&) noexcept = default;
+  Texture &operator=(Texture &&) noexcept = default;
 
-  static Texture* CreateTexture(const Context& context,
-                                VmaAllocator allocator,
-                                const std::filesystem::path& path);
+  static std::unique_ptr<Texture> CreateTexture(const Context &context,
+                                                VmaAllocator allocator,
+                                                uint32_t graphics_queue_family_index,
+                                                const std::filesystem::path &path);
 
   [[nodiscard]] vk::ImageView view() const { return image_.view(); }
   [[nodiscard]] vk::Sampler sampler() const { return *sampler_; }
 
-  virtual ~Texture();
-
-  private:
+  virtual ~Texture() = default;
+ private:
   Image image_;
   vk::raii::Sampler sampler_;
+
 };
 } // namespace chove::rendering::vulkan
 

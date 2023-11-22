@@ -9,7 +9,7 @@ PipelineBuilder::PipelineBuilder(const Context &context) {
     false,
     false,
     vk::PolygonMode::eFill,
-    vk::CullModeFlagBits::eNone,
+    vk::CullModeFlagBits::eBack,
     vk::FrontFace::eCounterClockwise,
     false,
     0.0f,
