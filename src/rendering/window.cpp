@@ -7,19 +7,18 @@ namespace chove::rendering {
 
 namespace {
 SDL_Window *InitSDLWindow() {
-  // Create an SDL window that supports Vulkan rendering.
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     LOG(FATAL) << "Could not initialize SDL.";
     return nullptr;
   }
 
   SDL_Window *window =
-      SDL_CreateWindow("Vulkan Window",
+      SDL_CreateWindow("Window",
                        SDL_WINDOWPOS_CENTERED,
                        SDL_WINDOWPOS_CENTERED,
                        1280,
                        720,
-                       SDL_WINDOW_VULKAN);
+                       SDL_WINDOW_OPENGL);
   if (window == nullptr) {
     LOG(FATAL) << "Could not create SDL window.";
     return nullptr;

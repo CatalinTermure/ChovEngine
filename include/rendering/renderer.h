@@ -7,7 +7,7 @@ namespace chove::rendering {
 class Renderer {
  public:
   virtual void SetupScene(const objects::Scene &scene) = 0;
-  virtual void Render(const objects::Scene &scene) = 0;
+  virtual void Render() = 0;
 
   virtual ~Renderer() = default;
 };

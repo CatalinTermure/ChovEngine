@@ -7,26 +7,20 @@ find_package(SDL2 REQUIRED)
 
 find_package(glm REQUIRED)
 find_package(absl CONFIG REQUIRED)
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+find_package(GLEW CONFIG REQUIRED)
 
-add_library(ProjectRendering src/rendering/camera.cpp src/rendering/vulkan/shader.cpp src/rendering/vulkan/context.cpp
-        src/rendering/vulkan/pipeline_builder.cpp
-        src/rendering/vulkan/swapchain.cpp
-        src/rendering/vulkan/vulkan_renderer.cpp
-        src/rendering/mesh.cpp
+add_library(ProjectRendering src/rendering/mesh.cpp
         src/rendering/window.cpp
+        src/rendering/camera.cpp
         src/objects/scene.cpp
-        src/rendering/vulkan/libraries_initializer.cpp
-        src/rendering/vulkan/buffer.cpp
-        src/rendering/vulkan/image.cpp
-        src/rendering/vulkan/allocator.cpp
-        src/rendering/vulkan/texture.cpp)
+        src/rendering/libraries_initializer.cpp)
 target_include_directories(ProjectRendering PUBLIC include)
-target_link_libraries(ProjectRendering GPUOpen::VulkanMemoryAllocator glm::glm absl::base absl::hash absl::log absl::status)
+target_link_libraries(ProjectRendering glm::glm absl::base absl::hash absl::log absl::status)
 
-#add_library(ProjectObjects)
-#target_include_directories(ProjectObjects PUBLIC include/objects)
-#target_link_libraries(ProjectObjects glm::glm)
+add_library(ProjectRenderingOpenGL
+        src/rendering/opengl/renderer.cpp)
+target_link_libraries(ProjectRenderingOpenGL GLEW::GLEW absl::base absl::log)
+target_include_directories(ProjectRenderingOpenGL PUBLIC include)
 
 add_executable(LabsExtra src/main.cpp)
 target_include_directories(LabsExtra PUBLIC include)
@@ -53,10 +47,8 @@ add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
 
 add_dependencies(LabsExtra shaders)
 
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
-target_link_libraries(LabsExtra GPUOpen::VulkanMemoryAllocator)
-
 find_package(Vulkan)
 include_directories("${Vulkan_INCLUDE_DIRS}")
-target_link_libraries(LabsExtra ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
-target_link_libraries(LabsExtra ProjectRendering)
+target_link_libraries(LabsExtra ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
+target_link_libraries(LabsExtra ProjectRendering ProjectRenderingOpenGL)
+target_include_directories(LabsExtra PUBLIC include)

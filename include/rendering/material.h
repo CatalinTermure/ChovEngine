@@ -3,9 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <memory>
-#include <vulkan/vulkan_raii.hpp>
-
-#include "texture.h"
+#include <filesystem>
 
 namespace chove::rendering {
 enum class IllumType {
@@ -23,20 +21,20 @@ enum class IllumType {
 };
 
 struct Material {
-  float specular_exponent;
+  float shininess;
   float optical_density;
-  float alpha;
+  float dissolve;
   glm::vec3 transmission_filter_color;
   glm::vec3 ambient_color;
   glm::vec3 diffuse_color;
   glm::vec3 specular_color;
-  std::shared_ptr<Texture> ambient_texture;
-  std::shared_ptr<Texture> diffuse_texture;
-  std::shared_ptr<Texture> specular_texture;
-  std::shared_ptr<Texture> specular_exponent_texture;
-  std::shared_ptr<Texture> alpha_texture;
-  std::shared_ptr<Texture> bump_texture;
-  std::shared_ptr<Texture> displacement_texture;
+  std::optional<std::filesystem::path> ambient_texture;
+  std::optional<std::filesystem::path> diffuse_texture;
+  std::optional<std::filesystem::path> specular_texture;
+  std::optional<std::filesystem::path> shininess_texture;
+  std::optional<std::filesystem::path> alpha_texture;
+  std::optional<std::filesystem::path> bump_texture;
+  std::optional<std::filesystem::path> displacement_texture;
   IllumType illumination_model;
 };
 } // namespace chove::rendering
