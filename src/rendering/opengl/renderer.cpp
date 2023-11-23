@@ -3,13 +3,82 @@
 #include <GL/glew.h>
 
 namespace chove::rendering::opengl {
+namespace {
+void GLAPIENTRY MessageCallback(GLenum source,
+                                GLenum type,
+                                unsigned int id,
+                                GLenum severity,
+                                GLsizei length,
+                                const char *message,
+                                const void *userParam) {
+  // ignore non-significant error/warning codes
+  if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+
+  std::string msg = "---------------\n";
+  msg += std::format("Debug message ({}): {}\n", id, message);
+
+  switch (source) {
+    case GL_DEBUG_SOURCE_API: msg += "Source: API";
+      break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM: msg += "Source: Window System";
+      break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER: msg += "Source: Shader Compiler";
+      break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY: msg += "Source: Third Party";
+      break;
+    case GL_DEBUG_SOURCE_APPLICATION: msg += "Source: Application";
+      break;
+    case GL_DEBUG_SOURCE_OTHER: msg += "Source: Other";
+      break;
+    default: msg += "Source: Unknown";
+      break;
+  }
+  msg += "\n";
+
+  switch (type) {
+    case GL_DEBUG_TYPE_ERROR: msg += "Type: Error";
+      break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: msg += "Type: Deprecated Behaviour";
+      break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: msg += "Type: Undefined Behaviour";
+      break;
+    case GL_DEBUG_TYPE_PORTABILITY: msg += "Type: Portability";
+      break;
+    case GL_DEBUG_TYPE_PERFORMANCE: msg += "Type: Performance";
+      break;
+    case GL_DEBUG_TYPE_MARKER: msg += "Type: Marker";
+      break;
+    case GL_DEBUG_TYPE_PUSH_GROUP: msg += "Type: Push Group";
+      break;
+    case GL_DEBUG_TYPE_POP_GROUP: msg += "Type: Pop Group";
+      break;
+    case GL_DEBUG_TYPE_OTHER: msg += "Type: Other";
+      break;
+    default: msg += "Type: Unknown";
+      break;
+  }
+  msg += "\n";
+
+  switch (severity) {
+    case GL_DEBUG_SEVERITY_HIGH: msg += "Severity: high";
+      break;
+    case GL_DEBUG_SEVERITY_MEDIUM: msg += "Severity: medium";
+      break;
+    case GL_DEBUG_SEVERITY_LOW: msg += "Severity: low";
+      break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION: msg += "Severity: notification";
+      break;
+    default: msg += "Severity: unknown";
+      break;
+  }
+  msg += "\n-------------------------------------------------------------";
+  LOG(INFO) << msg;
+}
+
+}
 
 Renderer::Renderer(Window *window) : window_(window), scene_(nullptr), view_(), projection_() {
   context_ = SDL_GL_CreateContext(*window_);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
   glewExperimental = GL_TRUE;
   glewInit();
@@ -24,6 +93,9 @@ Renderer::Renderer(Window *window) : window_(window), scene_(nullptr), view_(), 
   glFrontFace(GL_CCW);
 
   glEnable(GL_FRAMEBUFFER_SRGB);
+
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback(MessageCallback, nullptr);
 }
 
 void Renderer::Render() {
@@ -62,14 +134,18 @@ void Renderer::Render() {
 }
 
 void Renderer::SetupScene(const objects::Scene &scene) {
+  LOG(INFO) << "Starting setup scene";
   scene_ = &scene;
+  LOG(INFO) << "Setting up shaders";
   shaders_.emplace_back("shaders/render_shader.vert", "shaders/render_shader.frag");
 
+  LOG(INFO) << "Setting up uniforms";
   view_ = Uniform<glm::mat4>(shaders_[0].program(), "view", scene_->camera().GetViewMatrix());
   projection_ = Uniform<glm::mat4>(shaders_[0].program(), "projection", scene_->camera().GetProjectionMatrix());
 
   render_objects_.reserve(scene.objects().size());
   for (int i = 0; i < scene.objects().size(); ++i) {
+    LOG(INFO) << "Setting up object " << i << " of " << scene.objects().size() << " total objects";
     const objects::GameObject &object = scene.objects()[i];
     RenderObject render_object;
 
@@ -118,11 +194,14 @@ void Renderer::SetupScene(const objects::Scene &scene) {
 
     render_objects_.emplace_back(std::move(render_object));
   }
+  LOG(INFO) << "Finished setup scene";
 }
 
 void Renderer::AttachMaterial(RenderObject &render_object, const Material &material) {
   if (material.diffuse_texture.has_value()) {
     render_object.textures.emplace_back(material.diffuse_texture.value(), "diffuseTexture");
+  } else {
+    LOG(ERROR) << "Material has no diffuse texture ";
   }
 }
 }

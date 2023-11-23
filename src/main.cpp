@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
@@ -29,38 +30,19 @@ using chove::rendering::Renderer;
 class StdoutLogSink final : public absl::LogSink {
   void Send(const absl::LogEntry &entry) override {
     std::cout << entry.text_message_with_prefix_and_newline();
+    log_file_ << entry.text_message_with_prefix_and_newline();
   }
+
+ private:
+  std::ofstream log_file_{"log.txt"};
 };
 
 constexpr int target_frame_rate = 60;
 constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);
 
-static constexpr const float kCameraSpeed = 1e-1F;
+static constexpr const float kCameraSpeed = 1e2F;
 constexpr float camera_rotation_speed = 0.1F;
-
-GLenum glCheckError_(const char *file, int line) {
-  GLenum errorCode;
-  while ((errorCode = glGetError()) != GL_NO_ERROR) {
-    std::string error;
-    switch (errorCode) {
-      case GL_INVALID_ENUM: error = "INVALID_ENUM";
-        break;
-      case GL_INVALID_VALUE: error = "INVALID_VALUE";
-        break;
-      case GL_INVALID_OPERATION: error = "INVALID_OPERATION";
-        break;
-      case GL_OUT_OF_MEMORY: error = "OUT_OF_MEMORY";
-        break;
-      case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION";
-        break;
-      default:error = "UNKNOWN";
-    }
-    LOG(ERROR) << error << " | " << file << " (" << line << ")" << std::endl;
-  }
-  return errorCode;
-}
-#define glCheckError() glCheckError_(__FILE__, __LINE__)
 
 int main() {
   StdoutLogSink log_sink{};
@@ -69,7 +51,7 @@ int main() {
 
   Window window{static_cast<SDL_WindowFlags>(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI)};
 
-  std::vector<Mesh> meshes = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "nanosuit" / "nanosuit.obj");
+  std::vector<Mesh> meshes = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "sponza.obj");
 
   std::unique_ptr<Renderer> renderer = std::make_unique<chove::rendering::opengl::Renderer>(&window);
 

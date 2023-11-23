@@ -8,5 +8,5 @@ in vec3 fragNormal;
 in vec2 fragTexCoord;
 
 void main() {
-    outColor = texture(diffuseTexture, fragTexCoord);
+    outColor = vec4(texture(diffuseTexture, fragTexCoord).xyz, 1.0f);
 }

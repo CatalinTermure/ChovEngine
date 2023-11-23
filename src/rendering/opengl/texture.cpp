@@ -30,7 +30,11 @@ Texture::Texture(const std::filesystem::path &path, std::string name) : name_(st
     return;
   }
 
-  int bytes_per_row = width * channels;
+  if ((width & (width - 1)) != 0 || (height & (height - 1)) != 0) {
+    LOG(ERROR) << "Texture " << path << " is not a power of two";
+  }
+
+  int bytes_per_row = width * 4;
   std::vector<char> buffer(bytes_per_row);
   int half_height = height / 2;
   for (int row = 0; row < half_height; ++row) {
@@ -41,26 +45,10 @@ Texture::Texture(const std::filesystem::path &path, std::string name) : name_(st
     memcpy(row1, buffer.data(), bytes_per_row);
   }
 
-  constexpr GLint internal_format = GL_SRGB;
-  GLenum format;
-  switch (channels) {
-    case 1:format = GL_RED;
-      break;
-    case 2:format = GL_RG;
-      break;
-    case 3:format = GL_RGB;
-      break;
-    case 4:format = GL_RGBA;
-      break;
-    default:LOG(ERROR) << "Unsupported number of channels";
-      format = GL_RGB;
-      break;
-  }
-
   glGenTextures(1, &texture_);
   glBindTexture(GL_TEXTURE_2D, texture_);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, image_data);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
   glGenerateMipmap(GL_TEXTURE_2D);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

@@ -1,0 +1,796 @@
+I1123 21:33:52.508896   14804 mesh.cpp:47] TinyObjReader: successfully parsed "E:\\Dev\\Scoala\\GAC\\LabsExtra\\models\\sponza.obj"
+I1123 21:33:52.510859   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.540374   14804 mesh.cpp:112] Shape has 2306 vertices and 13824 indices
+I1123 21:33:52.572019   14804 mesh.cpp:112] Shape has 2434 vertices and 14592 indices
+I1123 21:33:52.572731   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.575928   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:52.576736   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.577552   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.606954   14804 mesh.cpp:112] Shape has 2434 vertices and 14592 indices
+I1123 21:33:52.635148   14804 mesh.cpp:112] Shape has 2306 vertices and 13824 indices
+I1123 21:33:52.665683   14804 mesh.cpp:112] Shape has 2434 vertices and 14592 indices
+I1123 21:33:52.695486   14804 mesh.cpp:112] Shape has 2434 vertices and 14592 indices
+I1123 21:33:52.723608   14804 mesh.cpp:112] Shape has 2306 vertices and 13824 indices
+I1123 21:33:52.755794   14804 mesh.cpp:112] Shape has 2434 vertices and 14592 indices
+I1123 21:33:52.784307   14804 mesh.cpp:112] Shape has 2306 vertices and 13824 indices
+I1123 21:33:52.814030   14804 mesh.cpp:112] Shape has 2434 vertices and 14592 indices
+I1123 21:33:52.817256   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:52.817537   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.820523   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:52.822600   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:52.823112   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.824933   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:52.825192   14804 mesh.cpp:112] Shape has 7 vertices and 15 indices
+I1123 21:33:52.825742   14804 mesh.cpp:112] Shape has 86 vertices and 150 indices
+I1123 21:33:52.826429   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.827109   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.827861   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.828154   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.829424   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:52.831572   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:52.831836   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.832232   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.834621   14804 mesh.cpp:112] Shape has 252 vertices and 1020 indices
+I1123 21:33:52.837031   14804 mesh.cpp:112] Shape has 254 vertices and 1020 indices
+I1123 21:33:52.837699   14804 mesh.cpp:112] Shape has 90 vertices and 150 indices
+I1123 21:33:52.839965   14804 mesh.cpp:112] Shape has 308 vertices and 834 indices
+I1123 21:33:52.840726   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.841821   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.842559   14804 mesh.cpp:112] Shape has 80 vertices and 246 indices
+I1123 21:33:52.842976   14804 mesh.cpp:112] Shape has 48 vertices and 72 indices
+I1123 21:33:52.844266   14804 mesh.cpp:112] Shape has 130 vertices and 480 indices
+I1123 21:33:52.846605   14804 mesh.cpp:112] Shape has 308 vertices and 834 indices
+I1123 21:33:52.847384   14804 mesh.cpp:112] Shape has 80 vertices and 246 indices
+I1123 21:33:52.847747   14804 mesh.cpp:112] Shape has 48 vertices and 72 indices
+I1123 21:33:52.848458   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.849329   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.850100   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.850854   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.851518   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.852306   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.862882   14804 mesh.cpp:112] Shape has 896 vertices and 4923 indices
+I1123 21:33:52.863195   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:52.863316   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:52.870863   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:52.872830   14804 mesh.cpp:112] Shape has 139 vertices and 810 indices
+I1123 21:33:52.873584   14804 mesh.cpp:112] Shape has 83 vertices and 222 indices
+I1123 21:33:52.881278   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:52.881537   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:52.881650   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:52.882501   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.883244   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:52.883695   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.885782   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:52.886293   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.886766   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.887220   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.887460   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.895032   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:52.895393   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.895968   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.896261   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.896488   14804 mesh.cpp:112] Shape has 25 vertices and 48 indices
+I1123 21:33:52.918672   14804 mesh.cpp:112] Shape has 1232 vertices and 5580 indices
+I1123 21:33:52.921881   14804 mesh.cpp:112] Shape has 254 vertices and 1020 indices
+I1123 21:33:52.924970   14804 mesh.cpp:112] Shape has 254 vertices and 1020 indices
+I1123 21:33:52.925284   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.925713   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.926184   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.926441   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.926833   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.927139   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.927607   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.927917   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.928453   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.928771   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.936501   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:52.938109   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:52.940539   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:52.941001   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.941379   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:52.941770   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:52.942069   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:52.943145   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:52.944241   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:52.945404   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:52.946463   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:52.946874   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:52.947367   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:52.947834   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:52.948923   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:52.981019   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:52.981747   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:52.982305   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.014589   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:53.015123   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.015441   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.015870   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.016083   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.016486   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.016696   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.017092   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.017536   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.019520   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.020809   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.028277   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.031116   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.033803   14804 mesh.cpp:112] Shape has 297 vertices and 1188 indices
+I1123 21:33:53.035647   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:53.037466   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:53.040143   14804 mesh.cpp:112] Shape has 297 vertices and 1188 indices
+I1123 21:33:53.042194   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:53.043966   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:53.046717   14804 mesh.cpp:112] Shape has 297 vertices and 1188 indices
+I1123 21:33:53.048558   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:53.051850   14804 mesh.cpp:112] Shape has 315 vertices and 1644 indices
+I1123 21:33:53.055201   14804 mesh.cpp:112] Shape has 315 vertices and 1644 indices
+I1123 21:33:53.058162   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.061142   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.061430   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.068464   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.069064   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.069364   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.069837   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.071421   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:53.072722   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.074365   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:53.075934   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:53.076268   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.079079   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.079884   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.081409   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:53.084207   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.087011   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.090457   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.123674   14804 mesh.cpp:112] Shape has 3578 vertices and 14466 indices
+I1123 21:33:53.125413   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:53.126943   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:53.130561   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.145044   14804 mesh.cpp:112] Shape has 1577 vertices and 6612 indices
+I1123 21:33:53.148114   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.149728   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:53.150180   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.150553   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.151264   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.153456   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.154960   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.162758   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.163088   14804 mesh.cpp:112] Shape has 14 vertices and 24 indices
+I1123 21:33:53.163966   14804 mesh.cpp:112] Shape has 108 vertices and 300 indices
+I1123 21:33:53.165920   14804 mesh.cpp:112] Shape has 160 vertices and 840 indices
+I1123 21:33:53.190318   14804 mesh.cpp:112] Shape has 2826 vertices and 10920 indices
+I1123 21:33:53.203809   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:53.207933   14804 mesh.cpp:112] Shape has 533 vertices and 1404 indices
+I1123 21:33:53.216590   14804 mesh.cpp:112] Shape has 747 vertices and 4086 indices
+I1123 21:33:53.234315   14804 mesh.cpp:112] Shape has 1844 vertices and 6996 indices
+I1123 21:33:53.235868   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.236146   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.236688   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.237988   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.240037   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.240352   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.248264   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.248803   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.249138   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.249676   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.249925   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.250349   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.250566   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.250965   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.251203   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.251403   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.259300   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.260763   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.263059   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.263331   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.263848   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.284679   14804 mesh.cpp:112] Shape has 1950 vertices and 8688 indices
+I1123 21:33:53.286237   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.287776   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.289165   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.290579   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.292257   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.293921   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.295588   14804 mesh.cpp:112] Shape has 151 vertices and 546 indices
+I1123 21:33:53.312969   14804 mesh.cpp:112] Shape has 1844 vertices and 6996 indices
+I1123 21:33:53.313338   14804 mesh.cpp:112] Shape has 16 vertices and 48 indices
+I1123 21:33:53.313774   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.314012   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.314514   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.314777   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.315232   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.317389   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.318749   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.318990   14804 mesh.cpp:112] Shape has 16 vertices and 54 indices
+I1123 21:33:53.319617   14804 mesh.cpp:112] Shape has 96 vertices and 192 indices
+I1123 21:33:53.321383   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:53.321727   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.322498   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.322678   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.323289   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:53.323695   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:53.324113   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:53.324571   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:53.324946   14804 mesh.cpp:112] Shape has 52 vertices and 96 indices
+I1123 21:33:53.326854   14804 mesh.cpp:112] Shape has 160 vertices and 840 indices
+I1123 21:33:53.327335   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:53.327841   14804 mesh.cpp:112] Shape has 30 vertices and 120 indices
+I1123 21:33:53.328165   14804 mesh.cpp:112] Shape has 20 vertices and 54 indices
+I1123 21:33:53.328948   14804 mesh.cpp:112] Shape has 34 vertices and 108 indices
+I1123 21:33:53.329202   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.329312   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.337529   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.338063   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.338199   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.338329   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.338996   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.346736   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:53.354820   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:53.355022   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.356811   14804 mesh.cpp:112] Shape has 139 vertices and 810 indices
+I1123 21:33:53.357499   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.357623   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.361290   14804 mesh.cpp:112] Shape has 320 vertices and 1674 indices
+I1123 21:33:53.371942   14804 mesh.cpp:112] Shape has 896 vertices and 4923 indices
+I1123 21:33:53.372915   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.374577   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:53.375444   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.377538   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.378302   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.381533   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.381852   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.382096   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.382561   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.382987   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.383403   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.383613   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.384371   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.385168   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.393478   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.394827   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.396398   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:53.399593   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.403132   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.404234   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.405098   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.405418   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.406247   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.407178   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.408296   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.409179   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.409996   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.410447   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.412583   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.413099   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.413429   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.414478   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.415310   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:53.417880   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.425939   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.426997   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:53.428157   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:53.429634   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:53.431258   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:53.432439   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:53.433754   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:53.434828   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:53.435953   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:53.436994   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:53.438228   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:53.446590   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:53.447600   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.483556   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:53.484055   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.520704   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:53.556724   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:53.593412   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:53.594109   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.627667   14804 mesh.cpp:112] Shape has 2313 vertices and 9924 indices
+I1123 21:33:53.657090   14804 mesh.cpp:112] Shape has 3128 vertices and 13266 indices
+I1123 21:33:53.658719   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.660875   14804 mesh.cpp:112] Shape has 210 vertices and 900 indices
+I1123 21:33:53.694327   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:53.728561   14804 mesh.cpp:112] Shape has 2818 vertices and 16512 indices
+I1123 21:33:53.738611   14804 mesh.cpp:112] Shape has 864 vertices and 4563 indices
+I1123 21:33:53.747510   14804 mesh.cpp:112] Shape has 747 vertices and 4086 indices
+I1123 21:33:53.762740   14804 mesh.cpp:112] Shape has 1327 vertices and 6888 indices
+I1123 21:33:53.777601   14804 mesh.cpp:112] Shape has 1327 vertices and 6888 indices
+I1123 21:33:53.792660   14804 mesh.cpp:112] Shape has 1327 vertices and 6888 indices
+I1123 21:33:53.807771   14804 mesh.cpp:112] Shape has 1327 vertices and 6888 indices
+I1123 21:33:53.823003   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:53.826830   14804 mesh.cpp:112] Shape has 450 vertices and 1200 indices
+I1123 21:33:53.840970   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:53.844601   14804 mesh.cpp:112] Shape has 450 vertices and 1200 indices
+I1123 21:33:53.858912   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:53.862719   14804 mesh.cpp:112] Shape has 450 vertices and 1200 indices
+I1123 21:33:53.866553   14804 mesh.cpp:112] Shape has 320 vertices and 1674 indices
+I1123 21:33:53.866952   14804 mesh.cpp:112] Shape has 24 vertices and 84 indices
+I1123 21:33:53.876305   14804 mesh.cpp:112] Shape has 864 vertices and 4563 indices
+I1123 21:33:53.885103   14804 mesh.cpp:112] Shape has 747 vertices and 4086 indices
+I1123 21:33:53.898560   14804 mesh.cpp:112] Shape has 1232 vertices and 5580 indices
+I1123 21:33:53.901724   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.915916   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:53.919881   14804 mesh.cpp:112] Shape has 533 vertices and 1404 indices
+I1123 21:33:53.920432   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.923778   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.924290   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.925977   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:53.926430   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.926662   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.927061   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:53.927373   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:53.927571   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.935174   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.938750   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.941840   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:53.943189   14804 mesh.cpp:112] Shape has 133 vertices and 498 indices
+I1123 21:33:53.951368   14804 mesh.cpp:112] Shape has 697 vertices and 3660 indices
+I1123 21:33:53.951581   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.953368   14804 mesh.cpp:112] Shape has 139 vertices and 810 indices
+I1123 21:33:53.968044   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:53.971938   14804 mesh.cpp:112] Shape has 533 vertices and 1404 indices
+I1123 21:33:53.985720   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:53.989861   14804 mesh.cpp:112] Shape has 533 vertices and 1404 indices
+I1123 21:33:53.990166   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:53.999811   14804 mesh.cpp:112] Shape has 896 vertices and 4923 indices
+I1123 21:33:54.000097   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:54.008186   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:54.015760   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:54.030724   14804 mesh.cpp:112] Shape has 1198 vertices and 6633 indices
+I1123 21:33:54.034301   14804 mesh.cpp:112] Shape has 450 vertices and 1200 indices
+I1123 21:33:54.042418   14804 mesh.cpp:112] Shape has 624 vertices and 3732 indices
+I1123 21:33:54.046274   14804 mesh.cpp:112] Shape has 320 vertices and 1674 indices
+I1123 21:33:54.057729   14804 mesh.cpp:112] Shape has 896 vertices and 4923 indices
+I1123 21:33:54.060956   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.064198   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.067294   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.069163   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:54.071360   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:54.074897   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.078201   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.081374   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.084755   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.086537   14804 mesh.cpp:112] Shape has 195 vertices and 576 indices
+I1123 21:33:54.088700   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:54.090760   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:54.093777   14804 mesh.cpp:112] Shape has 297 vertices and 1188 indices
+I1123 21:33:54.095771   14804 mesh.cpp:112] Shape has 212 vertices and 786 indices
+I1123 21:33:54.097643   14804 mesh.cpp:112] Shape has 206 vertices and 612 indices
+I1123 21:33:54.099290   14804 mesh.cpp:112] Shape has 209 vertices and 612 indices
+I1123 21:33:54.101217   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:54.102774   14804 mesh.cpp:112] Shape has 134 vertices and 444 indices
+I1123 21:33:54.104221   14804 mesh.cpp:112] Shape has 96 vertices and 480 indices
+I1123 21:33:54.105358   14804 mesh.cpp:112] Shape has 114 vertices and 336 indices
+I1123 21:33:54.105637   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:54.106379   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:54.134295   14804 mesh.cpp:112] Shape has 2922 vertices and 11406 indices
+I1123 21:33:54.157305   14804 mesh.cpp:112] Shape has 2313 vertices and 9924 indices
+I1123 21:33:54.157915   14804 mesh.cpp:112] Shape has 50 vertices and 132 indices
+I1123 21:33:54.158219   14804 mesh.cpp:112] Shape has 22 vertices and 54 indices
+I1123 21:33:54.160055   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:54.202692   14804 mesh.cpp:112] Shape has 4428 vertices and 17790 indices
+I1123 21:33:54.204915   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:54.207945   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.209904   14804 mesh.cpp:112] Shape has 181 vertices and 678 indices
+I1123 21:33:54.213036   14804 mesh.cpp:112] Shape has 241 vertices and 1368 indices
+I1123 21:33:54.213436   14804 mesh.cpp:112] Shape has 12 vertices and 30 indices
+I1123 21:33:54.217072   14804 mesh.cpp:112] Shape has 248 vertices and 1488 indices
+I1123 21:33:54.314802   14804 mesh.cpp:112] Shape has 10482 vertices and 41964 indices
+I1123 21:33:54.315320   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:54.316084   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.316298   14804 mesh.cpp:112] Shape has 4 vertices and 6 indices
+I1123 21:33:54.318179   14804 mesh.cpp:112] Shape has 139 vertices and 810 indices
+I1123 21:33:54.319178   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.320008   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.320807   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.322114   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.322923   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.323688   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.324449   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.325219   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.326105   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.327300   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.328072   14804 mesh.cpp:112] Shape has 90 vertices and 264 indices
+I1123 21:33:54.331973   14804 mesh.cpp:112] Shape has 320 vertices and 1674 indices
+I1123 21:33:54.345234   14804 renderer.cpp:137] Starting setup scene
+I1123 21:33:54.345572   14804 renderer.cpp:139] Setting up shaders
+I1123 21:33:54.345778   14804 shader.cpp:47] Reading vertex shader from "shaders/render_shader.vert"
+I1123 21:33:54.349283   14804 shader.cpp:54] Compiled vertex shader
+I1123 21:33:54.349432   14804 shader.cpp:56] Reading vertex shader from "shaders/render_shader.frag"
+I1123 21:33:54.349674   14804 shader.cpp:63] Compiled fragment shader
+I1123 21:33:54.350042   14804 renderer.cpp:142] Setting up uniforms
+I1123 21:33:54.350167   14804 renderer.cpp:148] Setting up object 0 of 393 total objects
+I1123 21:33:54.359931   14804 renderer.cpp:148] Setting up object 1 of 393 total objects
+I1123 21:33:54.398058   14804 renderer.cpp:148] Setting up object 2 of 393 total objects
+I1123 21:33:54.443801   14804 renderer.cpp:148] Setting up object 3 of 393 total objects
+I1123 21:33:54.467275   14804 renderer.cpp:148] Setting up object 4 of 393 total objects
+I1123 21:33:54.479097   14804 renderer.cpp:148] Setting up object 5 of 393 total objects
+I1123 21:33:54.490699   14804 renderer.cpp:148] Setting up object 6 of 393 total objects
+I1123 21:33:54.502970   14804 renderer.cpp:148] Setting up object 7 of 393 total objects
+I1123 21:33:54.539080   14804 renderer.cpp:148] Setting up object 8 of 393 total objects
+I1123 21:33:54.586513   14804 renderer.cpp:148] Setting up object 9 of 393 total objects
+I1123 21:33:54.634460   14804 renderer.cpp:148] Setting up object 10 of 393 total objects
+I1123 21:33:54.683896   14804 renderer.cpp:148] Setting up object 11 of 393 total objects
+I1123 21:33:54.732435   14804 renderer.cpp:148] Setting up object 12 of 393 total objects
+I1123 21:33:54.778004   14804 renderer.cpp:148] Setting up object 13 of 393 total objects
+I1123 21:33:54.825068   14804 renderer.cpp:148] Setting up object 14 of 393 total objects
+I1123 21:33:54.870830   14804 renderer.cpp:148] Setting up object 15 of 393 total objects
+I1123 21:33:54.894582   14804 renderer.cpp:148] Setting up object 16 of 393 total objects
+I1123 21:33:54.905745   14804 renderer.cpp:148] Setting up object 17 of 393 total objects
+I1123 21:33:54.918595   14804 renderer.cpp:148] Setting up object 18 of 393 total objects
+I1123 21:33:54.930744   14804 renderer.cpp:148] Setting up object 19 of 393 total objects
+I1123 21:33:54.943320   14804 renderer.cpp:148] Setting up object 20 of 393 total objects
+I1123 21:33:54.956114   14804 renderer.cpp:148] Setting up object 21 of 393 total objects
+I1123 21:33:54.969309   14804 renderer.cpp:148] Setting up object 22 of 393 total objects
+I1123 21:33:54.980856   14804 renderer.cpp:148] Setting up object 23 of 393 total objects
+I1123 21:33:54.993434   14804 renderer.cpp:148] Setting up object 24 of 393 total objects
+I1123 21:33:55.006336   14804 renderer.cpp:148] Setting up object 25 of 393 total objects
+I1123 21:33:55.022981   14804 renderer.cpp:148] Setting up object 26 of 393 total objects
+I1123 21:33:55.038682   14804 renderer.cpp:148] Setting up object 27 of 393 total objects
+I1123 21:33:55.052632   14804 renderer.cpp:148] Setting up object 28 of 393 total objects
+I1123 21:33:55.065941   14804 renderer.cpp:148] Setting up object 29 of 393 total objects
+I1123 21:33:55.077547   14804 renderer.cpp:148] Setting up object 30 of 393 total objects
+I1123 21:33:55.089149   14804 renderer.cpp:148] Setting up object 31 of 393 total objects
+I1123 21:33:55.101848   14804 renderer.cpp:148] Setting up object 32 of 393 total objects
+I1123 21:33:55.113840   14804 renderer.cpp:148] Setting up object 33 of 393 total objects
+I1123 21:33:55.126342   14804 renderer.cpp:148] Setting up object 34 of 393 total objects
+I1123 21:33:55.137883   14804 renderer.cpp:148] Setting up object 35 of 393 total objects
+I1123 21:33:55.149890   14804 renderer.cpp:148] Setting up object 36 of 393 total objects
+I1123 21:33:55.160902   14804 renderer.cpp:148] Setting up object 37 of 393 total objects
+I1123 21:33:55.172709   14804 renderer.cpp:148] Setting up object 38 of 393 total objects
+I1123 21:33:55.184731   14804 renderer.cpp:148] Setting up object 39 of 393 total objects
+I1123 21:33:55.196814   14804 renderer.cpp:148] Setting up object 40 of 393 total objects
+I1123 21:33:55.208519   14804 renderer.cpp:148] Setting up object 41 of 393 total objects
+I1123 21:33:55.220750   14804 renderer.cpp:148] Setting up object 42 of 393 total objects
+I1123 21:33:55.232942   14804 renderer.cpp:148] Setting up object 43 of 393 total objects
+I1123 21:33:55.245166   14804 renderer.cpp:148] Setting up object 44 of 393 total objects
+I1123 21:33:55.256331   14804 renderer.cpp:148] Setting up object 45 of 393 total objects
+I1123 21:33:55.268748   14804 renderer.cpp:148] Setting up object 46 of 393 total objects
+I1123 21:33:55.279855   14804 renderer.cpp:148] Setting up object 47 of 393 total objects
+I1123 21:33:55.292516   14804 renderer.cpp:148] Setting up object 48 of 393 total objects
+I1123 21:33:55.303971   14804 renderer.cpp:148] Setting up object 49 of 393 total objects
+I1123 21:33:55.315522   14804 renderer.cpp:148] Setting up object 50 of 393 total objects
+I1123 21:33:55.321597   14804 renderer.cpp:148] Setting up object 51 of 393 total objects
+I1123 21:33:55.325784   14804 renderer.cpp:148] Setting up object 52 of 393 total objects
+I1123 21:33:55.334643   14804 renderer.cpp:148] Setting up object 53 of 393 total objects
+I1123 21:33:55.345719   14804 renderer.cpp:148] Setting up object 54 of 393 total objects
+I1123 21:33:55.357958   14804 renderer.cpp:148] Setting up object 55 of 393 total objects
+I1123 21:33:55.368916   14804 renderer.cpp:148] Setting up object 56 of 393 total objects
+I1123 21:33:55.375932   14804 renderer.cpp:148] Setting up object 57 of 393 total objects
+I1123 21:33:55.379339   14804 renderer.cpp:148] Setting up object 58 of 393 total objects
+I1123 21:33:55.388336   14804 renderer.cpp:148] Setting up object 59 of 393 total objects
+I1123 21:33:55.401475   14804 renderer.cpp:148] Setting up object 60 of 393 total objects
+I1123 21:33:55.412981   14804 renderer.cpp:148] Setting up object 61 of 393 total objects
+I1123 21:33:55.425394   14804 renderer.cpp:148] Setting up object 62 of 393 total objects
+I1123 21:33:55.437357   14804 renderer.cpp:148] Setting up object 63 of 393 total objects
+I1123 21:33:55.449672   14804 renderer.cpp:148] Setting up object 64 of 393 total objects
+I1123 21:33:55.464961   14804 renderer.cpp:148] Setting up object 65 of 393 total objects
+I1123 21:33:55.477588   14804 renderer.cpp:148] Setting up object 66 of 393 total objects
+I1123 21:33:55.489538   14804 renderer.cpp:148] Setting up object 67 of 393 total objects
+I1123 21:33:55.502409   14804 renderer.cpp:148] Setting up object 68 of 393 total objects
+I1123 21:33:55.514628   14804 renderer.cpp:148] Setting up object 69 of 393 total objects
+I1123 21:33:55.527432   14804 renderer.cpp:148] Setting up object 70 of 393 total objects
+I1123 21:33:55.539410   14804 renderer.cpp:148] Setting up object 71 of 393 total objects
+I1123 21:33:55.552198   14804 renderer.cpp:148] Setting up object 72 of 393 total objects
+I1123 21:33:55.563668   14804 renderer.cpp:148] Setting up object 73 of 393 total objects
+I1123 21:33:55.575469   14804 renderer.cpp:148] Setting up object 74 of 393 total objects
+I1123 21:33:55.586371   14804 renderer.cpp:148] Setting up object 75 of 393 total objects
+I1123 21:33:55.598303   14804 renderer.cpp:148] Setting up object 76 of 393 total objects
+I1123 21:33:55.610199   14804 renderer.cpp:148] Setting up object 77 of 393 total objects
+I1123 21:33:55.622550   14804 renderer.cpp:148] Setting up object 78 of 393 total objects
+I1123 21:33:55.634287   14804 renderer.cpp:148] Setting up object 79 of 393 total objects
+I1123 21:33:55.646208   14804 renderer.cpp:148] Setting up object 80 of 393 total objects
+I1123 21:33:55.657411   14804 renderer.cpp:148] Setting up object 81 of 393 total objects
+I1123 21:33:55.669198   14804 renderer.cpp:148] Setting up object 82 of 393 total objects
+I1123 21:33:55.681429   14804 renderer.cpp:148] Setting up object 83 of 393 total objects
+I1123 21:33:55.695061   14804 renderer.cpp:148] Setting up object 84 of 393 total objects
+I1123 21:33:55.706495   14804 renderer.cpp:148] Setting up object 85 of 393 total objects
+I1123 21:33:55.719246   14804 renderer.cpp:148] Setting up object 86 of 393 total objects
+I1123 21:33:55.731541   14804 renderer.cpp:148] Setting up object 87 of 393 total objects
+I1123 21:33:55.744116   14804 renderer.cpp:148] Setting up object 88 of 393 total objects
+I1123 21:33:55.756327   14804 renderer.cpp:148] Setting up object 89 of 393 total objects
+I1123 21:33:55.768901   14804 renderer.cpp:148] Setting up object 90 of 393 total objects
+I1123 21:33:55.780526   14804 renderer.cpp:148] Setting up object 91 of 393 total objects
+I1123 21:33:55.793498   14804 renderer.cpp:148] Setting up object 92 of 393 total objects
+I1123 21:33:55.805580   14804 renderer.cpp:148] Setting up object 93 of 393 total objects
+I1123 21:33:55.818158   14804 renderer.cpp:148] Setting up object 94 of 393 total objects
+I1123 21:33:55.830275   14804 renderer.cpp:148] Setting up object 95 of 393 total objects
+I1123 21:33:55.842086   14804 renderer.cpp:148] Setting up object 96 of 393 total objects
+I1123 21:33:55.852970   14804 renderer.cpp:148] Setting up object 97 of 393 total objects
+I1123 21:33:55.865752   14804 renderer.cpp:148] Setting up object 98 of 393 total objects
+I1123 21:33:55.877372   14804 renderer.cpp:148] Setting up object 99 of 393 total objects
+I1123 21:33:55.890346   14804 renderer.cpp:148] Setting up object 100 of 393 total objects
+I1123 21:33:55.902384   14804 renderer.cpp:148] Setting up object 101 of 393 total objects
+I1123 21:33:55.915475   14804 renderer.cpp:148] Setting up object 102 of 393 total objects
+I1123 21:33:55.928283   14804 renderer.cpp:148] Setting up object 103 of 393 total objects
+I1123 21:33:55.940899   14804 renderer.cpp:148] Setting up object 104 of 393 total objects
+I1123 21:33:55.952397   14804 renderer.cpp:148] Setting up object 105 of 393 total objects
+I1123 21:33:55.965331   14804 renderer.cpp:148] Setting up object 106 of 393 total objects
+I1123 21:33:55.978120   14804 renderer.cpp:148] Setting up object 107 of 393 total objects
+I1123 21:33:55.990699   14804 renderer.cpp:148] Setting up object 108 of 393 total objects
+I1123 21:33:56.008617   14804 renderer.cpp:148] Setting up object 109 of 393 total objects
+I1123 21:33:56.021008   14804 renderer.cpp:148] Setting up object 110 of 393 total objects
+I1123 21:33:56.031929   14804 renderer.cpp:148] Setting up object 111 of 393 total objects
+I1123 21:33:56.044075   14804 renderer.cpp:148] Setting up object 112 of 393 total objects
+I1123 21:33:56.055643   14804 renderer.cpp:148] Setting up object 113 of 393 total objects
+I1123 21:33:56.067873   14804 renderer.cpp:148] Setting up object 114 of 393 total objects
+I1123 21:33:56.080135   14804 renderer.cpp:148] Setting up object 115 of 393 total objects
+I1123 21:33:56.092110   14804 renderer.cpp:148] Setting up object 116 of 393 total objects
+I1123 21:33:56.103916   14804 renderer.cpp:148] Setting up object 117 of 393 total objects
+I1123 21:33:56.116402   14804 renderer.cpp:148] Setting up object 118 of 393 total objects
+I1123 21:33:56.127727   14804 renderer.cpp:148] Setting up object 119 of 393 total objects
+I1123 21:33:56.141938   14804 renderer.cpp:148] Setting up object 120 of 393 total objects
+I1123 21:33:56.154745   14804 renderer.cpp:148] Setting up object 121 of 393 total objects
+I1123 21:33:56.167252   14804 renderer.cpp:148] Setting up object 122 of 393 total objects
+I1123 21:33:56.179188   14804 renderer.cpp:148] Setting up object 123 of 393 total objects
+I1123 21:33:56.191467   14804 renderer.cpp:148] Setting up object 124 of 393 total objects
+I1123 21:33:56.203110   14804 renderer.cpp:148] Setting up object 125 of 393 total objects
+I1123 21:33:56.216183   14804 renderer.cpp:148] Setting up object 126 of 393 total objects
+I1123 21:33:56.232998   14804 renderer.cpp:148] Setting up object 127 of 393 total objects
+I1123 21:33:56.244892   14804 renderer.cpp:148] Setting up object 128 of 393 total objects
+I1123 21:33:56.257011   14804 renderer.cpp:148] Setting up object 129 of 393 total objects
+I1123 21:33:56.269473   14804 renderer.cpp:148] Setting up object 130 of 393 total objects
+I1123 21:33:56.281402   14804 renderer.cpp:148] Setting up object 131 of 393 total objects
+I1123 21:33:56.294145   14804 renderer.cpp:148] Setting up object 132 of 393 total objects
+I1123 21:33:56.305976   14804 renderer.cpp:148] Setting up object 133 of 393 total objects
+I1123 21:33:56.318105   14804 renderer.cpp:148] Setting up object 134 of 393 total objects
+I1123 21:33:56.329901   14804 renderer.cpp:148] Setting up object 135 of 393 total objects
+I1123 21:33:56.342531   14804 renderer.cpp:148] Setting up object 136 of 393 total objects
+I1123 21:33:56.354636   14804 renderer.cpp:148] Setting up object 137 of 393 total objects
+I1123 21:33:56.367316   14804 renderer.cpp:148] Setting up object 138 of 393 total objects
+I1123 21:33:56.379925   14804 renderer.cpp:148] Setting up object 139 of 393 total objects
+I1123 21:33:56.393016   14804 renderer.cpp:148] Setting up object 140 of 393 total objects
+I1123 21:33:56.405197   14804 renderer.cpp:148] Setting up object 141 of 393 total objects
+I1123 21:33:56.417204   14804 renderer.cpp:148] Setting up object 142 of 393 total objects
+I1123 21:33:56.428580   14804 renderer.cpp:148] Setting up object 143 of 393 total objects
+I1123 21:33:56.435153   14804 renderer.cpp:148] Setting up object 144 of 393 total objects
+I1123 21:33:56.444628   14804 renderer.cpp:148] Setting up object 145 of 393 total objects
+I1123 21:33:56.456194   14804 renderer.cpp:148] Setting up object 146 of 393 total objects
+I1123 21:33:56.467975   14804 renderer.cpp:148] Setting up object 147 of 393 total objects
+I1123 21:33:56.473864   14804 renderer.cpp:148] Setting up object 148 of 393 total objects
+I1123 21:33:56.484029   14804 renderer.cpp:148] Setting up object 149 of 393 total objects
+I1123 21:33:56.495107   14804 renderer.cpp:148] Setting up object 150 of 393 total objects
+I1123 21:33:56.507652   14804 renderer.cpp:148] Setting up object 151 of 393 total objects
+I1123 21:33:56.519639   14804 renderer.cpp:148] Setting up object 152 of 393 total objects
+I1123 21:33:56.532541   14804 renderer.cpp:148] Setting up object 153 of 393 total objects
+I1123 21:33:56.544554   14804 renderer.cpp:148] Setting up object 154 of 393 total objects
+I1123 21:33:56.557324   14804 renderer.cpp:148] Setting up object 155 of 393 total objects
+I1123 21:33:56.569116   14804 renderer.cpp:148] Setting up object 156 of 393 total objects
+I1123 21:33:56.581731   14804 renderer.cpp:148] Setting up object 157 of 393 total objects
+I1123 21:33:56.593895   14804 renderer.cpp:148] Setting up object 158 of 393 total objects
+I1123 21:33:56.605608   14804 renderer.cpp:148] Setting up object 159 of 393 total objects
+I1123 21:33:56.611042   14804 renderer.cpp:148] Setting up object 160 of 393 total objects
+I1123 21:33:56.620359   14804 renderer.cpp:148] Setting up object 161 of 393 total objects
+I1123 21:33:56.632999   14804 renderer.cpp:148] Setting up object 162 of 393 total objects
+I1123 21:33:56.644509   14804 renderer.cpp:148] Setting up object 163 of 393 total objects
+I1123 21:33:56.657255   14804 renderer.cpp:148] Setting up object 164 of 393 total objects
+I1123 21:33:56.668970   14804 renderer.cpp:148] Setting up object 165 of 393 total objects
+I1123 21:33:56.681629   14804 renderer.cpp:148] Setting up object 166 of 393 total objects
+I1123 21:33:56.693092   14804 renderer.cpp:148] Setting up object 167 of 393 total objects
+I1123 21:33:56.705017   14804 renderer.cpp:148] Setting up object 168 of 393 total objects
+I1123 21:33:56.715963   14804 renderer.cpp:148] Setting up object 169 of 393 total objects
+I1123 21:33:56.728126   14804 renderer.cpp:148] Setting up object 170 of 393 total objects
+I1123 21:33:56.739964   14804 renderer.cpp:148] Setting up object 171 of 393 total objects
+I1123 21:33:56.752168   14804 renderer.cpp:148] Setting up object 172 of 393 total objects
+I1123 21:33:56.764255   14804 renderer.cpp:148] Setting up object 173 of 393 total objects
+I1123 21:33:56.776142   14804 renderer.cpp:148] Setting up object 174 of 393 total objects
+I1123 21:33:56.787323   14804 renderer.cpp:148] Setting up object 175 of 393 total objects
+I1123 21:33:56.800617   14804 renderer.cpp:148] Setting up object 176 of 393 total objects
+I1123 21:33:56.812202   14804 renderer.cpp:148] Setting up object 177 of 393 total objects
+I1123 21:33:56.824820   14804 renderer.cpp:148] Setting up object 178 of 393 total objects
+I1123 21:33:56.836868   14804 renderer.cpp:148] Setting up object 179 of 393 total objects
+I1123 21:33:56.849746   14804 renderer.cpp:148] Setting up object 180 of 393 total objects
+I1123 21:33:56.861563   14804 renderer.cpp:148] Setting up object 181 of 393 total objects
+I1123 21:33:56.874281   14804 renderer.cpp:148] Setting up object 182 of 393 total objects
+I1123 21:33:56.891043   14804 renderer.cpp:148] Setting up object 183 of 393 total objects
+I1123 21:33:56.903879   14804 renderer.cpp:148] Setting up object 184 of 393 total objects
+I1123 21:33:56.916200   14804 renderer.cpp:148] Setting up object 185 of 393 total objects
+I1123 21:33:56.928079   14804 renderer.cpp:148] Setting up object 186 of 393 total objects
+I1123 21:33:56.939707   14804 renderer.cpp:148] Setting up object 187 of 393 total objects
+I1123 21:33:56.952591   14804 renderer.cpp:148] Setting up object 188 of 393 total objects
+I1123 21:33:56.964457   14804 renderer.cpp:148] Setting up object 189 of 393 total objects
+I1123 21:33:56.976062   14804 renderer.cpp:148] Setting up object 190 of 393 total objects
+I1123 21:33:56.987024   14804 renderer.cpp:148] Setting up object 191 of 393 total objects
+I1123 21:33:57.001012   14804 renderer.cpp:148] Setting up object 192 of 393 total objects
+I1123 21:33:57.012852   14804 renderer.cpp:148] Setting up object 193 of 393 total objects
+I1123 21:33:57.024759   14804 renderer.cpp:148] Setting up object 194 of 393 total objects
+I1123 21:33:57.037274   14804 renderer.cpp:148] Setting up object 195 of 393 total objects
+I1123 21:33:57.049884   14804 renderer.cpp:148] Setting up object 196 of 393 total objects
+I1123 21:33:57.061291   14804 renderer.cpp:148] Setting up object 197 of 393 total objects
+I1123 21:33:57.073436   14804 renderer.cpp:148] Setting up object 198 of 393 total objects
+I1123 21:33:57.085319   14804 renderer.cpp:148] Setting up object 199 of 393 total objects
+I1123 21:33:57.097035   14804 renderer.cpp:148] Setting up object 200 of 393 total objects
+I1123 21:33:57.108199   14804 renderer.cpp:148] Setting up object 201 of 393 total objects
+I1123 21:33:57.121717   14804 renderer.cpp:148] Setting up object 202 of 393 total objects
+E1123 21:33:57.125841   14804 renderer.cpp:204] Material has no diffuse texture 
+I1123 21:33:57.126015   14804 renderer.cpp:148] Setting up object 203 of 393 total objects
+I1123 21:33:57.134092   14804 renderer.cpp:148] Setting up object 204 of 393 total objects
+I1123 21:33:57.146851   14804 renderer.cpp:148] Setting up object 205 of 393 total objects
+I1123 21:33:57.157874   14804 renderer.cpp:148] Setting up object 206 of 393 total objects
+I1123 21:33:57.170269   14804 renderer.cpp:148] Setting up object 207 of 393 total objects
+I1123 21:33:57.176819   14804 renderer.cpp:148] Setting up object 208 of 393 total objects
+I1123 21:33:57.186254   14804 renderer.cpp:148] Setting up object 209 of 393 total objects
+I1123 21:33:57.197953   14804 renderer.cpp:148] Setting up object 210 of 393 total objects
+I1123 21:33:57.209631   14804 renderer.cpp:148] Setting up object 211 of 393 total objects
+I1123 21:33:57.221955   14804 renderer.cpp:148] Setting up object 212 of 393 total objects
+I1123 21:33:57.233279   14804 renderer.cpp:148] Setting up object 213 of 393 total objects
+I1123 21:33:57.245392   14804 renderer.cpp:148] Setting up object 214 of 393 total objects
+I1123 21:33:57.258017   14804 renderer.cpp:148] Setting up object 215 of 393 total objects
+I1123 21:33:57.270603   14804 renderer.cpp:148] Setting up object 216 of 393 total objects
+I1123 21:33:57.283120   14804 renderer.cpp:148] Setting up object 217 of 393 total objects
+I1123 21:33:57.295446   14804 renderer.cpp:148] Setting up object 218 of 393 total objects
+I1123 21:33:57.307731   14804 renderer.cpp:148] Setting up object 219 of 393 total objects
+I1123 21:33:57.316023   14804 renderer.cpp:148] Setting up object 220 of 393 total objects
+I1123 21:33:57.325822   14804 renderer.cpp:148] Setting up object 221 of 393 total objects
+I1123 21:33:57.338060   14804 renderer.cpp:148] Setting up object 222 of 393 total objects
+I1123 21:33:57.345063   14804 renderer.cpp:148] Setting up object 223 of 393 total objects
+I1123 21:33:57.348576   14804 renderer.cpp:148] Setting up object 224 of 393 total objects
+I1123 21:33:57.358123   14804 renderer.cpp:148] Setting up object 225 of 393 total objects
+I1123 21:33:57.370175   14804 renderer.cpp:148] Setting up object 226 of 393 total objects
+I1123 21:33:57.382572   14804 renderer.cpp:148] Setting up object 227 of 393 total objects
+I1123 21:33:57.388194   14804 renderer.cpp:148] Setting up object 228 of 393 total objects
+I1123 21:33:57.397703   14804 renderer.cpp:148] Setting up object 229 of 393 total objects
+I1123 21:33:57.408593   14804 renderer.cpp:148] Setting up object 230 of 393 total objects
+I1123 21:33:57.415122   14804 renderer.cpp:148] Setting up object 231 of 393 total objects
+I1123 21:33:57.424565   14804 renderer.cpp:148] Setting up object 232 of 393 total objects
+I1123 21:33:57.438756   14804 renderer.cpp:148] Setting up object 233 of 393 total objects
+I1123 21:33:57.450225   14804 renderer.cpp:148] Setting up object 234 of 393 total objects
+I1123 21:33:57.462589   14804 renderer.cpp:148] Setting up object 235 of 393 total objects
+I1123 21:33:57.474707   14804 renderer.cpp:148] Setting up object 236 of 393 total objects
+I1123 21:33:57.487476   14804 renderer.cpp:148] Setting up object 237 of 393 total objects
+I1123 21:33:57.499633   14804 renderer.cpp:148] Setting up object 238 of 393 total objects
+I1123 21:33:57.512166   14804 renderer.cpp:148] Setting up object 239 of 393 total objects
+I1123 21:33:57.524402   14804 renderer.cpp:148] Setting up object 240 of 393 total objects
+I1123 21:33:57.536757   14804 renderer.cpp:148] Setting up object 241 of 393 total objects
+I1123 21:33:57.548113   14804 renderer.cpp:148] Setting up object 242 of 393 total objects
+I1123 21:33:57.559970   14804 renderer.cpp:148] Setting up object 243 of 393 total objects
+I1123 21:33:57.571009   14804 renderer.cpp:148] Setting up object 244 of 393 total objects
+I1123 21:33:57.583526   14804 renderer.cpp:148] Setting up object 245 of 393 total objects
+I1123 21:33:57.594779   14804 renderer.cpp:148] Setting up object 246 of 393 total objects
+I1123 21:33:57.606801   14804 renderer.cpp:148] Setting up object 247 of 393 total objects
+I1123 21:33:57.617934   14804 renderer.cpp:148] Setting up object 248 of 393 total objects
+I1123 21:33:57.630233   14804 renderer.cpp:148] Setting up object 249 of 393 total objects
+I1123 21:33:57.641964   14804 renderer.cpp:148] Setting up object 250 of 393 total objects
+I1123 21:33:57.654411   14804 renderer.cpp:148] Setting up object 251 of 393 total objects
+I1123 21:33:57.666862   14804 renderer.cpp:148] Setting up object 252 of 393 total objects
+I1123 21:33:57.679959   14804 renderer.cpp:148] Setting up object 253 of 393 total objects
+I1123 21:33:57.692685   14804 renderer.cpp:148] Setting up object 254 of 393 total objects
+I1123 21:33:57.705135   14804 renderer.cpp:148] Setting up object 255 of 393 total objects
+I1123 21:33:57.717143   14804 renderer.cpp:148] Setting up object 256 of 393 total objects
+I1123 21:33:57.729115   14804 renderer.cpp:148] Setting up object 257 of 393 total objects
+I1123 21:33:57.741043   14804 renderer.cpp:148] Setting up object 258 of 393 total objects
+I1123 21:33:57.753530   14804 renderer.cpp:148] Setting up object 259 of 393 total objects
+I1123 21:33:57.765194   14804 renderer.cpp:148] Setting up object 260 of 393 total objects
+I1123 21:33:57.776797   14804 renderer.cpp:148] Setting up object 261 of 393 total objects
+I1123 21:33:57.788101   14804 renderer.cpp:148] Setting up object 262 of 393 total objects
+I1123 21:33:57.800861   14804 renderer.cpp:148] Setting up object 263 of 393 total objects
+I1123 21:33:57.812474   14804 renderer.cpp:148] Setting up object 264 of 393 total objects
+I1123 21:33:57.824485   14804 renderer.cpp:148] Setting up object 265 of 393 total objects
+I1123 21:33:57.836258   14804 renderer.cpp:148] Setting up object 266 of 393 total objects
+I1123 21:33:57.848873   14804 renderer.cpp:148] Setting up object 267 of 393 total objects
+I1123 21:33:57.860515   14804 renderer.cpp:148] Setting up object 268 of 393 total objects
+I1123 21:33:57.875304   14804 renderer.cpp:148] Setting up object 269 of 393 total objects
+I1123 21:33:57.887749   14804 renderer.cpp:148] Setting up object 270 of 393 total objects
+I1123 21:33:57.900684   14804 renderer.cpp:148] Setting up object 271 of 393 total objects
+I1123 21:33:57.913021   14804 renderer.cpp:148] Setting up object 272 of 393 total objects
+I1123 21:33:57.926026   14804 renderer.cpp:148] Setting up object 273 of 393 total objects
+I1123 21:33:57.937682   14804 renderer.cpp:148] Setting up object 274 of 393 total objects
+I1123 21:33:57.950546   14804 renderer.cpp:148] Setting up object 275 of 393 total objects
+I1123 21:33:57.962521   14804 renderer.cpp:148] Setting up object 276 of 393 total objects
+I1123 21:33:57.975407   14804 renderer.cpp:148] Setting up object 277 of 393 total objects
+I1123 21:33:57.986968   14804 renderer.cpp:148] Setting up object 278 of 393 total objects
+I1123 21:33:57.999160   14804 renderer.cpp:148] Setting up object 279 of 393 total objects
+I1123 21:33:58.010470   14804 renderer.cpp:148] Setting up object 280 of 393 total objects
+I1123 21:33:58.021821   14804 renderer.cpp:148] Setting up object 281 of 393 total objects
+I1123 21:33:58.034094   14804 renderer.cpp:148] Setting up object 282 of 393 total objects
+I1123 21:33:58.047496   14804 renderer.cpp:148] Setting up object 283 of 393 total objects
+I1123 21:33:58.058956   14804 renderer.cpp:148] Setting up object 284 of 393 total objects
+I1123 21:33:58.071656   14804 renderer.cpp:148] Setting up object 285 of 393 total objects
+I1123 21:33:58.084642   14804 renderer.cpp:148] Setting up object 286 of 393 total objects
+I1123 21:33:58.092164   14804 renderer.cpp:148] Setting up object 287 of 393 total objects
+I1123 21:33:58.096063   14804 renderer.cpp:148] Setting up object 288 of 393 total objects
+I1123 21:33:58.105361   14804 renderer.cpp:148] Setting up object 289 of 393 total objects
+I1123 21:33:58.118111   14804 renderer.cpp:148] Setting up object 290 of 393 total objects
+I1123 21:33:58.130597   14804 renderer.cpp:148] Setting up object 291 of 393 total objects
+I1123 21:33:58.142687   14804 renderer.cpp:148] Setting up object 292 of 393 total objects
+I1123 21:33:58.155035   14804 renderer.cpp:148] Setting up object 293 of 393 total objects
+I1123 21:33:58.168214   14804 renderer.cpp:148] Setting up object 294 of 393 total objects
+I1123 21:33:58.180949   14804 renderer.cpp:148] Setting up object 295 of 393 total objects
+I1123 21:33:58.193541   14804 renderer.cpp:148] Setting up object 296 of 393 total objects
+I1123 21:33:58.205922   14804 renderer.cpp:148] Setting up object 297 of 393 total objects
+I1123 21:33:58.217579   14804 renderer.cpp:148] Setting up object 298 of 393 total objects
+I1123 21:33:58.229382   14804 renderer.cpp:148] Setting up object 299 of 393 total objects
+I1123 21:33:58.242032   14804 renderer.cpp:148] Setting up object 300 of 393 total objects
+I1123 21:33:58.253777   14804 renderer.cpp:148] Setting up object 301 of 393 total objects
+I1123 21:33:58.266903   14804 renderer.cpp:148] Setting up object 302 of 393 total objects
+I1123 21:33:58.278143   14804 renderer.cpp:148] Setting up object 303 of 393 total objects
+I1123 21:33:58.289891   14804 renderer.cpp:148] Setting up object 304 of 393 total objects
+I1123 21:33:58.301669   14804 renderer.cpp:148] Setting up object 305 of 393 total objects
+I1123 21:33:58.314341   14804 renderer.cpp:148] Setting up object 306 of 393 total objects
+I1123 21:33:58.326262   14804 renderer.cpp:148] Setting up object 307 of 393 total objects
+I1123 21:33:58.339340   14804 renderer.cpp:148] Setting up object 308 of 393 total objects
+I1123 21:33:58.351058   14804 renderer.cpp:148] Setting up object 309 of 393 total objects
+I1123 21:33:58.363967   14804 renderer.cpp:148] Setting up object 310 of 393 total objects
+I1123 21:33:58.375879   14804 renderer.cpp:148] Setting up object 311 of 393 total objects
+I1123 21:33:58.388556   14804 renderer.cpp:148] Setting up object 312 of 393 total objects
+I1123 21:33:58.400911   14804 renderer.cpp:148] Setting up object 313 of 393 total objects
+I1123 21:33:58.412985   14804 renderer.cpp:148] Setting up object 314 of 393 total objects
+I1123 21:33:58.424965   14804 renderer.cpp:148] Setting up object 315 of 393 total objects
+I1123 21:33:58.437153   14804 renderer.cpp:148] Setting up object 316 of 393 total objects
+I1123 21:33:58.448616   14804 renderer.cpp:148] Setting up object 317 of 393 total objects
+I1123 21:33:58.460355   14804 renderer.cpp:148] Setting up object 318 of 393 total objects
+I1123 21:33:58.471663   14804 renderer.cpp:148] Setting up object 319 of 393 total objects
+I1123 21:33:58.484083   14804 renderer.cpp:148] Setting up object 320 of 393 total objects
+I1123 21:33:58.490701   14804 renderer.cpp:148] Setting up object 321 of 393 total objects
+I1123 21:33:58.500336   14804 renderer.cpp:148] Setting up object 322 of 393 total objects
+I1123 21:33:58.512451   14804 renderer.cpp:148] Setting up object 323 of 393 total objects
+I1123 21:33:58.524412   14804 renderer.cpp:148] Setting up object 324 of 393 total objects
+I1123 21:33:58.536531   14804 renderer.cpp:148] Setting up object 325 of 393 total objects
+I1123 21:33:58.548374   14804 renderer.cpp:148] Setting up object 326 of 393 total objects
+I1123 21:33:58.554096   14804 renderer.cpp:148] Setting up object 327 of 393 total objects
+I1123 21:33:58.563465   14804 renderer.cpp:148] Setting up object 328 of 393 total objects
+I1123 21:33:58.575998   14804 renderer.cpp:148] Setting up object 329 of 393 total objects
+I1123 21:33:58.589506   14804 renderer.cpp:148] Setting up object 330 of 393 total objects
+I1123 21:33:58.601642   14804 renderer.cpp:148] Setting up object 331 of 393 total objects
+I1123 21:33:58.614563   14804 renderer.cpp:148] Setting up object 332 of 393 total objects
+I1123 21:33:58.620867   14804 renderer.cpp:148] Setting up object 333 of 393 total objects
+I1123 21:33:58.631035   14804 renderer.cpp:148] Setting up object 334 of 393 total objects
+I1123 21:33:58.637068   14804 renderer.cpp:148] Setting up object 335 of 393 total objects
+I1123 21:33:58.646851   14804 renderer.cpp:148] Setting up object 336 of 393 total objects
+I1123 21:33:58.658467   14804 renderer.cpp:148] Setting up object 337 of 393 total objects
+I1123 21:33:58.670583   14804 renderer.cpp:148] Setting up object 338 of 393 total objects
+I1123 21:33:58.682237   14804 renderer.cpp:148] Setting up object 339 of 393 total objects
+I1123 21:33:58.694156   14804 renderer.cpp:148] Setting up object 340 of 393 total objects
+I1123 21:33:58.705333   14804 renderer.cpp:148] Setting up object 341 of 393 total objects
+I1123 21:33:58.717565   14804 renderer.cpp:148] Setting up object 342 of 393 total objects
+I1123 21:33:58.729712   14804 renderer.cpp:148] Setting up object 343 of 393 total objects
+I1123 21:33:58.742979   14804 renderer.cpp:148] Setting up object 344 of 393 total objects
+I1123 21:33:58.755323   14804 renderer.cpp:148] Setting up object 345 of 393 total objects
+I1123 21:33:58.768005   14804 renderer.cpp:148] Setting up object 346 of 393 total objects
+I1123 21:33:58.780553   14804 renderer.cpp:148] Setting up object 347 of 393 total objects
+I1123 21:33:58.793043   14804 renderer.cpp:148] Setting up object 348 of 393 total objects
+I1123 21:33:58.806531   14804 renderer.cpp:148] Setting up object 349 of 393 total objects
+I1123 21:33:58.818186   14804 renderer.cpp:148] Setting up object 350 of 393 total objects
+I1123 21:33:58.830078   14804 renderer.cpp:148] Setting up object 351 of 393 total objects
+I1123 21:33:58.842440   14804 renderer.cpp:148] Setting up object 352 of 393 total objects
+I1123 21:33:58.854457   14804 renderer.cpp:148] Setting up object 353 of 393 total objects
+I1123 21:33:58.866954   14804 renderer.cpp:148] Setting up object 354 of 393 total objects
+I1123 21:33:58.878553   14804 renderer.cpp:148] Setting up object 355 of 393 total objects
+I1123 21:33:58.890599   14804 renderer.cpp:148] Setting up object 356 of 393 total objects
+I1123 21:33:58.901562   14804 renderer.cpp:148] Setting up object 357 of 393 total objects
+I1123 21:33:58.914006   14804 renderer.cpp:148] Setting up object 358 of 393 total objects
+I1123 21:33:58.926247   14804 renderer.cpp:148] Setting up object 359 of 393 total objects
+I1123 21:33:58.939119   14804 renderer.cpp:148] Setting up object 360 of 393 total objects
+I1123 21:33:58.951685   14804 renderer.cpp:148] Setting up object 361 of 393 total objects
+I1123 21:33:58.963830   14804 renderer.cpp:148] Setting up object 362 of 393 total objects
+I1123 21:33:58.975659   14804 renderer.cpp:148] Setting up object 363 of 393 total objects
+I1123 21:33:58.988971   14804 renderer.cpp:148] Setting up object 364 of 393 total objects
+I1123 21:33:58.995209   14804 renderer.cpp:148] Setting up object 365 of 393 total objects
+I1123 21:33:58.998763   14804 renderer.cpp:148] Setting up object 366 of 393 total objects
+I1123 21:33:59.008233   14804 renderer.cpp:148] Setting up object 367 of 393 total objects
+I1123 21:33:59.019962   14804 renderer.cpp:148] Setting up object 368 of 393 total objects
+I1123 21:33:59.031961   14804 renderer.cpp:148] Setting up object 369 of 393 total objects
+I1123 21:33:59.037864   14804 renderer.cpp:148] Setting up object 370 of 393 total objects
+I1123 21:33:59.047459   14804 renderer.cpp:148] Setting up object 371 of 393 total objects
+I1123 21:33:59.058782   14804 renderer.cpp:148] Setting up object 372 of 393 total objects
+I1123 21:33:59.069708   14804 renderer.cpp:148] Setting up object 373 of 393 total objects
+I1123 21:33:59.081493   14804 renderer.cpp:148] Setting up object 374 of 393 total objects
+I1123 21:33:59.092828   14804 renderer.cpp:148] Setting up object 375 of 393 total objects
+I1123 21:33:59.104077   14804 renderer.cpp:148] Setting up object 376 of 393 total objects
+I1123 21:33:59.115930   14804 renderer.cpp:148] Setting up object 377 of 393 total objects
+I1123 21:33:59.121482   14804 renderer.cpp:148] Setting up object 378 of 393 total objects
+I1123 21:33:59.131245   14804 renderer.cpp:148] Setting up object 379 of 393 total objects
+I1123 21:33:59.136655   14804 renderer.cpp:148] Setting up object 380 of 393 total objects
+I1123 21:33:59.146476   14804 renderer.cpp:148] Setting up object 381 of 393 total objects
+I1123 21:33:59.157916   14804 renderer.cpp:148] Setting up object 382 of 393 total objects
+I1123 21:33:59.169249   14804 renderer.cpp:148] Setting up object 383 of 393 total objects
+I1123 21:33:59.180743   14804 renderer.cpp:148] Setting up object 384 of 393 total objects
+I1123 21:33:59.192185   14804 renderer.cpp:148] Setting up object 385 of 393 total objects
+I1123 21:33:59.203579   14804 renderer.cpp:148] Setting up object 386 of 393 total objects
+I1123 21:33:59.215417   14804 renderer.cpp:148] Setting up object 387 of 393 total objects
+I1123 21:33:59.227043   14804 renderer.cpp:148] Setting up object 388 of 393 total objects
+I1123 21:33:59.238897   14804 renderer.cpp:148] Setting up object 389 of 393 total objects
+I1123 21:33:59.250726   14804 renderer.cpp:148] Setting up object 390 of 393 total objects
+I1123 21:33:59.262202   14804 renderer.cpp:148] Setting up object 391 of 393 total objects
+I1123 21:33:59.273590   14804 renderer.cpp:148] Setting up object 392 of 393 total objects
+I1123 21:33:59.284987   14804 renderer.cpp:197] Finished setup scene
