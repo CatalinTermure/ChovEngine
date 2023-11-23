@@ -36,17 +36,40 @@ constexpr int target_frame_rate = 60;
 constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);
 
-static constexpr const float kCameraSpeed = 1.0F;
+static constexpr const float kCameraSpeed = 1e-1F;
 constexpr float camera_rotation_speed = 0.1F;
+
+GLenum glCheckError_(const char *file, int line) {
+  GLenum errorCode;
+  while ((errorCode = glGetError()) != GL_NO_ERROR) {
+    std::string error;
+    switch (errorCode) {
+      case GL_INVALID_ENUM: error = "INVALID_ENUM";
+        break;
+      case GL_INVALID_VALUE: error = "INVALID_VALUE";
+        break;
+      case GL_INVALID_OPERATION: error = "INVALID_OPERATION";
+        break;
+      case GL_OUT_OF_MEMORY: error = "OUT_OF_MEMORY";
+        break;
+      case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION";
+        break;
+      default:error = "UNKNOWN";
+    }
+    LOG(ERROR) << error << " | " << file << " (" << line << ")" << std::endl;
+  }
+  return errorCode;
+}
+#define glCheckError() glCheckError_(__FILE__, __LINE__)
 
 int main() {
   StdoutLogSink log_sink{};
   absl::AddLogSink(&log_sink);
   absl::InitializeLog();
 
-  Window window;
+  Window window{static_cast<SDL_WindowFlags>(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI)};
 
-  std::vector<Mesh> meshes = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "cube.obj");
+  std::vector<Mesh> meshes = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "nanosuit" / "nanosuit.obj");
 
   std::unique_ptr<Renderer> renderer = std::make_unique<chove::rendering::opengl::Renderer>(&window);
 
@@ -60,9 +83,6 @@ int main() {
       100000.0F);
   glm::vec3 camera_velocity = {0.0F, 0.0F, 0.0F};
   for (auto &mesh : meshes) {
-    for (auto &vertex : mesh.vertices) {
-      vertex.position *= -1;
-    }
     scene.AddObject(mesh, {glm::vec3(0.0f, 0.0f, 0.0f),
                            glm::identity<glm::quat>(),
                            glm::vec3(1.0f, 1.0f, 1.0f),
@@ -84,7 +104,7 @@ int main() {
         switch (event.key.keysym.sym) {
           case SDLK_ESCAPE:should_app_close = true;
             break;
-          case SDLK_w:camera_velocity.y = kCameraSpeed;
+          case SDLK_w:camera_velocity.y = +kCameraSpeed;
             break;
           case SDLK_a:camera_velocity.x = -kCameraSpeed;
             break;
@@ -92,9 +112,9 @@ int main() {
             break;
           case SDLK_d:camera_velocity.x = kCameraSpeed;
             break;
-          case SDLK_SPACE:camera_velocity.z = -kCameraSpeed;
+          case SDLK_SPACE:camera_velocity.z = kCameraSpeed;
             break;
-          case SDLK_LSHIFT:camera_velocity.z = kCameraSpeed;
+          case SDLK_LSHIFT:camera_velocity.z = -kCameraSpeed;
             break;
           case SDLK_r:
             scene.objects()[0].transform->rotation *= glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F));
@@ -126,7 +146,7 @@ int main() {
       } else if (event.type == SDL_MOUSEMOTION) {
         scene.camera().Rotate(Camera::RotationDirection::eRight,
                               camera_rotation_speed * static_cast<float>(event.motion.xrel));
-        scene.camera().Rotate(Camera::RotationDirection::eDownward,
+        scene.camera().Rotate(Camera::RotationDirection::eUpward,
                               camera_rotation_speed * static_cast<float>(event.motion.yrel));
       }
     }

@@ -1,4 +1,5 @@
 #include "rendering/vulkan/texture.h"
+#include "rendering/opengl/texture.h"
 
 #include <stb_image.h>
 #include <filesystem>

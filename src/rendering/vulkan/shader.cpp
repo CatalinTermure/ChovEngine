@@ -1,4 +1,5 @@
 #include "rendering/vulkan/shader.h"
+#include "rendering/opengl/shader.h"
 
 #include <fstream>
 

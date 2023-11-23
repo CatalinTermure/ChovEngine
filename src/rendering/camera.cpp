@@ -1,7 +1,5 @@
 #include "rendering/camera.h"
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -17,9 +15,12 @@ bool IsAngleAcceptable(float angle) {
 }
 }
 
-glm::mat4 Camera::GetTransformMatrix() const {
-  return glm::perspective(fov_, aspect_ratio_, near_plane_, far_plane_)
-      * glm::lookAt(position_, position_ + look_direction_, glm::vec3(0.0f, 1.0f, 0.0f));
+glm::mat4 Camera::GetViewMatrix() const {
+  return glm::lookAt(position_, position_ + look_direction_, glm::vec3(0.0f, 1.0f, 0.0f));
+}
+
+glm::mat4 Camera::GetProjectionMatrix() const {
+  return glm::perspective(fov_, aspect_ratio_, near_plane_, far_plane_);
 }
 
 void Camera::Move(Camera::Direction direction, float amount) {

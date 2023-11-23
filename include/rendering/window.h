@@ -8,7 +8,7 @@ namespace chove::rendering {
 
 class Window {
  public:
-  Window();
+  Window(SDL_WindowFlags flags);
 
   [[nodiscard]] int width();
   [[nodiscard]] int height();

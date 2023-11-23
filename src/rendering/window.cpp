@@ -6,7 +6,7 @@
 namespace chove::rendering {
 
 namespace {
-SDL_Window *InitSDLWindow() {
+SDL_Window *InitSDLWindow(SDL_WindowFlags flags) {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     LOG(FATAL) << "Could not initialize SDL.";
     return nullptr;
@@ -18,7 +18,7 @@ SDL_Window *InitSDLWindow() {
                        SDL_WINDOWPOS_CENTERED,
                        1280,
                        720,
-                       SDL_WINDOW_OPENGL);
+                       flags);
   if (window == nullptr) {
     LOG(FATAL) << "Could not create SDL window.";
     return nullptr;
@@ -30,7 +30,7 @@ SDL_Window *InitSDLWindow() {
 }
 }
 
-Window::Window() : window_(InitSDLWindow(), SDL_DestroyWindow) {}
+Window::Window(SDL_WindowFlags flags) : window_(InitSDLWindow(flags), SDL_DestroyWindow) {}
 
 int Window::height() {
   int height = 0;

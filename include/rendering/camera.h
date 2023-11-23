@@ -20,7 +20,8 @@ class Camera {
   [[nodiscard]] const glm::vec3 &position() const { return position_; }
   [[nodiscard]] const glm::vec3 &look_direction() const { return look_direction_; }
 
-  [[nodiscard]] glm::mat4 GetTransformMatrix() const;
+  [[nodiscard]] glm::mat4 GetViewMatrix() const;
+  [[nodiscard]] glm::mat4 GetProjectionMatrix() const;
 
   enum class Direction {
     eForward,

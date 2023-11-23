@@ -1,11 +1,12 @@
 #version 450
 
-layout(location = 0) out vec4 outColor;
+out vec4 outColor;
 
-layout(location = 0) in vec4 inColor;
+uniform sampler2D diffuseTexture;
 
-layout(push_constant) uniform Size { vec2 size; } windowSize;
+in vec3 fragNormal;
+in vec2 fragTexCoord;
 
 void main() {
-    outColor = inColor;
+    outColor = texture(diffuseTexture, fragTexCoord);
 }

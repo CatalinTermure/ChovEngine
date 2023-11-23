@@ -18,7 +18,11 @@ target_include_directories(ProjectRendering PUBLIC include)
 target_link_libraries(ProjectRendering glm::glm absl::base absl::hash absl::log absl::status)
 
 add_library(ProjectRenderingOpenGL
-        src/rendering/opengl/renderer.cpp)
+        src/rendering/opengl/renderer.cpp
+        src/rendering/opengl/shader.cpp
+        src/rendering/opengl/pipeline.cpp
+        src/rendering/opengl/texture.cpp
+        src/rendering/opengl/render_object.cpp)
 target_link_libraries(ProjectRenderingOpenGL GLEW::GLEW absl::base absl::log)
 target_include_directories(ProjectRenderingOpenGL PUBLIC include)
 
@@ -30,8 +34,8 @@ set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 set(SHADER_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 
 file(GLOB SHADERS
-        ${SHADER_SOURCE_DIR}/*.vert
-        ${SHADER_SOURCE_DIR}/*.frag)
+        ${SHADER_SOURCE_DIR}/vulkan/*.vert
+        ${SHADER_SOURCE_DIR}/vulkan/*.frag)
 
 foreach (source IN LISTS SHADERS)
     get_filename_component(FILENAME ${source} NAME)

@@ -101,7 +101,7 @@ std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path &path) {
                                  attrib.normals[3 * index.normal_index + 1],
                                  attrib.normals[3 * index.normal_index + 2]),
                        glm::vec2(attrib.texcoords[2 * index.texcoord_index],
-                                 attrib.vertices[2 * index.texcoord_index + 1])};
+                                 attrib.texcoords[2 * index.texcoord_index + 1])};
       vertex_map[index] = final_vertices.size();
       final_vertices.push_back(vertex);
       indices.push_back(vertex_map.at(index));

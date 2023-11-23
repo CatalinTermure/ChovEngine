@@ -3,6 +3,12 @@
 
 #include "rendering/renderer.h"
 #include "rendering/window.h"
+#include "objects/scene.h"
+#include "rendering/opengl/uniform.h"
+#include "rendering/opengl/render_object.h"
+#include "rendering/opengl/pipeline.h"
+
+#include <absl/log/log.h>
 
 namespace chove::rendering::opengl {
 class Renderer : public rendering::Renderer {
@@ -19,6 +25,17 @@ class Renderer : public rendering::Renderer {
 
  private:
   Window *window_;
+  const objects::Scene *scene_;
+
+  Uniform<glm::mat4> view_;
+  Uniform<glm::mat4> projection_;
+
+  std::vector<RenderObject> render_objects_;
+  std::vector<Shader> shaders_;
+
+  SDL_GLContext context_;
+
+  void AttachMaterial(RenderObject &render_object, const Material &material);
 };
 }
 
