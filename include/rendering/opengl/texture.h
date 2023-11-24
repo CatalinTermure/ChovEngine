@@ -5,10 +5,12 @@
 #include <filesystem>
 #include <GL/glew.h>
 
+#include "rendering/opengl/texture_allocator.h"
+
 namespace chove::rendering::opengl {
 class Texture {
  public:
-  Texture(const std::filesystem::path& path, std::string name);
+  Texture(const std::filesystem::path &path, std::string name, TextureAllocator &allocator);
   Texture(const Texture &) = delete;
   Texture &operator=(const Texture &) = delete;
   Texture(Texture &&) noexcept;
@@ -20,8 +22,9 @@ class Texture {
   ~Texture();
 
  private:
-  GLuint texture_{};
+  GLuint texture_;
   std::string name_;
+  TextureAllocator *allocator_;
 };
 }
 

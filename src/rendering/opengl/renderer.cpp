@@ -96,6 +96,8 @@ Renderer::Renderer(Window *window) : window_(window), scene_(nullptr), view_(), 
 
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(MessageCallback, nullptr);
+
+  texture_allocator_ = std::make_unique<TextureAllocator>();
 }
 
 void Renderer::Render() {
@@ -199,7 +201,7 @@ void Renderer::SetupScene(const objects::Scene &scene) {
 
 void Renderer::AttachMaterial(RenderObject &render_object, const Material &material) {
   if (material.diffuse_texture.has_value()) {
-    render_object.textures.emplace_back(material.diffuse_texture.value(), "diffuseTexture");
+    render_object.textures.push_back(Texture{material.diffuse_texture.value(), "diffuseTexture", *texture_allocator_});
   } else {
     LOG(ERROR) << "Material has no diffuse texture ";
   }

@@ -22,7 +22,8 @@ add_library(ProjectRenderingOpenGL
         src/rendering/opengl/shader.cpp
         src/rendering/opengl/pipeline.cpp
         src/rendering/opengl/texture.cpp
-        src/rendering/opengl/render_object.cpp)
+        src/rendering/opengl/render_object.cpp
+        src/rendering/opengl/texture_allocator.cpp)
 target_link_libraries(ProjectRenderingOpenGL GLEW::GLEW absl::base absl::log)
 target_include_directories(ProjectRenderingOpenGL PUBLIC include)
 
