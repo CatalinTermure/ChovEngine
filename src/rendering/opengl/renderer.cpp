@@ -137,7 +137,7 @@ void Renderer::SetupScene(const objects::Scene &scene) {
   LOG(INFO) << "Starting setup scene";
   scene_ = &scene;
   LOG(INFO) << "Setting up shaders";
-  shaders_.emplace_back("shaders/render_shader.vert", "shaders/render_shader.frag");
+  shaders_.emplace_back("shaders/render_shader.vert", ShaderFlags{}, "shaders/render_shader.frag", ShaderFlags{});
 
   LOG(INFO) << "Setting up uniforms";
   view_ = Uniform<glm::mat4>(shaders_[0].program(), "view", scene_->camera().GetViewMatrix());

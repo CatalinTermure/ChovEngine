@@ -1,5 +1,3 @@
-#version 450
-
 out vec4 outColor;
 
 uniform sampler2D diffuseTexture;
