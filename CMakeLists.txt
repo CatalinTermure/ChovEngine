@@ -22,8 +22,10 @@ add_library(ProjectRenderingOpenGL
         src/rendering/opengl/shader.cpp
         src/rendering/opengl/pipeline.cpp
         src/rendering/opengl/texture.cpp
+        src/rendering/opengl/texture_allocator.cpp
         src/rendering/opengl/render_object.cpp
-        src/rendering/opengl/texture_allocator.cpp)
+        src/rendering/opengl/shader_allocator.cpp
+        src/rendering/opengl/uniform.cpp)
 target_link_libraries(ProjectRenderingOpenGL GLEW::GLEW absl::base absl::log)
 target_include_directories(ProjectRenderingOpenGL PUBLIC include)
 
@@ -31,12 +33,12 @@ add_executable(LabsExtra src/main.cpp)
 target_include_directories(LabsExtra PUBLIC include)
 
 set(GLSLC_EXECUTABLE "glslc.exe")
-set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
-set(SHADER_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vulkan)
+set(SHADER_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vulkan)
 
 file(GLOB SHADERS
-        ${SHADER_SOURCE_DIR}/vulkan/*.vert
-        ${SHADER_SOURCE_DIR}/vulkan/*.frag)
+        ${SHADER_SOURCE_DIR}/*.vert
+        ${SHADER_SOURCE_DIR}/*.frag)
 
 foreach (source IN LISTS SHADERS)
     get_filename_component(FILENAME ${source} NAME)

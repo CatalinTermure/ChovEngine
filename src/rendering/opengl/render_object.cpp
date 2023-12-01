@@ -9,12 +9,12 @@ RenderObject::RenderObject(RenderObject &&other) noexcept: model(other.model),
                                                            vbo(other.vbo),
                                                            ebo(other.ebo),
                                                            textures(std::move(other.textures)),
-                                                           float_uniforms(std::move(other.float_uniforms)),
-                                                           vec3_uniforms(std::move(other.vec3_uniforms)) {
+                                                           material_data(std::move(other.material_data)) {
   other.vao = 0;
   other.vbo = 0;
   other.ebo = 0;
 }
+
 RenderObject &RenderObject::operator=(RenderObject &&other) noexcept {
   model = other.model;
   object_index = other.object_index;
@@ -23,12 +23,19 @@ RenderObject &RenderObject::operator=(RenderObject &&other) noexcept {
   vbo = other.vbo;
   ebo = other.ebo;
   textures = std::move(other.textures);
-  float_uniforms = std::move(other.float_uniforms);
-  vec3_uniforms = std::move(other.vec3_uniforms);
+  material_data = std::move(other.material_data);
 
   other.vao = 0;
   other.vbo = 0;
   other.ebo = 0;
   return *this;
+}
+
+RenderObject::~RenderObject() {
+  if (vao != 0) {
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
+  }
 }
 }

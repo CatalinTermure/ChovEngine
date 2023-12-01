@@ -5,6 +5,8 @@
 #include "rendering/opengl/texture.h"
 
 #include <vector>
+
+#include <absl/container/flat_hash_map.h>
 #include <glm/glm.hpp>
 #include <GL/glew.h>
 
@@ -23,16 +25,9 @@ struct RenderObject {
   GLuint vbo{};
   GLuint ebo{};
   std::vector<Texture> textures{};
-  std::vector<Uniform<float>> float_uniforms{};
-  std::vector<Uniform<glm::vec3>> vec3_uniforms{};
+  UniformBuffer material_data{};
 
-  ~RenderObject() {
-    if (vao != 0) {
-      glDeleteVertexArrays(1, &vao);
-      glDeleteBuffers(1, &vbo);
-      glDeleteBuffers(1, &ebo);
-    }
-  }
+  ~RenderObject();
 };
 }
 

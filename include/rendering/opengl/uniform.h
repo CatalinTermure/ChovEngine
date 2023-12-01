@@ -26,7 +26,7 @@ class Uniform<glm::mat4> {
   Uniform(GLuint shader_program, const std::string &name, const glm::mat4 &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(ERROR) << "Uniform location not found for " << name;
+      LOG(WARNING) << "Uniform location not found for " << name;
     }
   }
 
@@ -46,7 +46,7 @@ class Uniform<glm::vec3> {
   Uniform(GLuint shader_program, const std::string &name, const glm::vec3 &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(ERROR) << "Uniform location not found for " << name;
+      LOG(WARNING) << "Uniform location not found for " << name;
     }
   }
 
@@ -66,7 +66,7 @@ class Uniform<glm::vec4> {
   Uniform(GLuint shader_program, const std::string &name, const glm::vec4 &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(ERROR) << "Uniform location not found for " << name;
+      LOG(WARNING) << "Uniform location not found for " << name;
     }
   }
 
@@ -86,7 +86,7 @@ class Uniform<float> {
   Uniform(GLuint shader_program, const std::string &name, const float &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(ERROR) << "Uniform location not found for " << name;
+      LOG(WARNING) << "Uniform location not found for " << name;
     }
   }
 
@@ -97,6 +97,27 @@ class Uniform<float> {
  private:
   float value_;
   GLint location_;
+};
+
+class UniformBuffer {
+ public:
+  UniformBuffer() = default;
+  UniformBuffer(UniformBuffer &) = delete;
+  UniformBuffer &operator=(UniformBuffer &) = delete;
+  UniformBuffer(UniformBuffer &&other) noexcept;
+  UniformBuffer &operator=(UniformBuffer &&other) noexcept;
+
+  UniformBuffer(size_t size);
+
+  void Bind(GLuint shader_program, const std::string &name, GLint binding);
+
+  void UpdateData(const void *data, size_t size) const;
+
+  ~UniformBuffer();
+
+ private:
+  GLuint buffer_;
+  GLint binding_;
 };
 }
 

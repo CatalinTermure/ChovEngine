@@ -13,18 +13,17 @@ SDL_Window *InitSDLWindow(SDL_WindowFlags flags) {
   }
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-  SDL_Window *window =
-      SDL_CreateWindow("Window",
-                       SDL_WINDOWPOS_CENTERED,
-                       SDL_WINDOWPOS_CENTERED,
-                       1280,
-                       720,
-                       flags);
+  SDL_Window *window = SDL_CreateWindow("Window",
+                                        SDL_WINDOWPOS_CENTERED,
+                                        SDL_WINDOWPOS_CENTERED,
+                                        1280,
+                                        720,
+                                        flags);
   if (window == nullptr) {
     LOG(FATAL) << "Could not create SDL window.";
     return nullptr;

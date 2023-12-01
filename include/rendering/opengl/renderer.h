@@ -33,9 +33,9 @@ class Renderer : public rendering::Renderer {
   SDL_GLContext context_;
 
   std::unique_ptr<TextureAllocator> texture_allocator_;
+  std::unique_ptr<ShaderAllocator> shader_allocator_;
 
-  Uniform<glm::mat4> view_;
-  Uniform<glm::mat4> projection_;
+  UniformBuffer view_projection_matrices_{};
 
   std::vector<RenderObject> render_objects_;
   std::vector<Shader> shaders_;

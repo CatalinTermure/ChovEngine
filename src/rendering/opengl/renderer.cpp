@@ -75,9 +75,23 @@ void GLAPIENTRY MessageCallback(GLenum source,
   LOG(INFO) << msg;
 }
 
+struct MaterialUBOData {
+  float shininess;
+  float opticalDensity;
+  float dissolve;
+  float padding;
+  glm::vec4 diffuseColor;
+  glm::vec4 ambientColor;
+  glm::vec4 specularColor;
+  glm::vec4 transmissionFilterColor;
+};
+
+constexpr int kMatricesUBOBindingPoint = 0;
+constexpr int kMaterialUBOBindingPoint = 1;
+
 }
 
-Renderer::Renderer(Window *window) : window_(window), scene_(nullptr), view_(), projection_() {
+Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
   context_ = SDL_GL_CreateContext(*window_);
 
   glewExperimental = GL_TRUE;
@@ -98,6 +112,7 @@ Renderer::Renderer(Window *window) : window_(window), scene_(nullptr), view_(), 
   glDebugMessageCallback(MessageCallback, nullptr);
 
   texture_allocator_ = std::make_unique<TextureAllocator>();
+  shader_allocator_ = std::make_unique<ShaderAllocator>();
 }
 
 void Renderer::Render() {
@@ -105,13 +120,27 @@ void Renderer::Render() {
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  shaders_[0].Use();
+  glm::mat4 view_projection[2] = {scene_->camera().GetViewMatrix(), scene_->camera().GetProjectionMatrix()};
+  view_projection_matrices_.UpdateData(view_projection, 2 * sizeof(glm::mat4));
 
-  view_.UpdateValue(scene_->camera().GetViewMatrix());
-  projection_.UpdateValue(scene_->camera().GetProjectionMatrix());
+  MaterialUBOData material_ubo_data{};
 
   for (auto &render_object : render_objects_) {
+    shaders_[render_object.shader_index].Use();
+
     render_object.model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+
+    const Material &material = scene_->objects()[render_object.object_index].mesh->material;
+
+    material_ubo_data.shininess = material.shininess;
+    material_ubo_data.opticalDensity = material.optical_density;
+    material_ubo_data.dissolve = material.dissolve;
+    material_ubo_data.diffuseColor = glm::vec4(material.diffuse_color, 1.0f);
+    material_ubo_data.ambientColor = glm::vec4(material.ambient_color, 1.0f);
+    material_ubo_data.specularColor = glm::vec4(material.specular_color, 1.0f);
+    material_ubo_data.transmissionFilterColor = glm::vec4(material.transmission_filter_color, 1.0f);
+
+    render_object.material_data.UpdateData(&material_ubo_data, sizeof(MaterialUBOData));
 
     for (int i = 0; i < render_object.textures.size(); ++i) {
       glActiveTexture(GL_TEXTURE0 + i);
@@ -139,20 +168,25 @@ void Renderer::SetupScene(const objects::Scene &scene) {
   LOG(INFO) << "Starting setup scene";
   scene_ = &scene;
   LOG(INFO) << "Setting up shaders";
-  shaders_.emplace_back("shaders/render_shader.vert", ShaderFlags{}, "shaders/render_shader.frag", ShaderFlags{});
 
   LOG(INFO) << "Setting up uniforms";
-  view_ = Uniform<glm::mat4>(shaders_[0].program(), "view", scene_->camera().GetViewMatrix());
-  projection_ = Uniform<glm::mat4>(shaders_[0].program(), "projection", scene_->camera().GetProjectionMatrix());
 
   render_objects_.reserve(scene.objects().size());
+  shaders_.reserve(scene.objects().size());
+
+  view_projection_matrices_ = UniformBuffer(2 * sizeof(glm::mat4));
+
   for (int i = 0; i < scene.objects().size(); ++i) {
     LOG(INFO) << "Setting up object " << i << " of " << scene.objects().size() << " total objects";
     const objects::GameObject &object = scene.objects()[i];
     RenderObject render_object;
 
+    AttachMaterial(render_object, object.mesh->material);
+    view_projection_matrices_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
+
     render_object.object_index = i;
-    render_object.model = Uniform<glm::mat4>(shaders_[0].program(), "model", object.transform->GetMatrix());
+    render_object.shader_index = i;
+    render_object.model = Uniform<glm::mat4>(shaders_[i].program(), "model", object.transform->GetMatrix());
 
     glGenVertexArrays(1, &render_object.vao);
     glGenBuffers(1, &render_object.vbo);
@@ -192,18 +226,27 @@ void Renderer::SetupScene(const objects::Scene &scene) {
 
     glBindVertexArray(0);
 
-    AttachMaterial(render_object, object.mesh->material);
-
     render_objects_.emplace_back(std::move(render_object));
   }
   LOG(INFO) << "Finished setup scene";
 }
 
 void Renderer::AttachMaterial(RenderObject &render_object, const Material &material) {
+  ShaderFlags vertex_shader_flags{};
+  ShaderFlags fragment_shader_flags{};
   if (material.diffuse_texture.has_value()) {
-    render_object.textures.push_back(Texture{material.diffuse_texture.value(), "diffuseTexture", *texture_allocator_});
+    render_object.textures.emplace_back(material.diffuse_texture.value(), "diffuseTexture", *texture_allocator_);
   } else {
-    LOG(ERROR) << "Material has no diffuse texture ";
+    fragment_shader_flags |= ShaderFlags::kNoDiffuseTexture;
   }
+  shaders_.emplace_back("shaders/render_shader.vert",
+                        vertex_shader_flags,
+                        "shaders/render_shader.frag",
+                        fragment_shader_flags,
+                        *shader_allocator_);
+  shaders_.back().Use();
+
+  render_object.material_data = UniformBuffer(sizeof(MaterialUBOData));
+  render_object.material_data.Bind(shaders_.back().program(), "Material", kMaterialUBOBindingPoint);
 }
 }
