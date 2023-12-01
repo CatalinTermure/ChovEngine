@@ -79,11 +79,10 @@ struct MaterialUBOData {
   float shininess;
   float opticalDensity;
   float dissolve;
-  float padding;
-  glm::vec4 diffuseColor;
-  glm::vec4 ambientColor;
-  glm::vec4 specularColor;
-  glm::vec4 transmissionFilterColor;
+  alignas(16) glm::vec4 diffuseColor;
+  alignas(16) glm::vec4 ambientColor;
+  alignas(16) glm::vec4 specularColor;
+  alignas(16) glm::vec4 transmissionFilterColor;
 };
 
 constexpr int kMatricesUBOBindingPoint = 0;
