@@ -5,6 +5,12 @@
 
 enum class ShaderFlags : uint64_t {
   kNoDiffuseTexture = 1 << 0,
+  kNoAmbientTexture = 1 << 1,
+  kNoSpecularTexture = 1 << 2,
+  kNoShininessTexture = 1 << 3,
+  kNoAlphaTexture = 1 << 4,
+  kNoBumpTexture = 1 << 5,
+  kNoDisplacementTexture = 1 << 6,
 };
 
 inline ShaderFlags operator|(ShaderFlags lhs, ShaderFlags rhs) {

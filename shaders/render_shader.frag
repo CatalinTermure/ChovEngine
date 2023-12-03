@@ -1,6 +1,12 @@
 out vec4 outColor;
 
+uniform sampler2D ambientTexture;
 uniform sampler2D diffuseTexture;
+uniform sampler2D specularTexture;
+uniform sampler2D shininessTexture;
+uniform sampler2D alphaTexture;
+uniform sampler2D bumpTexture;
+uniform sampler2D displacementTexture;
 
 layout (std140) uniform Material {
     float shininess;

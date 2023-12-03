@@ -233,10 +233,42 @@ void Renderer::SetupScene(const objects::Scene &scene) {
 void Renderer::AttachMaterial(RenderObject &render_object, const Material &material) {
   ShaderFlags vertex_shader_flags{};
   ShaderFlags fragment_shader_flags{};
+  if (material.ambient_texture.has_value()) {
+    render_object.textures.emplace_back(material.ambient_texture.value(), "ambientTexture", *texture_allocator_);
+  } else {
+    fragment_shader_flags |= ShaderFlags::kNoAmbientTexture;
+  }
   if (material.diffuse_texture.has_value()) {
     render_object.textures.emplace_back(material.diffuse_texture.value(), "diffuseTexture", *texture_allocator_);
   } else {
     fragment_shader_flags |= ShaderFlags::kNoDiffuseTexture;
+  }
+  if (material.specular_texture.has_value()) {
+    render_object.textures.emplace_back(material.specular_texture.value(), "specularTexture", *texture_allocator_);
+  } else {
+    fragment_shader_flags |= ShaderFlags::kNoSpecularTexture;
+  }
+  if (material.shininess_texture.has_value()) {
+    render_object.textures.emplace_back(material.shininess_texture.value(), "shininessTexture", *texture_allocator_);
+  } else {
+    fragment_shader_flags |= ShaderFlags::kNoShininessTexture;
+  }
+  if (material.alpha_texture.has_value()) {
+    render_object.textures.emplace_back(material.alpha_texture.value(), "alphaTexture", *texture_allocator_);
+  } else {
+    fragment_shader_flags |= ShaderFlags::kNoAlphaTexture;
+  }
+  if (material.bump_texture.has_value()) {
+    render_object.textures.emplace_back(material.bump_texture.value(), "bumpTexture", *texture_allocator_);
+  } else {
+    fragment_shader_flags |= ShaderFlags::kNoBumpTexture;
+  }
+  if (material.displacement_texture.has_value()) {
+    render_object.textures.emplace_back(material.displacement_texture.value(),
+                                        "displacementTexture",
+                                        *texture_allocator_);
+  } else {
+    fragment_shader_flags |= ShaderFlags::kNoDisplacementTexture;
   }
   shaders_.emplace_back("shaders/render_shader.vert",
                         vertex_shader_flags,
