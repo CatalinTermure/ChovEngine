@@ -79,10 +79,10 @@ struct MaterialUBOData {
   float shininess;
   float opticalDensity;
   float dissolve;
-  alignas(16) glm::vec4 diffuseColor;
-  alignas(16) glm::vec4 ambientColor;
-  alignas(16) glm::vec4 specularColor;
-  alignas(16) glm::vec4 transmissionFilterColor;
+  alignas(16) glm::vec3 diffuseColor;
+  alignas(16) glm::vec3 ambientColor;
+  alignas(16) glm::vec3 specularColor;
+  alignas(16) glm::vec3 transmissionFilterColor;
 };
 
 constexpr int kMatricesUBOBindingPoint = 0;
@@ -134,10 +134,10 @@ void Renderer::Render() {
     material_ubo_data.shininess = material.shininess;
     material_ubo_data.opticalDensity = material.optical_density;
     material_ubo_data.dissolve = material.dissolve;
-    material_ubo_data.diffuseColor = glm::vec4(material.diffuse_color, 1.0f);
-    material_ubo_data.ambientColor = glm::vec4(material.ambient_color, 1.0f);
-    material_ubo_data.specularColor = glm::vec4(material.specular_color, 1.0f);
-    material_ubo_data.transmissionFilterColor = glm::vec4(material.transmission_filter_color, 1.0f);
+    material_ubo_data.diffuseColor = material.diffuse_color;
+    material_ubo_data.ambientColor = material.ambient_color;
+    material_ubo_data.specularColor = material.specular_color;
+    material_ubo_data.transmissionFilterColor = material.transmission_filter_color;
 
     render_object.material_data.UpdateData(&material_ubo_data, sizeof(MaterialUBOData));
 

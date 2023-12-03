@@ -6,10 +6,10 @@ layout (std140) uniform Material {
     float shininess;
     float opticalDensity;
     float dissolve;
-    vec4 diffuseColor;
-    vec4 ambientColor;
-    vec4 specularColor;
-    vec4 transmissionFilterColor;
+    vec3 diffuseColor;
+    vec3 ambientColor;
+    vec3 specularColor;
+    vec3 transmissionFilterColor;
 };
 
 in vec3 fragNormal;
@@ -17,7 +17,7 @@ in vec2 fragTexCoord;
 
 void main() {
     #ifdef NO_DIFFUSE_TEXTURE
-    outColor = diffuseColor;
+    outColor = vec4(diffuseColor, 1.0f);
     #else
     outColor = vec4(texture(diffuseTexture, fragTexCoord).xyz, 1.0f);
     #endif
