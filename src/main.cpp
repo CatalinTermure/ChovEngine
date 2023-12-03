@@ -13,7 +13,7 @@
 #include <absl/log/log_sink.h>
 #include <absl/log/log_sink_registry.h>
 
-#include "rendering/camera.h"
+#include "objects/camera.h"
 #include "rendering/renderer.h"
 #include "rendering/window.h"
 #include "rendering/mesh.h"
@@ -22,7 +22,7 @@
 
 using chove::objects::Scene;
 using chove::objects::Transform;
-using chove::rendering::Camera;
+using chove::objects::Camera;
 using chove::rendering::Window;
 using chove::rendering::Mesh;
 using chove::rendering::Renderer;

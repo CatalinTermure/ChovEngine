@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-namespace chove::rendering {
+namespace chove::objects {
 class Camera {
  public:
   Camera() = default;

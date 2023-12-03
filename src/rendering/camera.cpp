@@ -1,10 +1,10 @@
-#include "rendering/camera.h"
+#include "objects/camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-namespace chove::rendering {
+namespace chove::objects {
 
 namespace {
 bool IsAngleAcceptable(float angle) {
