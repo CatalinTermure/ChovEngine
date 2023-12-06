@@ -134,16 +134,24 @@ void Renderer::Render() {
 
   glm::mat4 view_projection[2] = {scene_->camera().GetViewMatrix(), scene_->camera().GetProjectionMatrix()};
   view_projection_matrices_.UpdateData(view_projection, 2 * sizeof(glm::mat4));
+  std::vector<objects::PointLight> point_lights = scene_->point_lights();
+  std::vector<objects::SpotLight> spot_lights = scene_->spot_lights();
+  for (objects::PointLight &point_light : point_lights) {
+    point_light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(point_light.position, 1.0F));
+  }
+  for (objects::SpotLight &spot_light : spot_lights) {
+    spot_light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(spot_light.position, 1.0F));
+    spot_light.direction = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(spot_light.direction, 0.0F));
+  }
   lights_.UpdateSubData(&scene_->directional_light(), 0, sizeof(objects::DirectionalLight));
-  lights_.UpdateSubData(scene_->point_lights().data(),
+  lights_.UpdateSubData(point_lights.data(),
                         sizeof(objects::DirectionalLight),
-                        scene_->point_lights().size() * sizeof(objects::PointLight));
-  lights_.UpdateSubData(scene_->spot_lights().data(),
+                        point_lights.size() * sizeof(objects::PointLight));
+  lights_.UpdateSubData(spot_lights.data(),
                         sizeof(objects::DirectionalLight) + scene_->point_lights().size() * sizeof(objects::PointLight),
-                        scene_->spot_lights().size() * sizeof(objects::SpotLight));
+                        spot_lights.size() * sizeof(objects::SpotLight));
 
-  MaterialUBOData
-      material_ubo_data{};
+  MaterialUBOData material_ubo_data{};
 
   for (RenderObject &render_object : render_objects_) {
     shaders_[render_object.shader_index].Use();

@@ -80,12 +80,12 @@ int main() {
   }
 
   scene.SetDirectionalLight({glm::vec3(0.0F, 1.0F, 1.0F),
-                             glm::vec3(1.0F, 1.0F, 1.0F)});
+                             glm::vec3(0.0F, 0.0F, 0.0F)});
 
   scene.AddLight(PointLight{1.0F,
                             0.0014F,
                             0.000007F,
-                            scene.camera().position(),
+                            glm::vec3(0.0F, 100.0F, 0.0F),
                             glm::vec3(1.0F, 1.0F, 1.0F)
   });
 
