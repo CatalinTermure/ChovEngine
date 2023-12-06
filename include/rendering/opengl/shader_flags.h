@@ -3,27 +3,26 @@
 
 #include <cstdint>
 
-enum class ShaderFlags : uint64_t {
-  kNoDiffuseTexture = 1 << 0,
-  kNoAmbientTexture = 1 << 1,
-  kNoSpecularTexture = 1 << 2,
-  kNoShininessTexture = 1 << 3,
-  kNoAlphaTexture = 1 << 4,
-  kNoBumpTexture = 1 << 5,
-  kNoDisplacementTexture = 1 << 6,
+enum class ShaderFlagTypes {
+  kNoDiffuseTexture = 0,
+  kNoAmbientTexture = 1,
+  kNoSpecularTexture = 2,
+  kNoShininessTexture = 3,
+  kNoAlphaTexture = 4,
+  kNoBumpTexture = 5,
+  kNoDisplacementTexture = 6,
+  kPointLightCount = 7,
+  kDirectionalLightCount = 8,
+  kSpotLightCount = 9,
 };
 
-inline ShaderFlags operator|(ShaderFlags lhs, ShaderFlags rhs) {
-  return static_cast<ShaderFlags>(static_cast<uint64_t>(lhs) | static_cast<uint64_t>(rhs));
-}
+struct ShaderFlag {
+  ShaderFlagTypes type;
+  int value;
 
-inline ShaderFlags operator&(ShaderFlags lhs, ShaderFlags rhs) {
-  return static_cast<ShaderFlags>(static_cast<uint64_t>(lhs) & static_cast<uint64_t>(rhs));
-}
-
-inline ShaderFlags &operator|=(ShaderFlags &lhs, ShaderFlags rhs) {
-  lhs = lhs | rhs;
-  return lhs;
-}
+  auto operator<(const ShaderFlag &other) const {
+    return type < other.type;
+  }
+};
 
 #endif //LABSEXTRA_INCLUDE_RENDERING_OPENGL_SHADER_FLAGS_H_

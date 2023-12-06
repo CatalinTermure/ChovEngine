@@ -23,8 +23,8 @@ struct SpotLight {
   float linear;
   float quadratic;
   float inner_cutoff;
-  float outer_cutoff;
   alignas(16) glm::vec3 position;
+  float outer_cutoff;
   alignas(16) glm::vec3 direction;
   alignas(16) glm::vec3 color;
 };

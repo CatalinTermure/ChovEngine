@@ -44,4 +44,12 @@ UniformBuffer::~UniformBuffer() {
     glDeleteBuffers(1, &buffer_);
   }
 }
+void UniformBuffer::UpdateSubData(const void *data, size_t offset, size_t size) const {
+  if (size == 0) {
+    return;
+  }
+  glBindBuffer(GL_UNIFORM_BUFFER, buffer_);
+  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
 }

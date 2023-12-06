@@ -22,9 +22,9 @@ class ShaderAllocator {
   ShaderAllocator &operator=(ShaderAllocator &&) noexcept = delete;
 
   GLuint AllocateShader(const std::filesystem::path &vertex_shader_path,
-                        ShaderFlags vertex_shader_flags,
+                        const std::vector<ShaderFlag> &vertex_shader_flags,
                         const std::filesystem::path &fragment_shader_path,
-                        ShaderFlags fragment_shader_flags);
+                        const std::vector<ShaderFlag> &fragment_shader_flags);
 
   void DeallocateShader(GLuint shader);
 
@@ -33,9 +33,9 @@ class ShaderAllocator {
 
   struct ShaderInfo {
     std::filesystem::path vertex_shader_path;
-    ShaderFlags vertex_shader_flags;
+    std::string vertex_shader_flags;
     std::filesystem::path fragment_shader_path;
-    ShaderFlags fragment_shader_flags;
+    std::string fragment_shader_flags;
 
     // for hash map equality
     friend bool operator==(const ShaderInfo &lhs, const ShaderInfo &rhs) {
@@ -47,8 +47,8 @@ class ShaderAllocator {
 
     template<typename H>
     friend H AbslHashValue(H hash, const ShaderInfo &shader) {
-      return H::combine(std::move(hash), shader.vertex_shader_path, static_cast<uint64_t>(shader.vertex_shader_flags),
-                        shader.fragment_shader_path, static_cast<uint64_t>(shader.fragment_shader_flags));
+      return H::combine(std::move(hash), shader.vertex_shader_path, shader.vertex_shader_flags,
+                        shader.fragment_shader_path, shader.fragment_shader_flags);
     }
   };
 

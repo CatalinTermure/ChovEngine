@@ -39,6 +39,27 @@ class Uniform<glm::mat4> {
   GLint location_;
 };
 
+
+template<>
+class Uniform<glm::mat3> {
+ public:
+  Uniform() = default;
+  Uniform(GLuint shader_program, const std::string &name, const glm::mat3 &value) : value_(value) {
+    location_ = glGetUniformLocation(shader_program, name.c_str());
+    if (location_ == -1) {
+      LOG(WARNING) << "Uniform location not found for " << name;
+    }
+  }
+
+  void UpdateValue(glm::mat3 value) {
+    value_ = value;
+    glUniformMatrix3fv(location_, 1, GL_FALSE, glm::value_ptr(value));
+  }
+ private:
+  glm::mat3 value_;
+  GLint location_;
+};
+
 template<>
 class Uniform<glm::vec3> {
  public:
@@ -112,6 +133,7 @@ class UniformBuffer {
   void Bind(GLuint shader_program, const std::string &name, GLint binding);
 
   void UpdateData(const void *data, size_t size) const;
+  void UpdateSubData(const void *data, size_t offset, size_t size) const;
 
   ~UniformBuffer();
 

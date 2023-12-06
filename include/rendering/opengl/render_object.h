@@ -19,6 +19,7 @@ struct RenderObject {
   RenderObject &operator=(RenderObject &&other) noexcept;
 
   Uniform<glm::mat4> model{};
+  Uniform<glm::mat3> normal_matrix{};
   size_t object_index{};
   size_t shader_index{};
   GLuint vao{};

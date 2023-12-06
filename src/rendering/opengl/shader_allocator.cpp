@@ -42,10 +42,43 @@ void LogShaderLinkIssues(GLuint program) {
   }
 }
 
-std::vector<std::string> GetDefinesForFlags(ShaderFlags flags) {
+std::vector<std::string> GetDefinesForFlags(std::vector<ShaderFlag> flags) {
   std::vector<std::string> result;
-  if (static_cast<uint64_t>(flags) & static_cast<uint64_t>(ShaderFlags::kNoDiffuseTexture)) {
-    result.emplace_back("#define NO_DIFFUSE_TEXTURE\n");
+  for (const ShaderFlag &flag : flags) {
+    switch (flag.type) {
+      case ShaderFlagTypes::kNoDiffuseTexture:result.emplace_back("#define NO_DIFFUSE_TEXTURE\n");
+        break;
+      case ShaderFlagTypes::kNoAmbientTexture:result.emplace_back("#define NO_AMBIENT_TEXTURE\n");
+        break;
+      case ShaderFlagTypes::kNoSpecularTexture:result.emplace_back("#define NO_SPECULAR_TEXTURE\n");
+        break;
+      case ShaderFlagTypes::kNoShininessTexture:result.emplace_back("#define NO_SHININESS_TEXTURE\n");
+        break;
+      case ShaderFlagTypes::kNoAlphaTexture:result.emplace_back("#define NO_ALPHA_TEXTURE\n");
+        break;
+      case ShaderFlagTypes::kNoBumpTexture:result.emplace_back("#define NO_BUMP_TEXTURE\n");
+        break;
+      case ShaderFlagTypes::kNoDisplacementTexture:result.emplace_back("#define NO_DISPLACEMENT_TEXTURE\n");
+        break;
+      case ShaderFlagTypes::kPointLightCount:
+        result.emplace_back("#define POINT_LIGHT_COUNT " + std::to_string(flag.value) + "\n");
+        break;
+      case ShaderFlagTypes::kDirectionalLightCount:
+        result.emplace_back("#define DIRECTIONAL_LIGHT_COUNT " + std::to_string(flag.value) + "\n");
+        break;
+      case ShaderFlagTypes::kSpotLightCount:
+        result.emplace_back("#define SPOT_LIGHT_COUNT " + std::to_string(flag.value) + "\n");
+        break;
+    }
+  }
+  return result;
+}
+
+std::string StringifyFlags(std::vector<ShaderFlag> flags) {
+  std::string result;
+  std::sort(flags.begin(), flags.end());  // sort so that the order of flags doesn't matter
+  for (const ShaderFlag &flag : flags) {
+    result += std::to_string(static_cast<int>(flag.type)) + ":" + std::to_string(flag.value) + ",";
   }
   return result;
 }
@@ -62,10 +95,11 @@ ShaderAllocator::~ShaderAllocator() {
 }
 
 GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shader_path,
-                                       ShaderFlags vertex_shader_flags,
+                                       const std::vector<ShaderFlag> &vertex_shader_flags,
                                        const std::filesystem::path &fragment_shader_path,
-                                       ShaderFlags fragment_shader_flags) {
-  ShaderInfo info = {vertex_shader_path, vertex_shader_flags, fragment_shader_path, fragment_shader_flags};
+                                       const std::vector<ShaderFlag> &fragment_shader_flags) {
+  ShaderInfo info = {vertex_shader_path, StringifyFlags(vertex_shader_flags), fragment_shader_path,
+                     StringifyFlags(fragment_shader_flags)};
 
   if (shader_creation_cache_.contains(info) && shader_ref_counts.contains(shader_creation_cache_.at(info))) {
     // second check is needed because the shader might have been deallocated
@@ -124,8 +158,7 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
   glDeleteShader(vertex_shader);
   glDeleteShader(fragment_shader);
 
-  shader_creation_cache_[{vertex_shader_path, vertex_shader_flags, fragment_shader_path, fragment_shader_flags}] =
-      program;
+  shader_creation_cache_[info] = program;
   shader_ref_counts[program] = 1;
   return program;
 }

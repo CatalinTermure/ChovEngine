@@ -75,6 +75,10 @@ std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path &path) {
         .displacement_texture = GetPath(path, material.displacement_texname),
         .illumination_model = static_cast<IllumType>(material.illum)
     });
+
+    if (mesh_materials.back().ambient_color == glm::vec3(0.0f, 0.0f, 0.0f)) {
+      mesh_materials.back().ambient_color = mesh_materials.back().diffuse_color;
+    }
   }
 
   // One mesh per shape, may merge

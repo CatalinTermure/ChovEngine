@@ -4,9 +4,9 @@
 namespace chove::rendering::opengl {
 
 Shader::Shader(const std::filesystem::path &vertex_shader_path,
-               ShaderFlags vertex_shader_flags,
+               const std::vector<ShaderFlag> &vertex_shader_flags,
                const std::filesystem::path &fragment_shader_path,
-               ShaderFlags fragment_shader_flags,
+               const std::vector<ShaderFlag> &fragment_shader_flags,
                ShaderAllocator &shader_allocator) {
   allocator_ = &shader_allocator;
   program_ = shader_allocator.AllocateShader(vertex_shader_path,

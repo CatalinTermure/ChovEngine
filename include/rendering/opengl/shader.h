@@ -14,9 +14,9 @@ namespace chove::rendering::opengl {
 class Shader {
  public:
   Shader(const std::filesystem::path &vertex_shader_path,
-         ShaderFlags vertex_shader_flags,
+         const std::vector<ShaderFlag> &vertex_shader_flags,
          const std::filesystem::path &fragment_shader_path,
-         ShaderFlags fragment_shader_flags,
+         const std::vector<ShaderFlag> &fragment_shader_flags,
          ShaderAllocator &shader_allocator);
   Shader(const Shader &) = delete;
   Shader &operator=(const Shader &) = delete;

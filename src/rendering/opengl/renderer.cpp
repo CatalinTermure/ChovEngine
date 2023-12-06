@@ -1,6 +1,7 @@
 #include "rendering/opengl/renderer.h"
 
 #include <GL/glew.h>
+#include <glm/gtc/matrix_inverse.hpp>
 
 namespace chove::rendering::opengl {
 namespace {
@@ -8,9 +9,9 @@ void GLAPIENTRY MessageCallback(GLenum source,
                                 GLenum type,
                                 unsigned int id,
                                 GLenum severity,
-                                GLsizei length,
+                                [[maybe_unused]] GLsizei length,
                                 const char *message,
-                                const void *userParam) {
+                                [[maybe_unused]] const void *userParam) {
   // ignore non-significant error/warning codes
   if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
@@ -72,7 +73,18 @@ void GLAPIENTRY MessageCallback(GLenum source,
       break;
   }
   msg += "\n-------------------------------------------------------------";
-  LOG(INFO) << msg;
+  switch (severity) {
+    case GL_DEBUG_SEVERITY_HIGH: LOG(ERROR) << msg;
+      break;
+    case GL_DEBUG_SEVERITY_MEDIUM: LOG(WARNING) << msg;
+      break;
+    case GL_DEBUG_SEVERITY_LOW: LOG(INFO) << msg;
+      break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION: LOG(INFO) << msg;
+      break;
+    default: LOG(INFO) << msg;
+      break;
+  }
 }
 
 struct MaterialUBOData {
@@ -87,6 +99,7 @@ struct MaterialUBOData {
 
 constexpr int kMatricesUBOBindingPoint = 0;
 constexpr int kMaterialUBOBindingPoint = 1;
+constexpr int kLightsUBOBindingPoint = 2;
 
 }
 
@@ -121,13 +134,24 @@ void Renderer::Render() {
 
   glm::mat4 view_projection[2] = {scene_->camera().GetViewMatrix(), scene_->camera().GetProjectionMatrix()};
   view_projection_matrices_.UpdateData(view_projection, 2 * sizeof(glm::mat4));
+  lights_.UpdateSubData(&scene_->directional_light(), 0, sizeof(objects::DirectionalLight));
+  lights_.UpdateSubData(scene_->point_lights().data(),
+                        sizeof(objects::DirectionalLight),
+                        scene_->point_lights().size() * sizeof(objects::PointLight));
+  lights_.UpdateSubData(scene_->spot_lights().data(),
+                        sizeof(objects::DirectionalLight) + scene_->point_lights().size() * sizeof(objects::PointLight),
+                        scene_->spot_lights().size() * sizeof(objects::SpotLight));
 
-  MaterialUBOData material_ubo_data{};
+  MaterialUBOData
+      material_ubo_data{};
 
-  for (auto &render_object : render_objects_) {
+  for (RenderObject &render_object : render_objects_) {
     shaders_[render_object.shader_index].Use();
 
     render_object.model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+    render_object.normal_matrix.UpdateValue(
+        glm::mat3(glm::inverseTranspose(
+            view_projection[0] * scene_->objects()[render_object.object_index].transform->GetMatrix())));
 
     const Material &material = scene_->objects()[render_object.object_index].mesh->material;
 
@@ -174,6 +198,9 @@ void Renderer::SetupScene(const objects::Scene &scene) {
   shaders_.reserve(scene.objects().size());
 
   view_projection_matrices_ = UniformBuffer(2 * sizeof(glm::mat4));
+  lights_ = UniformBuffer(
+      sizeof(objects::DirectionalLight) + scene_->point_lights().size() * sizeof(objects::PointLight)
+          + scene_->spot_lights().size() * sizeof(objects::SpotLight));
 
   for (int i = 0; i < scene.objects().size(); ++i) {
     LOG(INFO) << "Setting up object " << i << " of " << scene.objects().size() << " total objects";
@@ -182,10 +209,15 @@ void Renderer::SetupScene(const objects::Scene &scene) {
 
     AttachMaterial(render_object, object.mesh->material);
     view_projection_matrices_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
+    lights_.Bind(shaders_[i].program(), "Lights", kLightsUBOBindingPoint);
 
     render_object.object_index = i;
     render_object.shader_index = i;
     render_object.model = Uniform<glm::mat4>(shaders_[i].program(), "model", object.transform->GetMatrix());
+    render_object.normal_matrix = Uniform<glm::mat3>(
+        shaders_[i].program(),
+        "normalMatrix",
+        glm::identity<glm::mat3>());
 
     glGenVertexArrays(1, &render_object.vao);
     glGenBuffers(1, &render_object.vbo);
@@ -231,45 +263,57 @@ void Renderer::SetupScene(const objects::Scene &scene) {
 }
 
 void Renderer::AttachMaterial(RenderObject &render_object, const Material &material) {
-  ShaderFlags vertex_shader_flags{};
-  ShaderFlags fragment_shader_flags{};
+  std::vector<ShaderFlag> vertex_shader_flags{};
+  std::vector<ShaderFlag> fragment_shader_flags{};
+
   if (material.ambient_texture.has_value()) {
     render_object.textures.emplace_back(material.ambient_texture.value(), "ambientTexture", *texture_allocator_);
   } else {
-    fragment_shader_flags |= ShaderFlags::kNoAmbientTexture;
+    fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoAmbientTexture, 1);
   }
+
   if (material.diffuse_texture.has_value()) {
     render_object.textures.emplace_back(material.diffuse_texture.value(), "diffuseTexture", *texture_allocator_);
   } else {
-    fragment_shader_flags |= ShaderFlags::kNoDiffuseTexture;
+    fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoDiffuseTexture, 1);
   }
+
   if (material.specular_texture.has_value()) {
     render_object.textures.emplace_back(material.specular_texture.value(), "specularTexture", *texture_allocator_);
   } else {
-    fragment_shader_flags |= ShaderFlags::kNoSpecularTexture;
+    fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoSpecularTexture, 1);
   }
+
   if (material.shininess_texture.has_value()) {
     render_object.textures.emplace_back(material.shininess_texture.value(), "shininessTexture", *texture_allocator_);
   } else {
-    fragment_shader_flags |= ShaderFlags::kNoShininessTexture;
+    fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoShininessTexture, 1);
   }
+
   if (material.alpha_texture.has_value()) {
     render_object.textures.emplace_back(material.alpha_texture.value(), "alphaTexture", *texture_allocator_);
   } else {
-    fragment_shader_flags |= ShaderFlags::kNoAlphaTexture;
+    fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoAlphaTexture, 1);
   }
+
   if (material.bump_texture.has_value()) {
     render_object.textures.emplace_back(material.bump_texture.value(), "bumpTexture", *texture_allocator_);
   } else {
-    fragment_shader_flags |= ShaderFlags::kNoBumpTexture;
+    fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoBumpTexture, 1);
   }
+
   if (material.displacement_texture.has_value()) {
     render_object.textures.emplace_back(material.displacement_texture.value(),
                                         "displacementTexture",
                                         *texture_allocator_);
   } else {
-    fragment_shader_flags |= ShaderFlags::kNoDisplacementTexture;
+    fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoDisplacementTexture, 1);
   }
+
+  fragment_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, scene_->point_lights().size());
+  fragment_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
+  fragment_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, scene_->spot_lights().size());
+
   shaders_.emplace_back("shaders/render_shader.vert",
                         vertex_shader_flags,
                         "shaders/render_shader.frag",

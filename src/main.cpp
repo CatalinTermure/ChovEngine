@@ -18,11 +18,14 @@
 #include "rendering/window.h"
 #include "rendering/mesh.h"
 #include "objects/scene.h"
+#include "objects/lights.h"
 #include "rendering/opengl/renderer.h"
 
 using chove::objects::Scene;
 using chove::objects::Transform;
 using chove::objects::Camera;
+using chove::objects::SpotLight;
+using chove::objects::PointLight;
 using chove::rendering::Window;
 using chove::rendering::Mesh;
 using chove::rendering::Renderer;
@@ -31,6 +34,10 @@ class StdoutLogSink final : public absl::LogSink {
   void Send(const absl::LogEntry &entry) override {
     std::cout << entry.text_message_with_prefix_and_newline();
     log_file_ << entry.text_message_with_prefix_and_newline();
+    if (entry.log_severity() == absl::LogSeverity::kError) {
+      std::cout << entry.stacktrace();
+      log_file_ << entry.stacktrace();
+    }
   }
 
  private:
@@ -71,6 +78,16 @@ int main() {
                            glm::vec3(0.0f, 0.0f, 0.0f),
                            glm::identity<glm::quat>()});
   }
+
+  scene.SetDirectionalLight({glm::vec3(0.0F, 1.0F, 1.0F),
+                             glm::vec3(1.0F, 1.0F, 1.0F)});
+
+  scene.AddLight(PointLight{1.0F,
+                            0.0014F,
+                            0.000007F,
+                            scene.camera().position(),
+                            glm::vec3(1.0F, 1.0F, 1.0F)
+  });
 
   renderer->SetupScene(scene);
 
