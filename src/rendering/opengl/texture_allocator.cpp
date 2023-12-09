@@ -93,4 +93,19 @@ GLuint TextureAllocator::AllocateTexture(const std::filesystem::path &path) {
 
   return texture;
 }
+
+GLuint TextureAllocator::AllocateDepthMap(int width, int height) {
+  AllocateUnmappedTextureBlockIfNeeded();
+  GLuint texture = unmapped_textures_.back();
+  unmapped_textures_.pop_back();
+
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+  texture_ref_counts_[texture] = 1;
+  return texture;
+}
 }

@@ -48,7 +48,7 @@ constexpr int target_frame_rate = 60;
 constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);
 
-static constexpr const float kCameraSpeed = 1e2F;
+static constexpr const float kCameraSpeed = 1e0F;
 constexpr float camera_rotation_speed = 0.1F;
 
 int main() {
@@ -58,7 +58,8 @@ int main() {
 
   Window window{static_cast<SDL_WindowFlags>(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI)};
 
-  std::vector<Mesh> meshes = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "sponza.obj");
+  std::vector<Mesh>
+      nanosuit = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "nanosuit" / "nanosuit.obj");
 
   std::unique_ptr<Renderer> renderer = std::make_unique<chove::rendering::opengl::Renderer>(&window);
 
@@ -71,7 +72,7 @@ int main() {
       0.1F,
       100000.0F);
   glm::vec3 camera_velocity = {0.0F, 0.0F, 0.0F};
-  for (auto &mesh : meshes) {
+  for (auto &mesh : nanosuit) {
     scene.AddObject(mesh, {glm::vec3(0.0f, 0.0f, 0.0f),
                            glm::identity<glm::quat>(),
                            glm::vec3(1.0f, 1.0f, 1.0f),
@@ -83,11 +84,22 @@ int main() {
                              glm::vec3(0.0F, 0.0F, 0.0F)});
 
   scene.AddLight(PointLight{1.0F,
-                            0.0014F,
-                            0.000007F,
-                            glm::vec3(0.0F, 100.0F, 0.0F),
+                            0.00014F,
+                            0.00000007F,
+                            glm::vec3(1.0F, 1.0F, 1.0F),
                             glm::vec3(1.0F, 1.0F, 1.0F)
   });
+
+  std::vector<Mesh> sponza = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "sponza.obj");
+
+  glm::vec3 sponza_scale = glm::vec3(0.01F, 0.01F, 0.01F);
+  for (auto &mesh : sponza) {
+    scene.AddObject(mesh, {glm::vec3(0.0f, 0.0f, 0.0f),
+                           glm::identity<glm::quat>(),
+                           sponza_scale,
+                           glm::vec3(0.0f, 0.0f, 0.0f),
+                           glm::identity<glm::quat>()});
+  }
 
   renderer->SetupScene(scene);
 

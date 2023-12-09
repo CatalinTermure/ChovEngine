@@ -40,6 +40,10 @@ class Renderer : public rendering::Renderer {
 
   std::vector<RenderObject> render_objects_;
   std::vector<Shader> shaders_;
+  std::vector<Shader> shadow_shaders_;
+  std::vector<Texture> depth_maps_;
+  std::vector<GLuint> shadow_framebuffers_;
+  UniformBuffer light_space_matrices_{};
 
   void AttachMaterial(RenderObject &render_object, const Material &material);
 };

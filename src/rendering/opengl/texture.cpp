@@ -28,4 +28,13 @@ Texture::Texture(const std::filesystem::path &path, std::string name, TextureAll
     : name_(std::move(name)), allocator_(&allocator) {
   texture_ = allocator_->AllocateTexture(path);
 }
+
+Texture::Texture(int width,
+                 int height,
+                 std::string name,
+                 chove::rendering::opengl::TextureAllocator &allocator) : name_(std::move(name)),
+                                                                          allocator_(&allocator) {
+  texture_ = allocator_->AllocateDepthMap(width, height);
 }
+}
+

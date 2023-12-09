@@ -17,6 +17,7 @@ class TextureAllocator {
   TextureAllocator &operator=(TextureAllocator &&) noexcept = delete;
 
   GLuint AllocateTexture(const std::filesystem::path &path);
+  GLuint AllocateDepthMap(int width, int height);
   void DeallocateTexture(GLuint texture);
  private:
   void InvalidateCache();

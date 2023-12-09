@@ -100,8 +100,17 @@ struct MaterialUBOData {
 constexpr int kMatricesUBOBindingPoint = 0;
 constexpr int kMaterialUBOBindingPoint = 1;
 constexpr int kLightsUBOBindingPoint = 2;
+constexpr int kLightSpaceMatricesUBOBindingPoint = 3;
+
+constexpr int kShadowMapSize = 2048;
 
 }
+
+using objects::PointLight;
+using objects::DirectionalLight;
+using objects::SpotLight;
+using objects::Scene;
+using objects::GameObject;
 
 Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
   context_ = SDL_GL_CreateContext(*window_);
@@ -130,26 +139,73 @@ Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
 void Renderer::Render() {
   if (scene_ == nullptr) return;
 
+  // Start depth map render pass
+
+  glViewport(0, 0, kShadowMapSize, kShadowMapSize);
+
+  shadow_shaders_[0].Use();
+  for (int i = 0; i < scene_->point_lights().size(); ++i) {
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffers_[i]);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glm::mat4 light_projection = glm::perspective(glm::radians(90.0F),
+                                                  1.0F,
+                                                  0.01F,
+                                                  100.0F);
+    glm::mat4 light_view = glm::lookAt(scene_->point_lights()[i].position,
+                                       glm::vec3(0.01F, 0.01F, 0.01F),
+                                       glm::vec3(0.0F, 1.0F, 0.0F));
+    glm::mat4 light_space_matrix = light_projection * light_view;
+    Uniform<glm::mat4> light_space_matrix_uniform(shadow_shaders_[0].program(),
+                                                  "lightSpaceMatrix",
+                                                  light_space_matrix);
+    light_space_matrices_.UpdateSubData(glm::value_ptr(light_space_matrix), i * sizeof(glm::mat4), sizeof(glm::mat4));
+    light_space_matrix_uniform.UpdateValue(light_space_matrix);
+    for (RenderObject &render_object : render_objects_) {
+      render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+      glBindVertexArray(render_object.vao);
+      glDrawElements(GL_TRIANGLES,
+                     static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
+                     GL_UNSIGNED_INT,
+                     nullptr);
+      glBindVertexArray(0);
+    }
+  }
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  // Start actual rendering pass
+
+  glViewport(0, 0, window_->width(), window_->height());
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glm::mat4 view_projection[2] = {scene_->camera().GetViewMatrix(), scene_->camera().GetProjectionMatrix()};
   view_projection_matrices_.UpdateData(view_projection, 2 * sizeof(glm::mat4));
-  std::vector<objects::PointLight> point_lights = scene_->point_lights();
-  std::vector<objects::SpotLight> spot_lights = scene_->spot_lights();
-  for (objects::PointLight &point_light : point_lights) {
+
+  // Send light data
+
+  std::vector<PointLight> point_lights = scene_->point_lights();
+  for (PointLight &point_light : point_lights) {
     point_light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(point_light.position, 1.0F));
   }
-  for (objects::SpotLight &spot_light : spot_lights) {
-    spot_light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(spot_light.position, 1.0F));
-    spot_light.direction = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(spot_light.direction, 0.0F));
-  }
-  lights_.UpdateSubData(&scene_->directional_light(), 0, sizeof(objects::DirectionalLight));
+  lights_.UpdateSubData(&scene_->directional_light(), 0, sizeof(DirectionalLight));
   lights_.UpdateSubData(point_lights.data(),
-                        sizeof(objects::DirectionalLight),
-                        point_lights.size() * sizeof(objects::PointLight));
-  lights_.UpdateSubData(spot_lights.data(),
-                        sizeof(objects::DirectionalLight) + scene_->point_lights().size() * sizeof(objects::PointLight),
-                        spot_lights.size() * sizeof(objects::SpotLight));
+                        sizeof(DirectionalLight),
+                        point_lights.size() * sizeof(PointLight));
+
+  // Send shadow map data
+
+  int texture_index = 0;
+  for (int i = 0; i < scene_->point_lights().size(); ++i) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    glUniform1i(glGetUniformLocation(shaders_[0].program(),
+                                     std::format("{}[{}]", depth_maps_[i].name(), i).c_str()),
+                i);
+    glBindTexture(GL_TEXTURE_2D, depth_maps_[i].texture());
+    texture_index++;
+  }
+
+  // Send object data
 
   MaterialUBOData material_ubo_data{};
 
@@ -174,8 +230,9 @@ void Renderer::Render() {
     render_object.material_data.UpdateData(&material_ubo_data, sizeof(MaterialUBOData));
 
     for (int i = 0; i < render_object.textures.size(); ++i) {
-      glActiveTexture(GL_TEXTURE0 + i);
-      glUniform1i(glGetUniformLocation(shaders_[0].program(), render_object.textures[i].name().c_str()), i);
+      glActiveTexture(GL_TEXTURE0 + texture_index + i);
+      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(), render_object.textures[i].name().c_str()),
+                  texture_index + i);
       glBindTexture(GL_TEXTURE_2D, render_object.textures[i].texture());
     }
 
@@ -187,7 +244,7 @@ void Renderer::Render() {
     glBindVertexArray(0);
 
     for (int i = 0; i < render_object.textures.size(); ++i) {
-      glActiveTexture(GL_TEXTURE0 + i);
+      glActiveTexture(GL_TEXTURE0 + texture_index + i);
       glBindTexture(GL_TEXTURE_2D, 0);
     }
   }
@@ -195,7 +252,7 @@ void Renderer::Render() {
   SDL_GL_SwapWindow(*window_);
 }
 
-void Renderer::SetupScene(const objects::Scene &scene) {
+void Renderer::SetupScene(const Scene &scene) {
   LOG(INFO) << "Starting setup scene";
   scene_ = &scene;
   LOG(INFO) << "Setting up shaders";
@@ -206,22 +263,43 @@ void Renderer::SetupScene(const objects::Scene &scene) {
   shaders_.reserve(scene.objects().size());
 
   view_projection_matrices_ = UniformBuffer(2 * sizeof(glm::mat4));
+  light_space_matrices_ = UniformBuffer(scene_->point_lights().size() * sizeof(glm::mat4));
   lights_ = UniformBuffer(
-      sizeof(objects::DirectionalLight) + scene_->point_lights().size() * sizeof(objects::PointLight)
-          + scene_->spot_lights().size() * sizeof(objects::SpotLight));
+      sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
+          + scene_->spot_lights().size() * sizeof(SpotLight));
+
+  shadow_shaders_.emplace_back("shaders/depth_map.vert",
+                               std::vector<ShaderFlag>{},
+                               "shaders/depth_map.frag",
+                               std::vector<ShaderFlag>{},
+                               *shader_allocator_);
+
+  shadow_framebuffers_.resize(scene_->point_lights().size());
+  glGenFramebuffers(scene_->point_lights().size(), shadow_framebuffers_.data());
+  for (int i = 0; i < scene_->point_lights().size(); ++i) {
+    depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "depthMap", *texture_allocator_);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffers_[i]);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_maps_[i].texture(), 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
 
   for (int i = 0; i < scene.objects().size(); ++i) {
     LOG(INFO) << "Setting up object " << i << " of " << scene.objects().size() << " total objects";
-    const objects::GameObject &object = scene.objects()[i];
+    const GameObject &object = scene.objects()[i];
     RenderObject render_object;
 
     AttachMaterial(render_object, object.mesh->material);
     view_projection_matrices_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
     lights_.Bind(shaders_[i].program(), "Lights", kLightsUBOBindingPoint);
+    light_space_matrices_.Bind(shaders_[i].program(), "LightSpaceMatrices", kLightSpaceMatricesUBOBindingPoint);
 
     render_object.object_index = i;
     render_object.shader_index = i;
     render_object.model = Uniform<glm::mat4>(shaders_[i].program(), "model", object.transform->GetMatrix());
+    render_object.shadow_model =
+        Uniform<glm::mat4>(shadow_shaders_[0].program(), "model", object.transform->GetMatrix());
     render_object.normal_matrix = Uniform<glm::mat3>(
         shaders_[i].program(),
         "normalMatrix",

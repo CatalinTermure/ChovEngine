@@ -3,6 +3,7 @@
 namespace chove::rendering::opengl {
 
 RenderObject::RenderObject(RenderObject &&other) noexcept: model(other.model),
+                                                           shadow_model(other.shadow_model),
                                                            normal_matrix(other.normal_matrix),
                                                            object_index(other.object_index),
                                                            shader_index(other.shader_index),
@@ -19,6 +20,7 @@ RenderObject::RenderObject(RenderObject &&other) noexcept: model(other.model),
 RenderObject &RenderObject::operator=(RenderObject &&other) noexcept {
   model = other.model;
   normal_matrix = other.normal_matrix;
+  shadow_model = other.shadow_model;
   object_index = other.object_index;
   shader_index = other.shader_index;
   vao = other.vao;
