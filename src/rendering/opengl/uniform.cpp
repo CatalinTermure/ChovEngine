@@ -22,10 +22,8 @@ UniformBuffer::UniformBuffer(size_t size) {
 }
 
 void UniformBuffer::Bind(GLuint shader_program, const std::string &name, GLint binding) {
-  if (binding_ != binding) {
-    binding_ = binding;
-    glBindBufferBase(GL_UNIFORM_BUFFER, binding_, buffer_);
-  }
+  binding_ = binding;
+  glBindBufferBase(GL_UNIFORM_BUFFER, binding_, buffer_);
   GLuint block_index = glGetUniformBlockIndex(shader_program, name.c_str());
   if (block_index == GL_INVALID_INDEX) {
     LOG(WARNING) << "Uniform block index not found for " << name;
@@ -37,6 +35,10 @@ void UniformBuffer::UpdateData(const void *data, size_t size) const {
   glBindBuffer(GL_UNIFORM_BUFFER, buffer_);
   glBufferSubData(GL_UNIFORM_BUFFER, 0, static_cast<GLsizeiptr>(size), data);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void UniformBuffer::Rebind() const {
+  glBindBufferBase(GL_UNIFORM_BUFFER, binding_, buffer_);
 }
 
 UniformBuffer::~UniformBuffer() {

@@ -44,7 +44,7 @@ class StdoutLogSink final : public absl::LogSink {
   std::ofstream log_file_{"log.txt"};
 };
 
-constexpr int target_frame_rate = 60;
+constexpr int target_frame_rate = 1;
 constexpr long long target_frame_time_ns = 1'000'000'000 / target_frame_rate;
 constexpr std::chrono::duration target_frame_time = std::chrono::nanoseconds(target_frame_time_ns);
 
@@ -72,8 +72,9 @@ int main() {
       0.1F,
       100000.0F);
   glm::vec3 camera_velocity = {0.0F, 0.0F, 0.0F};
+  glm::vec3 nanosuit_position = {0.0F, 1.0F, 0.0F};
   for (auto &mesh : nanosuit) {
-    scene.AddObject(mesh, {glm::vec3(0.0f, 0.0f, 0.0f),
+    scene.AddObject(mesh, {nanosuit_position,
                            glm::identity<glm::quat>(),
                            glm::vec3(1.0f, 1.0f, 1.0f),
                            glm::vec3(0.0f, 0.0f, 0.0f),
@@ -81,12 +82,12 @@ int main() {
   }
 
   scene.SetDirectionalLight({glm::vec3(0.0F, 1.0F, 1.0F),
-                             glm::vec3(0.0F, 0.0F, 0.0F)});
+                             glm::vec3(1.0F, 1.0F, 1.0F)});
 
   scene.AddLight(PointLight{1.0F,
                             0.00014F,
                             0.00000007F,
-                            glm::vec3(1.0F, 1.0F, 1.0F),
+                            glm::vec3(0.5F, 2.0F, 0.0F),
                             glm::vec3(1.0F, 1.0F, 1.0F)
   });
 
@@ -129,6 +130,10 @@ int main() {
             break;
           case SDLK_r:
             scene.objects()[0].transform->rotation *= glm::angleAxis(glm::radians(10.0F), glm::vec3(0.0F, 1.0F, 0.0F));
+            break;
+          case SDLK_l:
+            scene.SetDirectionalLight({scene.camera().look_direction(),
+                                       glm::vec3(1.0F, 1.0F, 1.0F)});
             break;
           default:break;
         }

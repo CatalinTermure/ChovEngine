@@ -88,13 +88,13 @@ void GLAPIENTRY MessageCallback(GLenum source,
 }
 
 struct MaterialUBOData {
-  float shininess;
-  float opticalDensity;
-  float dissolve;
-  alignas(16) glm::vec3 diffuseColor;
-  alignas(16) glm::vec3 ambientColor;
-  alignas(16) glm::vec3 specularColor;
-  alignas(16) glm::vec3 transmissionFilterColor;
+  [[maybe_unused]] float shininess;
+  [[maybe_unused]] float opticalDensity;
+  [[maybe_unused]] float dissolve;
+  [[maybe_unused]] alignas(16) glm::vec3 diffuseColor;
+  [[maybe_unused]] alignas(16) glm::vec3 ambientColor;
+  [[maybe_unused]] alignas(16) glm::vec3 specularColor;
+  [[maybe_unused]] alignas(16) glm::vec3 transmissionFilterColor;
 };
 
 constexpr int kMatricesUBOBindingPoint = 0;
@@ -139,6 +139,10 @@ Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
 void Renderer::Render() {
   if (scene_ == nullptr) return;
 
+  if (scene_->dirty_bit()) {
+    SetupScene(*scene_);
+  }
+
   // Start depth map render pass
 
   glViewport(0, 0, kShadowMapSize, kShadowMapSize);
@@ -159,6 +163,7 @@ void Renderer::Render() {
                                                   "lightSpaceMatrix",
                                                   light_space_matrix);
     light_space_matrices_.UpdateSubData(glm::value_ptr(light_space_matrix), i * sizeof(glm::mat4), sizeof(glm::mat4));
+    light_space_matrices_.Rebind();
     light_space_matrix_uniform.UpdateValue(light_space_matrix);
     for (RenderObject &render_object : render_objects_) {
       render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
@@ -181,6 +186,7 @@ void Renderer::Render() {
 
   glm::mat4 view_projection[2] = {scene_->camera().GetViewMatrix(), scene_->camera().GetProjectionMatrix()};
   view_projection_matrices_.UpdateData(view_projection, 2 * sizeof(glm::mat4));
+  view_projection_matrices_.Rebind();
 
   // Send light data
 
@@ -192,13 +198,14 @@ void Renderer::Render() {
   lights_.UpdateSubData(point_lights.data(),
                         sizeof(DirectionalLight),
                         point_lights.size() * sizeof(PointLight));
+  lights_.Rebind();
 
   // Send shadow map data
 
   int texture_index = 0;
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
     glActiveTexture(GL_TEXTURE0 + i);
-    glUniform1i(glGetUniformLocation(shaders_[0].program(),
+    glUniform1i(glGetUniformLocation(shaders_[i].program(),
                                      std::format("{}[{}]", depth_maps_[i].name(), i).c_str()),
                 i);
     glBindTexture(GL_TEXTURE_2D, depth_maps_[i].texture());
@@ -219,6 +226,8 @@ void Renderer::Render() {
 
     const Material &material = scene_->objects()[render_object.object_index].mesh->material;
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "UnusedValue"
     material_ubo_data.shininess = material.shininess;
     material_ubo_data.opticalDensity = material.optical_density;
     material_ubo_data.dissolve = material.dissolve;
@@ -226,12 +235,15 @@ void Renderer::Render() {
     material_ubo_data.ambientColor = material.ambient_color;
     material_ubo_data.specularColor = material.specular_color;
     material_ubo_data.transmissionFilterColor = material.transmission_filter_color;
+#pragma clang diagnostic pop
 
     render_object.material_data.UpdateData(&material_ubo_data, sizeof(MaterialUBOData));
+    render_object.material_data.Rebind();
 
     for (int i = 0; i < render_object.textures.size(); ++i) {
       glActiveTexture(GL_TEXTURE0 + texture_index + i);
-      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(), render_object.textures[i].name().c_str()),
+      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
+                                       render_object.textures[i].name().c_str()),
                   texture_index + i);
       glBindTexture(GL_TEXTURE_2D, render_object.textures[i].texture());
     }
@@ -255,9 +267,17 @@ void Renderer::Render() {
 void Renderer::SetupScene(const Scene &scene) {
   LOG(INFO) << "Starting setup scene";
   scene_ = &scene;
+  // this const cast is fine, we are not modifying the scene, just clearing the dirty bit
+  const_cast<Scene *>(scene_)->ClearDirtyBit();
   LOG(INFO) << "Setting up shaders";
 
   LOG(INFO) << "Setting up uniforms";
+
+  render_objects_.clear();
+  shaders_.clear();
+  shadow_shaders_.clear();
+  depth_maps_.clear();
+  shadow_framebuffers_.clear();
 
   render_objects_.reserve(scene.objects().size());
   shaders_.reserve(scene.objects().size());
@@ -275,7 +295,7 @@ void Renderer::SetupScene(const Scene &scene) {
                                *shader_allocator_);
 
   shadow_framebuffers_.resize(scene_->point_lights().size());
-  glGenFramebuffers(scene_->point_lights().size(), shadow_framebuffers_.data());
+  glGenFramebuffers(static_cast<GLsizei>(scene_->point_lights().size()), shadow_framebuffers_.data());
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
     depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "depthMap", *texture_allocator_);
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffers_[i]);

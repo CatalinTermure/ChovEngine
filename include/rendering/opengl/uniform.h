@@ -128,9 +128,10 @@ class UniformBuffer {
   UniformBuffer(UniformBuffer &&other) noexcept;
   UniformBuffer &operator=(UniformBuffer &&other) noexcept;
 
-  UniformBuffer(size_t size);
+  explicit UniformBuffer(size_t size);
 
   void Bind(GLuint shader_program, const std::string &name, GLint binding);
+  void Rebind() const;
 
   void UpdateData(const void *data, size_t size) const;
   void UpdateSubData(const void *data, size_t offset, size_t size) const;

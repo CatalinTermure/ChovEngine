@@ -169,8 +169,8 @@ void ComputePointLight() {
 }
 
 void main() {
-    ComputePointLight();
-    //ComputeDirectionalLight();
+    // ComputePointLight();
+    ComputeDirectionalLight();
     #ifndef NO_LIGHTS
         outColor = vec4(min(totalAmbient + totalDiffuse + totalSpecular, 1.0f), 1.0f);
     #else
