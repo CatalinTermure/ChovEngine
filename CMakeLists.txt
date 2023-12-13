@@ -9,10 +9,13 @@ find_package(glm REQUIRED)
 find_package(absl CONFIG REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
 
+add_library(ProjectObjects src/objects/scene.cpp)
+target_include_directories(ProjectObjects PUBLIC include)
+target_link_libraries(ProjectObjects glm::glm absl::base absl::hash absl::log absl::status)
+
 add_library(ProjectRendering src/rendering/mesh.cpp
         src/rendering/window.cpp
         src/rendering/camera.cpp
-        src/objects/scene.cpp
         src/rendering/libraries_initializer.cpp)
 target_include_directories(ProjectRendering PUBLIC include)
 target_link_libraries(ProjectRendering glm::glm absl::base absl::hash absl::log absl::status)
@@ -29,7 +32,13 @@ add_library(ProjectRenderingOpenGL
 target_link_libraries(ProjectRenderingOpenGL GLEW::GLEW absl::base absl::log)
 target_include_directories(ProjectRenderingOpenGL PUBLIC include)
 
-add_executable(LabsExtra src/main.cpp)
+add_library(ProjectApplication src/application.cpp)
+target_include_directories(ProjectApplication PUBLIC include)
+target_link_libraries(ProjectApplication ProjectObjects ProjectRendering absl::base absl::hash absl::log absl::status)
+
+add_executable(LabsExtra src/main.cpp
+        src/game.cpp
+)
 target_include_directories(LabsExtra PUBLIC include)
 
 set(GLSLC_EXECUTABLE "glslc.exe")
@@ -57,5 +66,5 @@ add_dependencies(LabsExtra shaders)
 find_package(Vulkan)
 include_directories("${Vulkan_INCLUDE_DIRS}")
 target_link_libraries(LabsExtra ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
-target_link_libraries(LabsExtra ProjectRendering ProjectRenderingOpenGL)
+target_link_libraries(LabsExtra ProjectApplication ProjectRenderingOpenGL)
 target_include_directories(LabsExtra PUBLIC include)

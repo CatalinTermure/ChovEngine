@@ -5,6 +5,7 @@ namespace chove::objects {
 void Scene::AddObject(const rendering::Mesh &mesh, Transform transform) {
   transforms_.push_back(transform);
   objects_.push_back(GameObject{&mesh, &transforms_.back()});
+  SetDirtyBit();
 }
 
 // TODO: fix this hack, needed for the pointers to be stable(up to 10k objects), will need to use indices into the vector,
