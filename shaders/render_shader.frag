@@ -149,8 +149,8 @@ void ComputePointLight() {
     for (int i = 0; i < POINT_LIGHT_COUNT; ++i) {
         vec3 lightDirN = normalize(pointLights[i].position - fragPosEye.xyz);  // compute light direction
         vec3 halfVector = normalize(lightDirN + viewDirN);  // compute half vector
-        float distance = length(pointLights[i].position - fragPosEye.xyz);
-        float attenuation = 1.0f / (pointLights[i].constant + pointLights[i].linear * distance + pointLights[i].quadratic * distance * distance);
+        float dist = length(pointLights[i].position - fragPosEye.xyz);
+        float attenuation = 1.0f / (pointLights[i].constant + pointLights[i].linear * dist + pointLights[i].quadratic * dist * dist);
 
         vec3 depthMapCoordinates = ((fragPosLightSpace[i].xyz / fragPosLightSpace[i].w) * 0.5f + 0.5) - vec3(0.0f, 0.0f, depthBias);
 
@@ -160,14 +160,14 @@ void ComputePointLight() {
                         (pointLights[i].far_plane + pointLights[i].near_plane - depth * (pointLights[i].far_plane - pointLights[i].near_plane));
 
         ambient = attenuation * ambientStrength * pointLights[i].color;
-        diffuse = (1.0f - shadow) * attenuation * max(dot(normalEye, lightDirN), 0.0f) * pointLights[i].color;
+        diffuse = attenuation * max(dot(normalEye, lightDirN), 0.0f) * pointLights[i].color;
 
         #ifdef NO_SHININESS_TEXTURE
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), shininess);
         #else
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), texture(shininessTexture, fragTexCoord).r);
         #endif
-        specular = (1.0f - shadow) * attenuation * specularStrength * specCoeff * pointLights[i].color;
+        specular = attenuation * specularStrength * specCoeff * pointLights[i].color;
 
         ComputeLightComponents();
     }
@@ -175,10 +175,10 @@ void ComputePointLight() {
 #endif
 
 void main() {
+    ComputeDirectionalLight();
     #if POINT_LIGHT_COUNT > 0
         ComputePointLight();
     #endif
-    ComputeDirectionalLight();
     #ifndef NO_LIGHTS
         outColor = vec4(min(totalAmbient + totalDiffuse + totalSpecular, 1.0f), 1.0f);
     #else

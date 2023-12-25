@@ -16,6 +16,7 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
   renderer_ = std::make_unique<rendering::opengl::Renderer>(&window_);
 
   nanosuit = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "nanosuit" / "nanosuit.obj");
+  cube = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "cube.obj")[0];
   sponza = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "sponza.obj");
   glm::vec3 nanosuit_position = {0.0F, 1.0F, 0.0F};
   glm::vec3 sponza_scale = glm::vec3(0.01F, 0.01F, 0.01F);
@@ -45,16 +46,21 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
                            glm::identity<glm::quat>()});
   }
   scene.SetDirectionalLight({glm::vec3(0.0F, 1.0F, 1.0F),
-                             glm::vec3(1.0F, 1.0F, 1.0F)});
+                             glm::vec3(0.0F, 0.0F, 0.0F)});
 
-//  scene.AddLight(objects::PointLight{1.0F,
-//                                     0.00014F,
-//                                     0.00000007F,
-//                                     0.01F,
-//                                     glm::vec3(0.5F, 2.0F, 0.0F),
-//                                     100.0F,
-//                                     glm::vec3(1.0F, 1.0F, 1.0F)
-//  });
+  scene.AddLight(objects::PointLight{1.0F,
+                                     0.0014F,
+                                     0.00007F,
+                                     0.01F,
+                                     glm::vec3(1.5F, 6.0F, 0.0F),
+                                     100.0F,
+                                     glm::vec3(1.0F, 1.0F, 1.0F)
+  });
+//  scene.AddObject(cube, {glm::vec3(1.5F, 6.0F, 0.0F),
+//                         glm::identity<glm::quat>(),
+//                         glm::vec3(0.1F, 0.1F, 0.1F),
+//                         glm::vec3(0.0f, 0.0f, 0.0f),
+//                         glm::identity<glm::quat>()});
 
   scenes_["main"] = std::move(scene);
 

@@ -196,21 +196,20 @@ void Renderer::Render() {
 
   // Send light data
 
-  std::vector<PointLight> point_lights = scene_->point_lights();
-  for (PointLight &point_light : point_lights) {
-    point_light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(point_light.position, 1.0F));
+  {
+    DirectionalLight light = scene_->directional_light();
+    light.direction = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(light.direction, 0.0F));
+    lights_.UpdateSubData(&light, 0, sizeof(DirectionalLight));
   }
 
   {
-    DirectionalLight directional_light = scene_->directional_light();
-    directional_light.direction =
-        glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(directional_light.direction, 0.0F));
-    lights_.UpdateSubData(&directional_light, 0, sizeof(DirectionalLight));
+    for (int i = 0; i < scene_->point_lights().size(); i++) {
+      PointLight light = scene_->point_lights()[i];
+      light.position =
+          glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(scene_->point_lights()[i].position, 1.0F));
+      lights_.UpdateSubData(&light, sizeof(DirectionalLight) + i * sizeof(PointLight), sizeof(PointLight));
+    }
   }
-
-  lights_.UpdateSubData(point_lights.data(),
-                        sizeof(DirectionalLight),
-                        point_lights.size() * sizeof(PointLight));
   lights_.Rebind();
 
   // Send shadow map data

@@ -26,6 +26,7 @@ class Game : public Application {
 
   std::vector<rendering::Mesh> nanosuit;
   std::vector<rendering::Mesh> sponza;
+  rendering::Mesh cube;
 };
 }  // namespace chove
 
