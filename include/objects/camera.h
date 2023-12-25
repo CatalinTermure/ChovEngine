@@ -19,6 +19,8 @@ class Camera {
 
   [[nodiscard]] const glm::vec3 &position() const { return position_; }
   [[nodiscard]] const glm::vec3 &look_direction() const { return look_direction_; }
+  [[nodiscard]] float near_plane() const { return near_plane_; }
+  [[nodiscard]] float far_plane() const { return far_plane_; }
 
   [[nodiscard]] glm::mat4 GetViewMatrix() const;
   [[nodiscard]] glm::mat4 GetProjectionMatrix() const;

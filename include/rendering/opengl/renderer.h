@@ -35,7 +35,7 @@ class Renderer : public rendering::Renderer {
   std::unique_ptr<TextureAllocator> texture_allocator_;
   std::unique_ptr<ShaderAllocator> shader_allocator_;
 
-  UniformBuffer view_projection_matrices_{};
+  UniformBuffer matrices_ubo_{};
   UniformBuffer lights_{};
 
   std::vector<RenderObject> render_objects_;

@@ -14,13 +14,13 @@ struct PointLight {
     float constant;
     float linear;
     float quadratic;
-    float pad0;
+    float near_plane;
 
     vec3 position;
-    float pad1;
+    float far_plane;
 
     vec3 color;
-    float pad2;
+    float pad0;
 };
 
 struct SpotLight {
@@ -123,7 +123,7 @@ void ComputeDirectionalLight() {
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 
     for (int i = 0; i < DIRECTIONAL_LIGHT_COUNT; ++i) {
-        vec3 lightDirN = normalize(directionalLights[i].direction - fragPosEye.xyz);  // compute light direction
+        vec3 lightDirN = normalize(directionalLights[i].direction);  // compute light direction
         vec3 halfVector = normalize(lightDirN + viewDirN);  // compute half vector
         ambient = ambientStrength * directionalLights[i].color;
         diffuse = max(dot(normalEye, lightDirN), 0.0f) * directionalLights[i].color;
@@ -139,6 +139,7 @@ void ComputeDirectionalLight() {
     }
 }
 
+#if POINT_LIGHT_COUNT > 0
 void ComputePointLight() {
     vec3 cameraPosEye = vec3(0.0f);
 
@@ -152,7 +153,11 @@ void ComputePointLight() {
         float attenuation = 1.0f / (pointLights[i].constant + pointLights[i].linear * distance + pointLights[i].quadratic * distance * distance);
 
         vec3 depthMapCoordinates = ((fragPosLightSpace[i].xyz / fragPosLightSpace[i].w) * 0.5f + 0.5) - vec3(0.0f, 0.0f, depthBias);
-        float shadow = texture(depthMaps[i], depthMapCoordinates.xyz);
+
+        float depth = texture(depthMaps[i], depthMapCoordinates.xyz) * 2.0f - 1.0f;
+
+        float shadow = (2.0 * pointLights[i].near_plane * pointLights[i].far_plane) /
+                        (pointLights[i].far_plane + pointLights[i].near_plane - depth * (pointLights[i].far_plane - pointLights[i].near_plane));
 
         ambient = attenuation * ambientStrength * pointLights[i].color;
         diffuse = (1.0f - shadow) * attenuation * max(dot(normalEye, lightDirN), 0.0f) * pointLights[i].color;
@@ -167,9 +172,12 @@ void ComputePointLight() {
         ComputeLightComponents();
     }
 }
+#endif
 
 void main() {
-    // ComputePointLight();
+    #if POINT_LIGHT_COUNT > 0
+        ComputePointLight();
+    #endif
     ComputeDirectionalLight();
     #ifndef NO_LIGHTS
         outColor = vec4(min(totalAmbient + totalDiffuse + totalSpecular, 1.0f), 1.0f);

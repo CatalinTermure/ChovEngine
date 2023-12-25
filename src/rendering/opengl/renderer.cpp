@@ -87,6 +87,11 @@ void GLAPIENTRY MessageCallback(GLenum source,
   }
 }
 
+struct MatricesUBOData {
+  [[maybe_unused]] alignas(16) glm::mat4 view;
+  [[maybe_unused]] alignas(16) glm::mat4 projection;
+};
+
 struct MaterialUBOData {
   [[maybe_unused]] float shininess;
   [[maybe_unused]] float opticalDensity;
@@ -153,8 +158,8 @@ void Renderer::Render() {
     glClear(GL_DEPTH_BUFFER_BIT);
     glm::mat4 light_projection = glm::perspective(glm::radians(90.0F),
                                                   1.0F,
-                                                  0.01F,
-                                                  100.0F);
+                                                  scene_->point_lights()[i].near_plane,
+                                                  scene_->point_lights()[i].far_plane);
     glm::mat4 light_view = glm::lookAt(scene_->point_lights()[i].position,
                                        glm::vec3(0.01F, 0.01F, 0.01F),
                                        glm::vec3(0.0F, 1.0F, 0.0F));
@@ -184,9 +189,10 @@ void Renderer::Render() {
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  glm::mat4 view_projection[2] = {scene_->camera().GetViewMatrix(), scene_->camera().GetProjectionMatrix()};
-  view_projection_matrices_.UpdateData(view_projection, 2 * sizeof(glm::mat4));
-  view_projection_matrices_.Rebind();
+  MatricesUBOData matrices_ubo_data = {scene_->camera().GetViewMatrix(),
+                                       scene_->camera().GetProjectionMatrix()};
+  matrices_ubo_.UpdateData(&matrices_ubo_data, sizeof(MatricesUBOData));
+  matrices_ubo_.Rebind();
 
   // Send light data
 
@@ -194,7 +200,14 @@ void Renderer::Render() {
   for (PointLight &point_light : point_lights) {
     point_light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(point_light.position, 1.0F));
   }
-  lights_.UpdateSubData(&scene_->directional_light(), 0, sizeof(DirectionalLight));
+
+  {
+    DirectionalLight directional_light = scene_->directional_light();
+    directional_light.direction =
+        glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(directional_light.direction, 0.0F));
+    lights_.UpdateSubData(&directional_light, 0, sizeof(DirectionalLight));
+  }
+
   lights_.UpdateSubData(point_lights.data(),
                         sizeof(DirectionalLight),
                         point_lights.size() * sizeof(PointLight));
@@ -222,7 +235,7 @@ void Renderer::Render() {
     render_object.model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
     render_object.normal_matrix.UpdateValue(
         glm::mat3(glm::inverseTranspose(
-            view_projection[0] * scene_->objects()[render_object.object_index].transform->GetMatrix())));
+            matrices_ubo_data.view * scene_->objects()[render_object.object_index].transform->GetMatrix())));
 
     const Material &material = scene_->objects()[render_object.object_index].mesh->material;
 
@@ -282,7 +295,7 @@ void Renderer::SetupScene(const Scene &scene) {
   render_objects_.reserve(scene.objects().size());
   shaders_.reserve(scene.objects().size());
 
-  view_projection_matrices_ = UniformBuffer(2 * sizeof(glm::mat4));
+  matrices_ubo_ = UniformBuffer(2 * sizeof(glm::mat4));
   light_space_matrices_ = UniformBuffer(scene_->point_lights().size() * sizeof(glm::mat4));
   lights_ = UniformBuffer(
       sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
@@ -295,7 +308,7 @@ void Renderer::SetupScene(const Scene &scene) {
                                *shader_allocator_);
 
   shadow_framebuffers_.resize(scene_->point_lights().size());
-  glGenFramebuffers(static_cast<GLsizei>(scene_->point_lights().size()), shadow_framebuffers_.data());
+  glGenFramebuffers(static_cast<GLsizei>(shadow_framebuffers_.size()), shadow_framebuffers_.data());
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
     depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "depthMap", *texture_allocator_);
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffers_[i]);
@@ -311,7 +324,7 @@ void Renderer::SetupScene(const Scene &scene) {
     RenderObject render_object;
 
     AttachMaterial(render_object, object.mesh->material);
-    view_projection_matrices_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
+    matrices_ubo_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
     lights_.Bind(shaders_[i].program(), "Lights", kLightsUBOBindingPoint);
     light_space_matrices_.Bind(shaders_[i].program(), "LightSpaceMatrices", kLightSpaceMatricesUBOBindingPoint);
 

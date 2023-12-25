@@ -14,7 +14,9 @@ struct PointLight {
   float constant;
   float linear;
   float quadratic;
+  float near_plane;
   alignas(16) glm::vec3 position;
+  float far_plane;
   alignas(16) glm::vec3 color;
 };
 

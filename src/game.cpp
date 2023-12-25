@@ -47,12 +47,14 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
   scene.SetDirectionalLight({glm::vec3(0.0F, 1.0F, 1.0F),
                              glm::vec3(1.0F, 1.0F, 1.0F)});
 
-  scene.AddLight(objects::PointLight{1.0F,
-                                     0.00014F,
-                                     0.00000007F,
-                                     glm::vec3(0.5F, 2.0F, 0.0F),
-                                     glm::vec3(1.0F, 1.0F, 1.0F)
-  });
+//  scene.AddLight(objects::PointLight{1.0F,
+//                                     0.00014F,
+//                                     0.00000007F,
+//                                     0.01F,
+//                                     glm::vec3(0.5F, 2.0F, 0.0F),
+//                                     100.0F,
+//                                     glm::vec3(1.0F, 1.0F, 1.0F)
+//  });
 
   scenes_["main"] = std::move(scene);
 
