@@ -18,7 +18,8 @@ struct Transform {
   glm::quat angular_velocity;
 
   [[nodiscard]] glm::mat4 GetMatrix() const {
-    return glm::translate(glm::scale(glm::toMat4(rotation), scale), location);
+    return glm::translate(glm::identity<glm::mat4>(), location) * glm::scale(glm::identity<glm::mat4>(), scale)
+        * glm::toMat4(rotation);
   }
 };
 
