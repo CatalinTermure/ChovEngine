@@ -154,7 +154,14 @@ void ComputePointLight() {
 
         vec3 depthMapCoordinates = ((fragPosLightSpace[i].xyz / fragPosLightSpace[i].w) * 0.5f + 0.5) - vec3(0.0f, 0.0f, depthBias);
 
-        float shadow = texture(depthMaps[i], depthMapCoordinates.xyz);
+        float totalShadow = 0.0f;
+        for (int dx = -2; dx <= 2; ++dx) {
+            for (int dy = -2; dy <= 2; ++dy) {
+                float shadowCoeff = texture(depthMaps[i], depthMapCoordinates.xyz + vec3(dx, dy, 0.0f) / 2048.0f);
+                totalShadow += shadowCoeff;
+            }
+        }
+        float shadow = totalShadow / 16.0f;
 
         ambient = attenuation * ambientStrength * pointLights[i].color;
         diffuse = shadow * attenuation * max(dot(normalEye, lightDirN), 0.0f) * pointLights[i].color;
