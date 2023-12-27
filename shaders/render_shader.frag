@@ -86,7 +86,7 @@ vec3 totalAmbient = vec3(0.0f);
 vec3 totalDiffuse = vec3(0.0f);
 vec3 totalSpecular = vec3(0.0f);
 
-float depthBias = 0.05f;
+float depthBias = 0.00005f;
 
 void ComputeLightComponents() {
     #ifdef NO_AMBIENT_TEXTURE
@@ -154,20 +154,17 @@ void ComputePointLight() {
 
         vec3 depthMapCoordinates = ((fragPosLightSpace[i].xyz / fragPosLightSpace[i].w) * 0.5f + 0.5) - vec3(0.0f, 0.0f, depthBias);
 
-        float depth = texture(depthMaps[i], depthMapCoordinates.xyz) * 2.0f - 1.0f;
-
-        float shadow = (2.0 * pointLights[i].near_plane * pointLights[i].far_plane) /
-                        (pointLights[i].far_plane + pointLights[i].near_plane - depth * (pointLights[i].far_plane - pointLights[i].near_plane));
+        float shadow = texture(depthMaps[i], depthMapCoordinates.xyz);
 
         ambient = attenuation * ambientStrength * pointLights[i].color;
-        diffuse = attenuation * max(dot(normalEye, lightDirN), 0.0f) * pointLights[i].color;
+        diffuse = shadow * attenuation * max(dot(normalEye, lightDirN), 0.0f) * pointLights[i].color;
 
         #ifdef NO_SHININESS_TEXTURE
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), shininess);
         #else
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), texture(shininessTexture, fragTexCoord).r);
         #endif
-        specular = attenuation * specularStrength * specCoeff * pointLights[i].color;
+        specular = shadow * attenuation * specularStrength * specCoeff * pointLights[i].color;
 
         ComputeLightComponents();
     }

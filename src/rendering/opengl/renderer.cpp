@@ -212,18 +212,6 @@ void Renderer::Render() {
   }
   lights_.Rebind();
 
-  // Send shadow map data
-
-  int texture_index = 0;
-  for (int i = 0; i < scene_->point_lights().size(); ++i) {
-    glActiveTexture(GL_TEXTURE0 + i);
-    glUniform1i(glGetUniformLocation(shaders_[i].program(),
-                                     std::format("{}[{}]", depth_maps_[i].name(), i).c_str()),
-                i);
-    glBindTexture(GL_TEXTURE_2D, depth_maps_[i].texture());
-    texture_index++;
-  }
-
   // Send object data
 
   MaterialUBOData material_ubo_data{};
@@ -252,12 +240,24 @@ void Renderer::Render() {
     render_object.material_data.UpdateData(&material_ubo_data, sizeof(MaterialUBOData));
     render_object.material_data.Rebind();
 
+    // Send shadow map data
+
+    int texture_index = 0;
+    for (int i = 0; i < scene_->point_lights().size(); ++i) {
+      glActiveTexture(GL_TEXTURE0 + i);
+      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
+                                       std::format("{}[{}]", depth_maps_[i].name(), i).c_str()),
+                  i);
+      glBindTexture(GL_TEXTURE_2D, depth_maps_[i].texture());
+      texture_index++;
+    }
+
     for (int i = 0; i < render_object.textures.size(); ++i) {
       glActiveTexture(GL_TEXTURE0 + texture_index + i);
-      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
-                                       render_object.textures[i].name().c_str()),
-                  texture_index + i);
       glBindTexture(GL_TEXTURE_2D, render_object.textures[i].texture());
+      int location = glGetUniformLocation(shaders_[render_object.shader_index].program(),
+                           render_object.textures[i].name().c_str());
+      glUniform1i(location, texture_index + i);
     }
 
     glBindVertexArray(render_object.vao);
@@ -309,7 +309,7 @@ void Renderer::SetupScene(const Scene &scene) {
   shadow_framebuffers_.resize(scene_->point_lights().size());
   glGenFramebuffers(static_cast<GLsizei>(shadow_framebuffers_.size()), shadow_framebuffers_.data());
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
-    depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "depthMap", *texture_allocator_);
+    depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "depthMaps", *texture_allocator_);
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffers_[i]);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_maps_[i].texture(), 0);
     glDrawBuffer(GL_NONE);

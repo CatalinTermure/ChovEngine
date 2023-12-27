@@ -52,7 +52,7 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
                                      0.0014F,
                                      0.00007F,
                                      0.01F,
-                                     glm::vec3(1.5F, 6.0F, 0.0F),
+                                     glm::vec3(2.5F, 6.0F, 0.0F),
                                      100.0F,
                                      glm::vec3(1.0F, 1.0F, 1.0F)
   });
