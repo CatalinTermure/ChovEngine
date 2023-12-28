@@ -18,6 +18,7 @@ class TextureAllocator {
 
   GLuint AllocateTexture(const std::filesystem::path &path);
   GLuint AllocateDepthMap(int width, int height);
+  GLuint AllocateCubeDepthMap(int cube_length);
   void DeallocateTexture(GLuint texture);
  private:
   void InvalidateCache();

@@ -12,6 +12,7 @@ class Texture {
  public:
   Texture(const std::filesystem::path &path, std::string name, TextureAllocator &allocator);
   Texture(int width, int height, std::string name, TextureAllocator &allocator);
+  Texture(int cube_length, std::string name, TextureAllocator &allocator);
   Texture(const Texture &) = delete;
   Texture &operator=(const Texture &) = delete;
   Texture(Texture &&) noexcept;

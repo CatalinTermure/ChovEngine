@@ -19,13 +19,11 @@ layout (std140) uniform LightSpaceMatrices {
 out vec3 fragNormal;
 out vec2 fragTexCoord;
 out vec4 fragPosEye;
-out vec4 fragPosLightSpace[MAX_DEPTH_MAPS];
+out vec4 fragPosWorld;
 
 void main() {
-    for (int i = 0; i < MAX_DEPTH_MAPS; i++) {
-        fragPosLightSpace[i] = lightSpaceMatrices[i] * model * vec4(position, 1.0f);
-    }
     fragPosEye = view * model * vec4(position, 1.0f);
+    fragPosWorld = model * vec4(position, 1.0f);
     fragNormal = normalize(normalMatrix * normal);
     fragTexCoord = texcoord;
     gl_Position = projection * view * model * vec4(position, 1.0f);

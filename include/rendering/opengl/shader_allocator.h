@@ -26,6 +26,13 @@ class ShaderAllocator {
                         const std::filesystem::path &fragment_shader_path,
                         const std::vector<ShaderFlag> &fragment_shader_flags);
 
+  GLuint AllocateShader(const std::filesystem::path &vertex_shader_path,
+                        const std::vector<ShaderFlag> &vertex_shader_flags,
+                        const std::filesystem::path &fragment_shader_path,
+                        const std::vector<ShaderFlag> &fragment_shader_flags,
+                        const std::filesystem::path &geometry_shader_path,
+                        const std::vector<ShaderFlag> &geometry_shader_flags);
+
   void DeallocateShader(GLuint shader);
 
  private:

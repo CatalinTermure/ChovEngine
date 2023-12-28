@@ -21,6 +21,9 @@ struct PointLight {
 
     vec3 color;
     float pad0;
+
+    vec3 positionEyeSpace;
+    float pad1;
 };
 
 struct SpotLight {
@@ -46,7 +49,7 @@ uniform sampler2D shininessTexture;
 uniform sampler2D alphaTexture;
 uniform sampler2D bumpTexture;
 uniform sampler2D displacementTexture;
-uniform sampler2DShadow depthMaps[MAX_DEPTH_MAPS];
+uniform samplerCubeShadow pointDepthMaps[MAX_DEPTH_MAPS];
 
 layout (std140) uniform Material {
     float shininess;
@@ -73,7 +76,7 @@ layout (std140) uniform Lights {
 in vec3 fragNormal;
 in vec2 fragTexCoord;
 in vec4 fragPosEye;
-in vec4 fragPosLightSpace[MAX_DEPTH_MAPS];
+in vec4 fragPosWorld;
 
 float ambientStrength = 0.2f;
 float specularStrength = 0.5f;
@@ -140,6 +143,17 @@ void ComputeDirectionalLight() {
 }
 
 #if POINT_LIGHT_COUNT > 0
+
+// See: https://stackoverflow.com/questions/10786951/omnidirectional-shadow-mapping-with-depth-cubemap
+float GetProjectedDepth(vec3 v, float n, float f)
+{
+    vec3 absVec = abs(v);
+    float lightSpaceZ = max(absVec.x, max(absVec.y, absVec.z));
+
+    float worldSpaceZ = (f + n) / (f - n) - (2 * f * n) / ((f - n) * lightSpaceZ);
+    return (worldSpaceZ + 1.0) * 0.5;
+}
+
 void ComputePointLight() {
     vec3 cameraPosEye = vec3(0.0f);
 
@@ -147,17 +161,18 @@ void ComputePointLight() {
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 
     for (int i = 0; i < POINT_LIGHT_COUNT; ++i) {
-        vec3 lightDirN = normalize(pointLights[i].position - fragPosEye.xyz);  // compute light direction
+        vec3 lightDirN = normalize(pointLights[i].positionEyeSpace - fragPosEye.xyz);  // compute light direction
         vec3 halfVector = normalize(lightDirN + viewDirN);  // compute half vector
-        float dist = length(pointLights[i].position - fragPosEye.xyz);
+        float dist = length(pointLights[i].positionEyeSpace - fragPosEye.xyz);
         float attenuation = 1.0f / (pointLights[i].constant + pointLights[i].linear * dist + pointLights[i].quadratic * dist * dist);
 
-        vec3 depthMapCoordinates = ((fragPosLightSpace[i].xyz / fragPosLightSpace[i].w) * 0.5f + 0.5) - vec3(0.0f, 0.0f, depthBias);
+        vec3 fragToLight = fragPosWorld.xyz - pointLights[i].position;
+        float depth = GetProjectedDepth(fragToLight, pointLights[i].near_plane, pointLights[i].far_plane);
 
         float totalShadow = 0.0f;
         for (int dx = -2; dx <= 2; ++dx) {
             for (int dy = -2; dy <= 2; ++dy) {
-                float shadowCoeff = texture(depthMaps[i], depthMapCoordinates.xyz + vec3(dx, dy, 0.0f) / 2048.0f);
+                float shadowCoeff = texture(pointDepthMaps[i], vec4(normalize(fragToLight) + vec3(dx, dy, 0.0f) / 2048.0f, depth - depthBias));
                 totalShadow += shadowCoeff;
             }
         }

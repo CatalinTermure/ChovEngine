@@ -24,6 +24,8 @@ Texture::~Texture() {
   }
 }
 
+// TODO: move depth map settings to the texture constructor, instead of the texture allocator
+
 Texture::Texture(const std::filesystem::path &path, std::string name, TextureAllocator &allocator)
     : name_(std::move(name)), allocator_(&allocator) {
   texture_ = allocator_->AllocateTexture(path);
@@ -35,6 +37,11 @@ Texture::Texture(int width,
                  chove::rendering::opengl::TextureAllocator &allocator) : name_(std::move(name)),
                                                                           allocator_(&allocator) {
   texture_ = allocator_->AllocateDepthMap(width, height);
+}
+
+Texture::Texture(int cube_length, std::string name, TextureAllocator &allocator) : name_(std::move(name)),
+                                                                                   allocator_(&allocator) {
+  texture_ = allocator_->AllocateCubeDepthMap(cube_length);
 }
 }
 

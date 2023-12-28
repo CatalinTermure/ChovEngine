@@ -163,6 +163,102 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
   return program;
 }
 
+
+GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shader_path,
+                                       const std::vector<ShaderFlag> &vertex_shader_flags,
+                                       const std::filesystem::path &fragment_shader_path,
+                                       const std::vector<ShaderFlag> &fragment_shader_flags,
+                                       const std::filesystem::path &geometry_shader_path,
+                                       const std::vector<ShaderFlag> &geometry_shader_flags) {
+  ShaderInfo info = {vertex_shader_path, StringifyFlags(vertex_shader_flags), fragment_shader_path,
+                     StringifyFlags(fragment_shader_flags)};
+
+  if (shader_creation_cache_.contains(info) && shader_ref_counts.contains(shader_creation_cache_.at(info))) {
+    // second check is needed because the shader might have been deallocated
+    shader_ref_counts.at(shader_creation_cache_.at(info)) += 1;
+    return shader_creation_cache_.at(info);
+  }
+
+  LOG(INFO) << "Reading vertex shader from " << vertex_shader_path;
+  GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+
+  std::vector<const GLchar *> sources;
+  std::vector<GLint> lengths;
+  std::vector<std::string> defines = GetDefinesForFlags(vertex_shader_flags);
+  std::string shader_source = ReadFile(vertex_shader_path);
+  sources.push_back(kShaderVersion);
+  lengths.push_back(static_cast<GLint>(strlen(kShaderVersion)));
+  for (const std::string &define : defines) {
+    sources.push_back(define.c_str());
+    lengths.push_back(static_cast<GLint>(define.size()));
+  }
+  sources.push_back(shader_source.c_str());
+  lengths.push_back(static_cast<GLint>(shader_source.size()));
+  glShaderSource(vertex_shader, static_cast<GLsizei>(sources.size()), sources.data(), lengths.data());
+
+  glCompileShader(vertex_shader);
+  LogShaderCompileIssues(vertex_shader);
+  LOG(INFO) << "Compiled vertex shader";
+
+  LOG(INFO) << "Reading fragment shader from " << fragment_shader_path;
+  GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+
+  sources.clear();
+  lengths.clear();
+  defines = GetDefinesForFlags(fragment_shader_flags);
+  shader_source = ReadFile(fragment_shader_path);
+  sources.push_back(kShaderVersion);
+  lengths.push_back(static_cast<GLint>(strlen(kShaderVersion)));
+  for (const std::string &define : defines) {
+    sources.push_back(define.c_str());
+    lengths.push_back(static_cast<GLint>(define.size()));
+  }
+  sources.push_back(shader_source.c_str());
+  lengths.push_back(static_cast<GLint>(shader_source.size()));
+  glShaderSource(fragment_shader, static_cast<GLsizei>(sources.size()), sources.data(), lengths.data());
+
+  glCompileShader(fragment_shader);
+  LogShaderCompileIssues(fragment_shader);
+  LOG(INFO) << "Compiled fragment shader";
+
+
+  LOG(INFO) << "Reading geometry shader from " << vertex_shader_path;
+  GLuint geometry_shader = glCreateShader(GL_GEOMETRY_SHADER);
+
+  sources.clear();
+  lengths.clear();
+  defines = GetDefinesForFlags(geometry_shader_flags);
+  shader_source = ReadFile(geometry_shader_path);
+  sources.push_back(kShaderVersion);
+  lengths.push_back(static_cast<GLint>(strlen(kShaderVersion)));
+  for (const std::string &define : defines) {
+    sources.push_back(define.c_str());
+    lengths.push_back(static_cast<GLint>(define.size()));
+  }
+  sources.push_back(shader_source.c_str());
+  lengths.push_back(static_cast<GLint>(shader_source.size()));
+  glShaderSource(geometry_shader, static_cast<GLsizei>(sources.size()), sources.data(), lengths.data());
+
+  glCompileShader(geometry_shader);
+  LogShaderCompileIssues(geometry_shader);
+  LOG(INFO) << "Compiled geometry shader";
+
+  GLuint program = glCreateProgram();
+  glAttachShader(program, vertex_shader);
+  glAttachShader(program, fragment_shader);
+  glAttachShader(program, geometry_shader);
+  glLinkProgram(program);
+  LogShaderLinkIssues(program);
+
+  glDeleteShader(vertex_shader);
+  glDeleteShader(fragment_shader);
+  glDeleteShader(geometry_shader);
+
+  shader_creation_cache_[info] = program;
+  shader_ref_counts[program] = 1;
+  return program;
+}
+
 void ShaderAllocator::DeallocateShader(GLuint shader) {
   shader_ref_counts.at(shader) -= 1;
   if (shader_ref_counts.at(shader) == 0) {

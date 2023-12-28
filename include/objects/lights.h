@@ -18,6 +18,7 @@ struct PointLight {
   alignas(16) glm::vec3 position;
   float far_plane;
   alignas(16) glm::vec3 color;
+  alignas(16) glm::vec3 positionEyeSpace;
 };
 
 struct SpotLight {

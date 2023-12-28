@@ -111,6 +111,41 @@ GLuint TextureAllocator::AllocateDepthMap(int width, int height) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  texture_ref_counts_[texture] = 1;
+  return texture;
+}
+
+GLuint TextureAllocator::AllocateCubeDepthMap(int cube_length) {
+  AllocateUnmappedTextureBlockIfNeeded();
+  GLuint texture = unmapped_textures_.back();
+  unmapped_textures_.pop_back();
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+
+  for (int i = 0; i < 6; ++i) {
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                 0,
+                 GL_DEPTH_COMPONENT,
+                 cube_length,
+                 cube_length,
+                 0,
+                 GL_DEPTH_COMPONENT,
+                 GL_FLOAT,
+                 nullptr);
+  }
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+  glTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, borderColor);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
   texture_ref_counts_[texture] = 1;
   return texture;
 }
