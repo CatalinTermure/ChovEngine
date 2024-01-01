@@ -82,6 +82,8 @@ in mat3 TBN;
 float ambientStrength = 0.2f;
 float specularStrength = 0.5f;
 
+vec2 texCoord = vec2(0.0f);
+
 vec3 ambient;
 vec3 diffuse;
 vec3 specular;
@@ -97,22 +99,22 @@ void ComputeLightComponents() {
         #ifdef NO_DIFFUSE_TEXTURE
             ambient *= ambientColor;
         #else
-            ambient *= texture(diffuseTexture, fragTexCoord).xyz * ambientColor;
+            ambient *= texture(diffuseTexture, texCoord).xyz * ambientColor;
         #endif
     #else
-        ambient *= texture(ambientTexture, fragTexCoord).xyz * ambientColor;
+        ambient *= texture(ambientTexture, texCoord).xyz * ambientColor;
     #endif
 
     #ifdef NO_DIFFUSE_TEXTURE
         diffuse *= diffuseColor;
     #else
-        diffuse *= texture(diffuseTexture, fragTexCoord).xyz * diffuseColor;
+        diffuse *= texture(diffuseTexture, texCoord).xyz * diffuseColor;
     #endif
 
     #ifdef NO_SPECULAR_TEXTURE
         specular *= specularColor;
     #else
-        specular *= texture(specularTexture, fragTexCoord).xyz * specularColor;
+        specular *= texture(specularTexture, texCoord).xyz * specularColor;
     #endif
 
     totalAmbient += ambient;
@@ -126,8 +128,8 @@ void ComputeDirectionalLight() {
     #ifdef NO_BUMP_TEXTURE
         vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
     #else
-        vec3 normalEye = normalize(texture(bumpTexture, fragTexCoord).xyz * 2.0 - 1.0);
-        normalEye = normalize(TBN * normalEye);
+        vec3 normalEye = normalize(texture(bumpTexture, texCoord).xyz * 2.0 - 1.0);
+        normalEye = normalize(inverse(TBN) * normalEye);
     #endif
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 
@@ -140,7 +142,7 @@ void ComputeDirectionalLight() {
         #ifdef NO_SHININESS_TEXTURE
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), shininess);
         #else
-            float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), texture(shininessTexture, fragTexCoord).r);
+            float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), texture(shininessTexture, texCoord).r);
         #endif
         specular = specularStrength * specCoeff * directionalLights[i].color;
 
@@ -166,8 +168,8 @@ void ComputePointLight() {
     #ifdef NO_BUMP_TEXTURE
         vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
     #else
-        vec3 normalEye = normalize(texture(bumpTexture, fragTexCoord).xyz * 2.0 - 1.0);
-        normalEye = normalize(TBN * normalEye);
+        vec3 normalEye = normalize(texture(bumpTexture, texCoord).xyz * 2.0 - 1.0);
+        normalEye = normalize(inverse(TBN) * normalEye);
     #endif
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 
@@ -195,7 +197,7 @@ void ComputePointLight() {
         #ifdef NO_SHININESS_TEXTURE
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), shininess);
         #else
-            float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), texture(shininessTexture, fragTexCoord).r);
+            float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), texture(shininessTexture, texCoord).r);
         #endif
         specular = shadow * attenuation * specularStrength * specCoeff * pointLights[i].color;
 
@@ -204,7 +206,19 @@ void ComputePointLight() {
 }
 #endif
 
+vec2 ParralaxMapping(vec2 texCoord, vec3 viewDir) {
+    float height = texture(displacementTexture, texCoord).r;
+    vec2 p = viewDir.xy / viewDir.z * height * 0.05f;
+    return texCoord - p;
+}
+
 void main() {
+    #ifdef NO_DISPLACEMENT_TEXTURE
+        texCoord = fragTexCoord;
+    #else
+        texCoord = ParralaxMapping(fragTexCoord, TBN * normalize(-fragPosEye.xyz));
+    #endif
+
     ComputeDirectionalLight();
     #if POINT_LIGHT_COUNT > 0
         ComputePointLight();

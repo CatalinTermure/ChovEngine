@@ -5,7 +5,7 @@
 namespace chove {
 
 namespace {
-constexpr const float kCameraSpeed = 1e-1F;
+constexpr const float kCameraSpeed = 1e0F;
 constexpr float kCameraRotationSpeed = 0.1F;
 }
 
@@ -15,10 +15,11 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
     | SDL_WINDOW_ALLOW_HIGHDPI)) {
   renderer_ = std::make_unique<rendering::opengl::Renderer>(&window_);
 
-  nanosuit = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "nanosuit" / "nanosuit.obj");
-  cube = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "cube.obj")[0];
+  nanosuit = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "bricks" / "plane.obj");
+  cube = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "bricks" / "plane2.obj");
   sponza = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "sponza.obj");
   glm::vec3 nanosuit_position = {0.0F, 1.0F, 0.0F};
+  glm::vec3 cube_position = {2.0F, 1.0F, 0.0F};
   glm::vec3 sponza_scale = glm::vec3(0.01F, 0.01F, 0.01F);
 
   objects::Scene scene;
@@ -32,6 +33,14 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
 
   for (auto &mesh : nanosuit) {
     scene.AddObject(mesh, {nanosuit_position,
+                           glm::identity<glm::quat>(),
+                           glm::vec3(1.0f, 1.0f, 1.0f),
+                           glm::vec3(0.0f, 0.0f, 0.0f),
+                           glm::identity<glm::quat>()});
+  }
+
+  for (auto &mesh : cube) {
+    scene.AddObject(mesh, {cube_position,
                            glm::identity<glm::quat>(),
                            glm::vec3(1.0f, 1.0f, 1.0f),
                            glm::vec3(0.0f, 0.0f, 0.0f),

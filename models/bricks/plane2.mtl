@@ -1,0 +1,10 @@
+newmtl m1
+Ns 7.07
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.000000
+illum 2
+map_Kd bricks2.png
+bump bricks2_normal.png
