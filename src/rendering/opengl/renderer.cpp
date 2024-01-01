@@ -397,6 +397,14 @@ void Renderer::SetupScene(const Scene &scene) {
                           sizeof(Mesh::Vertex),
                           reinterpret_cast<void *>(offsetof(Mesh::Vertex, texcoord)));
 
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(Mesh::Vertex),
+                          reinterpret_cast<void *>(offsetof(Mesh::Vertex, tangent)));
+
     glBindVertexArray(0);
 
     render_objects_.emplace_back(std::move(render_object));

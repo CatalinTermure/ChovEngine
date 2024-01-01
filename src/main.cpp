@@ -35,8 +35,7 @@ class StdoutLogSink final : public absl::LogSink {
   void Send(const absl::LogEntry &entry) override {
     std::cout << entry.text_message_with_prefix_and_newline();
     log_file_ << entry.text_message_with_prefix_and_newline();
-    if (entry.log_severity() == absl::LogSeverity::kError || entry.log_severity() == absl::LogSeverity::kFatal
-        || entry.log_severity() == absl::LogSeverity::kWarning) {
+    if (entry.log_severity() == absl::LogSeverity::kError || entry.log_severity() == absl::LogSeverity::kFatal) {
       std::cout << entry.stacktrace();
       log_file_ << entry.stacktrace();
     }

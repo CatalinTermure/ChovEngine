@@ -5,7 +5,7 @@
 namespace chove {
 
 namespace {
-constexpr const float kCameraSpeed = 1e0F;
+constexpr const float kCameraSpeed = 1e-1F;
 constexpr float kCameraRotationSpeed = 0.1F;
 }
 
@@ -56,11 +56,6 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
                                      100.0F,
                                      glm::vec3(1.0F, 1.0F, 1.0F)
   });
-//  scene.AddObject(cube, {glm::vec3(1.5F, 6.0F, 0.0F),
-//                         glm::identity<glm::quat>(),
-//                         glm::vec3(0.1F, 0.1F, 0.1F),
-//                         glm::vec3(0.0f, 0.0f, 0.0f),
-//                         glm::identity<glm::quat>()});
 
   scenes_["main"] = std::move(scene);
 

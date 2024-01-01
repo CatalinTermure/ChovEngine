@@ -77,6 +77,7 @@ in vec3 fragNormal;
 in vec2 fragTexCoord;
 in vec4 fragPosEye;
 in vec4 fragPosWorld;
+in mat3 TBN;
 
 float ambientStrength = 0.2f;
 float specularStrength = 0.5f;
@@ -122,7 +123,12 @@ void ComputeLightComponents() {
 void ComputeDirectionalLight() {
     vec3 cameraPosEye = vec3(0.0f);
 
-    vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
+    #ifdef NO_BUMP_TEXTURE
+        vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
+    #else
+        vec3 normalEye = normalize(texture(bumpTexture, fragTexCoord).xyz * 2.0 - 1.0);
+        normalEye = normalize(TBN * normalEye);
+    #endif
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 
     for (int i = 0; i < DIRECTIONAL_LIGHT_COUNT; ++i) {
@@ -157,7 +163,12 @@ float GetProjectedDepth(vec3 v, float n, float f)
 void ComputePointLight() {
     vec3 cameraPosEye = vec3(0.0f);
 
-    vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
+    #ifdef NO_BUMP_TEXTURE
+        vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
+    #else
+        vec3 normalEye = normalize(texture(bumpTexture, fragTexCoord).xyz * 2.0 - 1.0);
+        normalEye = normalize(TBN * normalEye);
+    #endif
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 
     for (int i = 0; i < POINT_LIGHT_COUNT; ++i) {

@@ -93,26 +93,41 @@ std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path &path) {
       LOG_IF(ERROR, material_id != shape.mesh.material_ids[0])
               << "Shape has multiple materials, decomposing into multiple meshes is not supported";
     }
-    for (auto index : shape.mesh.indices) {
-      if (vertex_map.contains(index)) {
-        indices.push_back(vertex_map.at(index));
-        continue;
+    LOG_IF(FATAL, shape.mesh.indices.size() % 3 != 0) << "Shape has non-triangular faces";
+    for (int i = 0; i < shape.mesh.indices.size(); i += 3) {
+      for (int j = 0; j < 3; ++j) {
+        const auto &index = shape.mesh.indices[i + j];
+        if (vertex_map.contains(index)) {
+          indices.push_back(vertex_map.at(index));
+        } else {
+          Vertex vertex = {glm::vec3(attrib.vertices[3 * index.vertex_index],
+                                     attrib.vertices[3 * index.vertex_index + 1],
+                                     attrib.vertices[3 * index.vertex_index + 2]),
+                           glm::vec3(attrib.normals[3 * index.normal_index],
+                                     attrib.normals[3 * index.normal_index + 1],
+                                     attrib.normals[3 * index.normal_index + 2]),
+                           index.texcoord_index == -1 ? glm::vec2(0.0f, 0.0f) :
+                           glm::vec2(attrib.texcoords[2 * index.texcoord_index],
+                                     attrib.texcoords[2 * index.texcoord_index + 1]),
+                           glm::vec3(0.0f, 0.0f, 0.0f)};
+          vertex_map[index] = final_vertices.size();
+          indices.push_back(final_vertices.size());
+          final_vertices.push_back(vertex);
+          colors.emplace_back(attrib.colors[3 * index.vertex_index],
+                              attrib.colors[3 * index.vertex_index + 1],
+                              attrib.colors[3 * index.vertex_index + 2]);
+        }
       }
-      Vertex vertex = {glm::vec3(attrib.vertices[3 * index.vertex_index],
-                                 attrib.vertices[3 * index.vertex_index + 1],
-                                 attrib.vertices[3 * index.vertex_index + 2]),
-                       glm::vec3(attrib.normals[3 * index.normal_index],
-                                 attrib.normals[3 * index.normal_index + 1],
-                                 attrib.normals[3 * index.normal_index + 2]),
-                       index.texcoord_index == -1 ? glm::vec2(0.0f, 0.0f) :
-                       glm::vec2(attrib.texcoords[2 * index.texcoord_index],
-                                 attrib.texcoords[2 * index.texcoord_index + 1])};
-      vertex_map[index] = final_vertices.size();
-      indices.push_back(final_vertices.size());
-      final_vertices.push_back(vertex);
-      colors.emplace_back(attrib.colors[3 * index.vertex_index],
-                          attrib.colors[3 * index.vertex_index + 1],
-                          attrib.colors[3 * index.vertex_index + 2]);
+      glm::vec3 edge1 = final_vertices[indices[i + 1]].position - final_vertices[indices[i]].position;
+      glm::vec3 edge2 = final_vertices[indices[i + 2]].position - final_vertices[indices[i]].position;
+      glm::vec2 delta_uv1 = final_vertices[indices[i + 1]].texcoord - final_vertices[indices[i]].texcoord;
+      glm::vec2 delta_uv2 = final_vertices[indices[i + 2]].texcoord - final_vertices[indices[i]].texcoord;
+
+      float f = 1.0f / (delta_uv1.x * delta_uv2.y - delta_uv2.x * delta_uv1.y);
+      glm::vec3 tangent = glm::normalize(f * (delta_uv2.y * edge1 - delta_uv1.y * edge2));
+      final_vertices[indices[i]].tangent = tangent;
+      final_vertices[indices[i + 1]].tangent = tangent;
+      final_vertices[indices[i + 2]].tangent = tangent;
     }
     LOG(INFO) << "Shape has " << final_vertices.size() << " vertices and " << indices.size() << " indices";
 
