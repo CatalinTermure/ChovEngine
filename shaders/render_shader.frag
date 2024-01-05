@@ -223,8 +223,14 @@ void main() {
     #if POINT_LIGHT_COUNT > 0
         ComputePointLight();
     #endif
+
+    float alpha = dissolve;
+    #ifndef NO_ALPHA_TEXTURE
+        alpha *= texture(alphaTexture, texCoord).r;
+    #endif
+    if (alpha < 0.01f) discard;
     #ifndef NO_LIGHTS
-        outColor = vec4(min(totalAmbient + totalDiffuse + totalSpecular, 1.0f), 1.0f);
+        outColor = vec4(min(totalAmbient + totalDiffuse + totalSpecular, 1.0f), alpha);
     #else
         #ifdef NO_DIFFUSE_TEXTURE
             outColor = vec4(diffuseColor, 1.0f);

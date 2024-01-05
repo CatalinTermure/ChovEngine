@@ -28,6 +28,7 @@ struct RenderObject {
   GLuint ebo{};
   std::vector<Texture> textures{};
   UniformBuffer material_data{};
+  float dist{};
 
   ~RenderObject();
 };

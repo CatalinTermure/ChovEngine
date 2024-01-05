@@ -10,6 +10,7 @@ RenderObject::RenderObject(RenderObject &&other) noexcept: model(other.model),
                                                            vao(other.vao),
                                                            vbo(other.vbo),
                                                            ebo(other.ebo),
+                                                           dist(other.dist),
                                                            textures(std::move(other.textures)),
                                                            material_data(std::move(other.material_data)) {
   other.vao = 0;
@@ -28,6 +29,7 @@ RenderObject &RenderObject::operator=(RenderObject &&other) noexcept {
   ebo = other.ebo;
   textures = std::move(other.textures);
   material_data = std::move(other.material_data);
+  dist = other.dist;
 
   other.vao = 0;
   other.vbo = 0;

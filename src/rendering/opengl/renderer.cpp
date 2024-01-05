@@ -127,6 +127,18 @@ constexpr glm::vec3 kCubeMapUpVectors[6] = {
     glm::vec3(0.0F, -1.0F, 0.0F)
 };
 
+void InsertionSort(std::vector<RenderObject> &objects) {
+  for (size_t i = 1; i < objects.size(); ++i) {
+    RenderObject key = std::move(objects[i]);
+    size_t j = i;
+    while (j > 0 && objects[j - 1].dist < key.dist) {
+      objects[j] = std::move(objects[j - 1]);
+      --j;
+    }
+    objects[j] = std::move(key);
+  }
+}
+
 }
 
 using objects::PointLight;
@@ -150,6 +162,8 @@ Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_FRAMEBUFFER_SRGB);
 
   glEnable(GL_DEBUG_OUTPUT);
@@ -165,6 +179,16 @@ void Renderer::Render() {
   if (scene_->dirty_bit()) {
     SetupScene(*scene_);
   }
+
+  // Sort objects by distance to camera
+  for (RenderObject &object : render_objects_) {
+    object.dist =
+        glm::distance2(scene_->camera().position(),
+                       scene_->objects()[object.object_index].transform->location
+                           + scene_->objects()[object.object_index].mesh->bounding_box.center());
+  }
+
+  InsertionSort(render_objects_);
 
   // Start depth map render pass
 
@@ -346,6 +370,8 @@ void Renderer::SetupScene(const Scene &scene) {
     const GameObject &object = scene.objects()[i];
     RenderObject render_object;
 
+    render_object.dist = glm::distance2(scene_->camera().position(), object.transform->location);
+
     AttachMaterial(render_object, object.mesh->material);
     matrices_ubo_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
     lights_.Bind(shaders_[i].program(), "Lights", kLightsUBOBindingPoint);
@@ -409,6 +435,11 @@ void Renderer::SetupScene(const Scene &scene) {
 
     render_objects_.emplace_back(std::move(render_object));
   }
+
+  std::sort(render_objects_.begin(), render_objects_.end(), [](const RenderObject &lhs, const RenderObject &rhs) {
+    return lhs.dist > rhs.dist;
+  });
+
   LOG(INFO) << "Finished setup scene";
 }
 

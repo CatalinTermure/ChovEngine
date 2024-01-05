@@ -1,6 +1,7 @@
 #include "application.h"
 
 #include <absl/log/log.h>
+#include <thread>
 
 namespace chove {
 void Application::SetCurrentScene(std::string scene_name) {

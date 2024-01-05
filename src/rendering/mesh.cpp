@@ -131,7 +131,26 @@ std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path &path) {
     }
     LOG(INFO) << "Shape has " << final_vertices.size() << " vertices and " << indices.size() << " indices";
 
-    meshes.emplace_back(final_vertices, colors, indices, mesh_materials[shape.mesh.material_ids[0]]);
+    float min_x = std::numeric_limits<float>::max();
+    float min_y = std::numeric_limits<float>::max();
+    float min_z = std::numeric_limits<float>::max();
+    float max_x = std::numeric_limits<float>::min();
+    float max_y = std::numeric_limits<float>::min();
+    float max_z = std::numeric_limits<float>::min();
+    for (const auto &vertex : final_vertices) {
+      min_x = std::min(min_x, vertex.position.x);
+      min_y = std::min(min_y, vertex.position.y);
+      min_z = std::min(min_z, vertex.position.z);
+      max_x = std::max(max_x, vertex.position.x);
+      max_y = std::max(max_y, vertex.position.y);
+      max_z = std::max(max_z, vertex.position.z);
+    }
+    BoundingBox bounding_box = {
+        .min = glm::vec3(min_x, min_y, min_z),
+        .max = glm::vec3(max_x, max_y, max_z)
+    };
+
+    meshes.emplace_back(final_vertices, colors, indices, mesh_materials[shape.mesh.material_ids[0]], bounding_box);
   }
 
   return meshes;
