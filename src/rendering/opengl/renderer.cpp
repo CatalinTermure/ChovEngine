@@ -181,11 +181,17 @@ void Renderer::Render() {
   }
 
   // Sort objects by distance to camera
-  for (RenderObject &object : render_objects_) {
-    object.dist =
+  for (RenderObject &render_object : render_objects_) {
+    if (scene_->objects()[render_object.object_index].mesh->material.dissolve > 0.99F
+        && !scene_->objects()[render_object.object_index].mesh->material.alpha_texture.has_value()) {
+      render_object.dist = std::numeric_limits<float>::max();
+      continue;
+    }
+
+    render_object.dist =
         glm::distance2(scene_->camera().position(),
-                       scene_->objects()[object.object_index].transform->location
-                           + scene_->objects()[object.object_index].mesh->bounding_box.center());
+                       scene_->objects()[render_object.object_index].transform->location
+                           + scene_->objects()[render_object.object_index].mesh->bounding_box.center());
   }
 
   InsertionSort(render_objects_);
@@ -216,8 +222,6 @@ void Renderer::Render() {
       Uniform<glm::mat4> light_space_matrix_uniform(point_shadow_shader_->program(),
                                                     "lightSpaceMatrix",
                                                     light_space_matrix);
-      light_space_matrices_.UpdateSubData(glm::value_ptr(light_space_matrix), i * sizeof(glm::mat4), sizeof(glm::mat4));
-      light_space_matrices_.Rebind();
       light_space_matrix_uniform.UpdateValue(light_space_matrix);
       for (RenderObject &render_object : render_objects_) {
         render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
@@ -344,7 +348,7 @@ void Renderer::SetupScene(const Scene &scene) {
   shaders_.reserve(scene.objects().size());
 
   matrices_ubo_ = UniformBuffer(2 * sizeof(glm::mat4));
-  light_space_matrices_ = UniformBuffer(scene_->point_lights().size() * sizeof(glm::mat4));
+  light_space_matrices_ = UniformBuffer((1 + scene.spot_lights().size()) * sizeof(glm::mat4));
   lights_ = UniformBuffer(
       sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
           + scene_->spot_lights().size() * sizeof(SpotLight));
@@ -370,12 +374,16 @@ void Renderer::SetupScene(const Scene &scene) {
     const GameObject &object = scene.objects()[i];
     RenderObject render_object;
 
-    render_object.dist = glm::distance2(scene_->camera().position(), object.transform->location);
-
     AttachMaterial(render_object, object.mesh->material);
     matrices_ubo_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
     lights_.Bind(shaders_[i].program(), "Lights", kLightsUBOBindingPoint);
     light_space_matrices_.Bind(shaders_[i].program(), "LightSpaceMatrices", kLightSpaceMatricesUBOBindingPoint);
+
+    if (object.mesh->material.dissolve > 0.99F && !object.mesh->material.alpha_texture.has_value()) {
+      render_object.dist = std::numeric_limits<float>::max();
+    } else {
+      render_object.dist = glm::distance2(scene_->camera().position(), object.transform->location);
+    }
 
     render_object.object_index = i;
     render_object.shader_index = i;
@@ -494,6 +502,10 @@ void Renderer::AttachMaterial(RenderObject &render_object, const Material &mater
   fragment_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, scene_->point_lights().size());
   fragment_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
   fragment_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, scene_->spot_lights().size());
+
+  vertex_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, scene_->point_lights().size());
+  vertex_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
+  vertex_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, scene_->spot_lights().size());
 
   shaders_.emplace_back("shaders/render_shader.vert",
                         vertex_shader_flags,

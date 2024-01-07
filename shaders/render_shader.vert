@@ -1,5 +1,3 @@
-#define MAX_DEPTH_MAPS 8
-
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 texcoord;
@@ -14,7 +12,7 @@ layout (std140) uniform Matrices {
 };
 
 layout (std140) uniform LightSpaceMatrices {
-    mat4 lightSpaceMatrices[MAX_DEPTH_MAPS];
+    mat4 lightSpaceMatrices[DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT];
 };
 
 out vec3 fragNormal;

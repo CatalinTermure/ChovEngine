@@ -1,5 +1,3 @@
-#define MAX_DEPTH_MAPS 8
-
 out vec4 outColor;
 
 struct DirectionalLight {
@@ -49,7 +47,10 @@ uniform sampler2D shininessTexture;
 uniform sampler2D alphaTexture;
 uniform sampler2D bumpTexture;
 uniform sampler2D displacementTexture;
-uniform samplerCubeShadow pointDepthMaps[MAX_DEPTH_MAPS];
+
+#if POINT_LIGHT_COUNT > 0
+uniform samplerCubeShadow pointDepthMaps[POINT_LIGHT_COUNT];
+#endif
 
 layout (std140) uniform Material {
     float shininess;
