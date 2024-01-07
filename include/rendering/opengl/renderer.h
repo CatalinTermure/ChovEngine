@@ -40,8 +40,13 @@ class Renderer : public rendering::Renderer {
 
   std::vector<RenderObject> render_objects_;
   std::vector<Shader> shaders_;
-  std::unique_ptr<Shader> point_shadow_shader_;
+  std::unique_ptr<Shader> depth_map_shader_;
   std::vector<Texture> point_depth_maps_;
+  std::vector<Texture> directional_depth_maps_;
+  std::vector<Texture> spot_depth_maps_;
+
+  std::vector<GLuint> spot_shadow_framebuffers_;
+  std::vector<GLuint> directional_shadow_framebuffers_;
   std::vector<GLuint> point_shadow_framebuffers_;
   UniformBuffer light_space_matrices_{};
 

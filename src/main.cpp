@@ -6,30 +6,12 @@
 #include <fstream>
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
-#include <glm/glm.hpp>
 #include <absl/log/log.h>
 #include <absl/log/initialize.h>
 #include <absl/log/log_sink.h>
 #include <absl/log/log_sink_registry.h>
 
-#include "objects/camera.h"
-#include "rendering/renderer.h"
-#include "rendering/window.h"
-#include "rendering/mesh.h"
-#include "objects/scene.h"
-#include "objects/lights.h"
-#include "rendering/opengl/renderer.h"
 #include "game.h"
-
-using chove::objects::Scene;
-using chove::objects::Transform;
-using chove::objects::Camera;
-using chove::objects::SpotLight;
-using chove::objects::PointLight;
-using chove::rendering::Window;
-using chove::rendering::Mesh;
-using chove::rendering::Renderer;
 
 class StdoutLogSink final : public absl::LogSink {
   void Send(const absl::LogEntry &entry) override {

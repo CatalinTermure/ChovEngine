@@ -200,7 +200,7 @@ void Renderer::Render() {
 
   glViewport(0, 0, kShadowMapSize, kShadowMapSize);
 
-  point_shadow_shader_->Use();
+  depth_map_shader_->Use();
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
     glBindFramebuffer(GL_FRAMEBUFFER, point_shadow_framebuffers_[i]);
     glm::mat4 light_projection = glm::perspective(glm::radians(90.0F),
@@ -219,7 +219,7 @@ void Renderer::Render() {
                                          scene_->point_lights()[i].position + kCubeMapDirections[j],
                                          kCubeMapUpVectors[j]);
       glm::mat4 light_space_matrix = light_projection * light_view;
-      Uniform<glm::mat4> light_space_matrix_uniform(point_shadow_shader_->program(),
+      Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
                                                     "lightSpaceMatrix",
                                                     light_space_matrix);
       light_space_matrix_uniform.UpdateValue(light_space_matrix);
@@ -232,6 +232,77 @@ void Renderer::Render() {
                        nullptr);
         glBindVertexArray(0);
       }
+    }
+  }
+
+  depth_map_shader_->Use();
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, directional_shadow_framebuffers_[0]);
+    glm::mat4 light_projection = glm::ortho(-20.0F, 20.0F, -20.0F, 20.0F, 0.1F, 100.0F);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER,
+                           GL_DEPTH_ATTACHMENT,
+                           GL_TEXTURE_2D,
+                           directional_depth_maps_[0].texture(),
+                           0);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glm::mat4 light_view = glm::lookAt(10.0F * glm::normalize(scene_->directional_light().direction),
+                                       glm::vec3(0.0F),
+                                       glm::vec3(0.0F, 1.0F, 0.0F));
+    glm::mat4 light_space_matrix = light_projection * light_view;
+    Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
+                                                  "lightSpaceMatrix",
+                                                  light_space_matrix);
+    light_space_matrix_uniform.UpdateValue(light_space_matrix);
+
+    light_space_matrices_.UpdateSubData(&light_space_matrix, 0, sizeof(glm::mat4));
+
+    for (RenderObject &render_object : render_objects_) {
+      render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+      glBindVertexArray(render_object.vao);
+      glDrawElements(GL_TRIANGLES,
+                     static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
+                     GL_UNSIGNED_INT,
+                     nullptr);
+      glBindVertexArray(0);
+    }
+  }
+
+  depth_map_shader_->Use();
+  for (int i = 0; i < scene_->spot_lights().size(); ++i) {
+    glBindFramebuffer(GL_FRAMEBUFFER, spot_shadow_framebuffers_[i]);
+    glm::mat4 light_projection = glm::perspective(glm::radians(scene_->spot_lights()[i].outer_cutoff * 2.0F),
+                                                  1.0F,
+                                                  0.1F,
+                                                  10.0F);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER,
+                           GL_DEPTH_ATTACHMENT,
+                           GL_TEXTURE_2D,
+                           spot_depth_maps_[i].texture(),
+                           0);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glm::mat4 light_view = glm::lookAt(scene_->spot_lights()[i].position,
+                                       scene_->spot_lights()[i].position + scene_->spot_lights()[i].direction,
+                                       glm::vec3(0.0F, 1.0F, 0.0F));
+    glm::mat4 light_space_matrix = light_projection * light_view;
+    Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
+                                                  "lightSpaceMatrix",
+                                                  light_space_matrix);
+    light_space_matrix_uniform.UpdateValue(light_space_matrix);
+
+    light_space_matrices_.UpdateSubData(&light_space_matrix,
+                                        sizeof(glm::mat4) + i * sizeof(glm::mat4),
+                                        sizeof(glm::mat4));
+
+    for (RenderObject &render_object : render_objects_) {
+      render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+      glBindVertexArray(render_object.vao);
+      glDrawElements(GL_TRIANGLES,
+                     static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
+                     GL_UNSIGNED_INT,
+                     nullptr);
+      glBindVertexArray(0);
     }
   }
 
@@ -263,6 +334,18 @@ void Renderer::Render() {
       lights_.UpdateSubData(&light, sizeof(DirectionalLight) + i * sizeof(PointLight), sizeof(PointLight));
     }
   }
+
+  {
+    for (int i = 0; i < scene_->spot_lights().size(); i++) {
+      SpotLight light = scene_->spot_lights()[i];
+      light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(light.position, 1.0F));
+      light.direction = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(light.direction, 0.0F));
+      lights_.UpdateSubData(&light,
+                            sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
+                                + i * sizeof(SpotLight),
+                            sizeof(SpotLight));
+    }
+  }
   lights_.Rebind();
 
   // Send object data
@@ -271,6 +354,8 @@ void Renderer::Render() {
 
   for (RenderObject &render_object : render_objects_) {
     shaders_[render_object.shader_index].Use();
+
+    light_space_matrices_.Rebind();
 
     render_object.model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
     render_object.normal_matrix.UpdateValue(
@@ -297,7 +382,7 @@ void Renderer::Render() {
 
     int texture_index = 0;
     for (int i = 0; i < scene_->point_lights().size(); ++i) {
-      glActiveTexture(GL_TEXTURE0 + i);
+      glActiveTexture(GL_TEXTURE0 + texture_index);
       glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
                                        std::format("{}[{}]", point_depth_maps_[i].name(), i).c_str()),
                   i);
@@ -305,12 +390,29 @@ void Renderer::Render() {
       texture_index++;
     }
 
+    glActiveTexture(GL_TEXTURE0 + texture_index);
+    glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
+                                     std::format("{}[{}]", directional_depth_maps_[0].name(), 0).c_str()),
+                texture_index);
+    glBindTexture(GL_TEXTURE_2D, directional_depth_maps_[0].texture());
+    texture_index++;
+
+    for (int i = 0; i < scene_->spot_lights().size(); ++i) {
+      glActiveTexture(GL_TEXTURE0 + texture_index);
+      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
+                                       std::format("{}[{}]", spot_depth_maps_[i].name(), i).c_str()),
+                  texture_index);
+      glBindTexture(GL_TEXTURE_2D, spot_depth_maps_[i].texture());
+      texture_index++;
+    }
+
     for (int i = 0; i < render_object.textures.size(); ++i) {
-      glActiveTexture(GL_TEXTURE0 + texture_index + i);
-      glBindTexture(GL_TEXTURE_2D, render_object.textures[i].texture());
+      glActiveTexture(GL_TEXTURE0 + texture_index);
       int location = glGetUniformLocation(shaders_[render_object.shader_index].program(),
                                           render_object.textures[i].name().c_str());
-      glUniform1i(location, texture_index + i);
+      glUniform1i(location, texture_index);
+      glBindTexture(GL_TEXTURE_2D, render_object.textures[i].texture());
+      texture_index++;
     }
 
     glBindVertexArray(render_object.vao);
@@ -320,8 +422,8 @@ void Renderer::Render() {
                    nullptr);
     glBindVertexArray(0);
 
-    for (int i = 0; i < render_object.textures.size(); ++i) {
-      glActiveTexture(GL_TEXTURE0 + texture_index + i);
+    for (int i = 0; i < texture_index; ++i) {
+      glActiveTexture(GL_TEXTURE0 + i);
       glBindTexture(GL_TEXTURE_2D, 0);
     }
   }
@@ -340,9 +442,18 @@ void Renderer::SetupScene(const Scene &scene) {
 
   render_objects_.clear();
   shaders_.clear();
-  point_shadow_shader_.reset();
+  depth_map_shader_.reset();
+  directional_depth_maps_.clear();
   point_depth_maps_.clear();
+  spot_depth_maps_.clear();
+
+  glDeleteFramebuffers(static_cast<GLsizei>(directional_shadow_framebuffers_.size()),
+                       directional_shadow_framebuffers_.data());
+  directional_shadow_framebuffers_.clear();
+  glDeleteFramebuffers(static_cast<GLsizei>(point_shadow_framebuffers_.size()), point_shadow_framebuffers_.data());
   point_shadow_framebuffers_.clear();
+  glDeleteFramebuffers(static_cast<GLsizei>(spot_shadow_framebuffers_.size()), spot_shadow_framebuffers_.data());
+  spot_shadow_framebuffers_.clear();
 
   render_objects_.reserve(scene.objects().size());
   shaders_.reserve(scene.objects().size());
@@ -353,17 +464,36 @@ void Renderer::SetupScene(const Scene &scene) {
       sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
           + scene_->spot_lights().size() * sizeof(SpotLight));
 
-  point_shadow_shader_ = std::make_unique<Shader>("shaders/point_depth_map.vert",
-                                                  std::vector<ShaderFlag>{},
-                                                  "shaders/point_depth_map.frag",
-                                                  std::vector<ShaderFlag>{},
-                                                  *shader_allocator_);
+  depth_map_shader_ = std::make_unique<Shader>("shaders/depth_map.vert",
+                                               std::vector<ShaderFlag>{},
+                                               "shaders/depth_map.frag",
+                                               std::vector<ShaderFlag>{},
+                                               *shader_allocator_);
 
   point_shadow_framebuffers_.resize(scene_->point_lights().size());
   glGenFramebuffers(static_cast<GLsizei>(point_shadow_framebuffers_.size()), point_shadow_framebuffers_.data());
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
     point_depth_maps_.emplace_back(kShadowMapSize, "pointDepthMaps", *texture_allocator_);
     glBindFramebuffer(GL_FRAMEBUFFER, point_shadow_framebuffers_[i]);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+
+  directional_shadow_framebuffers_.resize(1);
+  glGenFramebuffers(static_cast<GLsizei>(directional_shadow_framebuffers_.size()),
+                    directional_shadow_framebuffers_.data());
+  directional_depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "directionalDepthMaps", *texture_allocator_);
+  glBindFramebuffer(GL_FRAMEBUFFER, directional_shadow_framebuffers_[0]);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  spot_shadow_framebuffers_.resize(scene_->spot_lights().size());
+  glGenFramebuffers(static_cast<GLsizei>(spot_shadow_framebuffers_.size()), spot_shadow_framebuffers_.data());
+  for (int i = 0; i < scene_->spot_lights().size(); ++i) {
+    spot_depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "spotDepthMaps", *texture_allocator_);
+    glBindFramebuffer(GL_FRAMEBUFFER, spot_shadow_framebuffers_[i]);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -389,7 +519,7 @@ void Renderer::SetupScene(const Scene &scene) {
     render_object.shader_index = i;
     render_object.model = Uniform<glm::mat4>(shaders_[i].program(), "model", object.transform->GetMatrix());
     render_object.shadow_model =
-        Uniform<glm::mat4>(point_shadow_shader_->program(), "model", object.transform->GetMatrix());
+        Uniform<glm::mat4>(depth_map_shader_->program(), "model", object.transform->GetMatrix());
     render_object.normal_matrix = Uniform<glm::mat3>(
         shaders_[i].program(),
         "normalMatrix",

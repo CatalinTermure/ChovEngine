@@ -25,6 +25,8 @@ void Application::Run() {
     if (end_frame_time - start_frame_time > target_frame_time) {
       LOG(INFO) << std::format("Frame time: {} ns.",
                                duration_cast<std::chrono::nanoseconds>(end_frame_time - start_frame_time).count());
+    } else {
+      std::this_thread::sleep_for(target_frame_time - (end_frame_time - start_frame_time));
     }
   }
 }

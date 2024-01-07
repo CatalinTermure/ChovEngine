@@ -48,6 +48,14 @@ uniform sampler2D alphaTexture;
 uniform sampler2D bumpTexture;
 uniform sampler2D displacementTexture;
 
+#if DIRECTIONAL_LIGHT_COUNT > 0
+uniform sampler2DShadow directionalDepthMaps[DIRECTIONAL_LIGHT_COUNT];
+#endif
+
+#if SPOT_LIGHT_COUNT > 0
+uniform sampler2DShadow spotDepthMaps[SPOT_LIGHT_COUNT];
+#endif
+
 #if POINT_LIGHT_COUNT > 0
 uniform samplerCubeShadow pointDepthMaps[POINT_LIGHT_COUNT];
 #endif
@@ -80,6 +88,10 @@ in vec4 fragPosEye;
 in vec4 fragPosWorld;
 in mat3 TBN;
 
+#if DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT > 0
+in vec4 fragPosLightSpace[DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT];
+#endif
+
 float ambientStrength = 0.2f;
 float specularStrength = 0.5f;
 
@@ -93,7 +105,8 @@ vec3 totalAmbient = vec3(0.0f);
 vec3 totalDiffuse = vec3(0.0f);
 vec3 totalSpecular = vec3(0.0f);
 
-float depthBias = 0.00005f;
+float directionalDepthBias = 0.005f;
+float pointDepthBias = 0.00005f;
 
 void ComputeLightComponents() {
     #ifdef NO_AMBIENT_TEXTURE
@@ -123,6 +136,7 @@ void ComputeLightComponents() {
     totalSpecular += specular;
 }
 
+#if DIRECTIONAL_LIGHT_COUNT > 0
 void ComputeDirectionalLight() {
     vec3 cameraPosEye = vec3(0.0f);
 
@@ -138,18 +152,39 @@ void ComputeDirectionalLight() {
         vec3 lightDirN = normalize(directionalLights[i].direction);  // compute light direction
         vec3 halfVector = normalize(lightDirN + viewDirN);  // compute half vector
         ambient = ambientStrength * directionalLights[i].color;
-        diffuse = max(dot(normalEye, lightDirN), 0.0f) * directionalLights[i].color;
+
+        vec3 depthMapCoordinates = ((fragPosLightSpace[i].xyz / fragPosLightSpace[i].w) * 0.5f + 0.5) - vec3(0.0f, 0.0f, directionalDepthBias);
+
+        float totalShadow = 0.0f;
+        for (int dx = -2; dx <= 2; ++dx) {
+            for (int dy = -2; dy <= 2; ++dy) {
+                float shadowCoeff = texture(directionalDepthMaps[i], depthMapCoordinates.xyz + vec3(dx, dy, 0.0f) / 2048.0f);
+                totalShadow += shadowCoeff;
+            }
+        }
+        float shadow = totalShadow / 16.0f;
+
+        if (depthMapCoordinates.x < 0.001f || depthMapCoordinates.x > 0.999f || depthMapCoordinates.y < 0.001f || depthMapCoordinates.y > 0.999f) {
+            shadow = 0.0f;
+        }
+
+        if (depthMapCoordinates.z > 1.0f) {
+            shadow = 0.0f;
+        }
+
+        diffuse = shadow * max(dot(normalEye, lightDirN), 0.0f) * directionalLights[i].color;
 
         #ifdef NO_SHININESS_TEXTURE
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), shininess);
         #else
             float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), texture(shininessTexture, texCoord).r);
         #endif
-        specular = specularStrength * specCoeff * directionalLights[i].color;
+        specular = shadow * specularStrength * specCoeff * directionalLights[i].color;
 
         ComputeLightComponents();
     }
 }
+#endif
 
 #if POINT_LIGHT_COUNT > 0
 
@@ -186,7 +221,7 @@ void ComputePointLight() {
         float totalShadow = 0.0f;
         for (int dx = -2; dx <= 2; ++dx) {
             for (int dy = -2; dy <= 2; ++dy) {
-                float shadowCoeff = texture(pointDepthMaps[i], vec4(normalize(fragToLight) + vec3(dx, dy, 0.0f) / 2048.0f, depth - depthBias));
+                float shadowCoeff = texture(pointDepthMaps[i], vec4(normalize(fragToLight) + vec3(dx, dy, 0.0f) / 2048.0f, depth - pointDepthBias));
                 totalShadow += shadowCoeff;
             }
         }
@@ -220,7 +255,9 @@ void main() {
         texCoord = ParralaxMapping(fragTexCoord, TBN * normalize(-fragPosEye.xyz));
     #endif
 
-    ComputeDirectionalLight();
+    #if DIRECTIONAL_LIGHT_COUNT > 0
+        ComputeDirectionalLight();
+    #endif
     #if POINT_LIGHT_COUNT > 0
         ComputePointLight();
     #endif

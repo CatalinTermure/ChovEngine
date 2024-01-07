@@ -47,7 +47,9 @@ class Uniform<glm::mat3> {
   Uniform(GLuint shader_program, const std::string &name, const glm::mat3 &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(WARNING) << "Uniform location not found for " << name;
+      if (name != "normalMatrix") {
+        LOG(WARNING) << "Uniform location not found for " << name;
+      }
     }
   }
 

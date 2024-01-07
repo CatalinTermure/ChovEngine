@@ -54,8 +54,8 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
                            glm::vec3(0.0f, 0.0f, 0.0f),
                            glm::identity<glm::quat>()});
   }
-  scene.SetDirectionalLight({glm::vec3(0.0F, 1.0F, 1.0F),
-                             glm::vec3(0.0F, 0.0F, 0.0F)});
+  scene.SetDirectionalLight({glm::vec3(0.01F, 1.0F, 0.01F),
+                             glm::vec3(1.0F, 1.0F, 1.0F)});
 
   scene.AddLight(objects::PointLight{1.0F,
                                      0.0014F,
@@ -96,7 +96,7 @@ void Game::HandleInput() {
         case SDLK_LSHIFT:camera_velocity_.z = -kCameraSpeed;
           break;
         case SDLK_l:
-          current_scene().SetDirectionalLight({current_scene().camera().look_direction(),
+          current_scene().SetDirectionalLight({-current_scene().camera().look_direction(),
                                                glm::vec3(1.0F, 1.0F, 1.0F)});
           break;
         case SDLK_i:
