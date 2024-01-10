@@ -23,8 +23,8 @@ void Scene::AddLight(SpotLight light) {
   spot_lights_.push_back(light);
   SetDirtyBit();
 }
+
 void Scene::SetDirectionalLight(DirectionalLight light) {
   directional_light_ = light;
-  SetDirtyBit();
 }
 }  // namespace chove::objects

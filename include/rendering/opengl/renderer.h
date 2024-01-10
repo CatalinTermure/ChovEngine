@@ -44,6 +44,7 @@ class Renderer : public rendering::Renderer {
   std::vector<Texture> point_depth_maps_;
   std::vector<Texture> directional_depth_maps_;
   std::vector<Texture> spot_depth_maps_;
+  std::unique_ptr<Texture> white_pixel_;
 
   std::vector<GLuint> spot_shadow_framebuffers_;
   std::vector<GLuint> directional_shadow_framebuffers_;

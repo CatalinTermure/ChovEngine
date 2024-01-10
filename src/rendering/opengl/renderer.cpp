@@ -171,6 +171,16 @@ Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
 
   texture_allocator_ = std::make_unique<TextureAllocator>();
   shader_allocator_ = std::make_unique<ShaderAllocator>();
+
+  depth_map_shader_ = std::make_unique<Shader>("shaders/depth_map.vert",
+                                               std::vector<ShaderFlag>{},
+                                               "shaders/depth_map.frag",
+                                               std::vector<ShaderFlag>{},
+                                               *shader_allocator_);
+
+  white_pixel_ = std::make_unique<Texture>(std::filesystem::current_path() / "models" / "textures" / "white_pixel.png",
+                                           "whitePixel",
+                                           *texture_allocator_);
 }
 
 void Renderer::Render() {
@@ -201,6 +211,8 @@ void Renderer::Render() {
   glViewport(0, 0, kShadowMapSize, kShadowMapSize);
 
   depth_map_shader_->Use();
+  glActiveTexture(GL_TEXTURE0);
+  glUniform1i(glGetUniformLocation(depth_map_shader_->program(), "alphaTexture"), 0);
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
     glBindFramebuffer(GL_FRAMEBUFFER, point_shadow_framebuffers_[i]);
     glm::mat4 light_projection = glm::perspective(glm::radians(90.0F),
@@ -225,6 +237,20 @@ void Renderer::Render() {
       light_space_matrix_uniform.UpdateValue(light_space_matrix);
       for (RenderObject &render_object : render_objects_) {
         render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+        glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
+                    scene_->objects()[render_object.object_index].mesh->material.dissolve);
+
+        // find alphaTexture in textures
+        auto alphaTexture =
+            std::find_if(render_object.textures.begin(), render_object.textures.end(), [](const Texture &texture) {
+              return texture.name() == "alphaTexture";
+            });
+        if (alphaTexture == render_object.textures.end()) {
+          glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
+        } else {
+          glBindTexture(GL_TEXTURE_2D, alphaTexture->texture());
+        }
+
         glBindVertexArray(render_object.vao);
         glDrawElements(GL_TRIANGLES,
                        static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
@@ -259,6 +285,20 @@ void Renderer::Render() {
 
     for (RenderObject &render_object : render_objects_) {
       render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+      glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
+                  scene_->objects()[render_object.object_index].mesh->material.dissolve);
+
+      // find alphaTexture in textures
+      auto alphaTexture =
+          std::find_if(render_object.textures.begin(), render_object.textures.end(), [](const Texture &texture) {
+            return texture.name() == "alphaTexture";
+          });
+      if (alphaTexture == render_object.textures.end()) {
+        glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
+      } else {
+        glBindTexture(GL_TEXTURE_2D, alphaTexture->texture());
+      }
+
       glBindVertexArray(render_object.vao);
       glDrawElements(GL_TRIANGLES,
                      static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
@@ -297,6 +337,20 @@ void Renderer::Render() {
 
     for (RenderObject &render_object : render_objects_) {
       render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+      glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
+                  scene_->objects()[render_object.object_index].mesh->material.dissolve);
+
+      // find alphaTexture in textures
+      auto alphaTexture =
+          std::find_if(render_object.textures.begin(), render_object.textures.end(), [](const Texture &texture) {
+            return texture.name() == "alphaTexture";
+          });
+      if (alphaTexture == render_object.textures.end()) {
+        glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
+      } else {
+        glBindTexture(GL_TEXTURE_2D, alphaTexture->texture());
+      }
+
       glBindVertexArray(render_object.vao);
       glDrawElements(GL_TRIANGLES,
                      static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
@@ -442,7 +496,6 @@ void Renderer::SetupScene(const Scene &scene) {
 
   render_objects_.clear();
   shaders_.clear();
-  depth_map_shader_.reset();
   directional_depth_maps_.clear();
   point_depth_maps_.clear();
   spot_depth_maps_.clear();
@@ -463,12 +516,6 @@ void Renderer::SetupScene(const Scene &scene) {
   lights_ = UniformBuffer(
       sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
           + scene_->spot_lights().size() * sizeof(SpotLight));
-
-  depth_map_shader_ = std::make_unique<Shader>("shaders/depth_map.vert",
-                                               std::vector<ShaderFlag>{},
-                                               "shaders/depth_map.frag",
-                                               std::vector<ShaderFlag>{},
-                                               *shader_allocator_);
 
   point_shadow_framebuffers_.resize(scene_->point_lights().size());
   glGenFramebuffers(static_cast<GLsizei>(point_shadow_framebuffers_.size()), point_shadow_framebuffers_.data());
@@ -584,6 +631,9 @@ void Renderer::SetupScene(const Scene &scene) {
 void Renderer::AttachMaterial(RenderObject &render_object, const Material &material) {
   std::vector<ShaderFlag> vertex_shader_flags{};
   std::vector<ShaderFlag> fragment_shader_flags{};
+
+  std::vector<ShaderFlag> shadow_vertex_shader_flags{};
+  std::vector<ShaderFlag> shadow_fragment_shader_flags{};
 
   if (material.ambient_texture.has_value()) {
     render_object.textures.emplace_back(material.ambient_texture.value(), "ambientTexture", *texture_allocator_);
