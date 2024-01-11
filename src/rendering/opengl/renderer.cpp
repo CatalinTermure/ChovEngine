@@ -284,7 +284,7 @@ void Renderer::Render() {
     light_space_matrices_.UpdateSubData(&light_space_matrix, 0, sizeof(glm::mat4));
 
     for (RenderObject &render_object : render_objects_) {
-      render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+      render_object.shadow_model.Rebind();
       glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
                   scene_->objects()[render_object.object_index].mesh->material.dissolve);
 
@@ -336,7 +336,7 @@ void Renderer::Render() {
                                         sizeof(glm::mat4));
 
     for (RenderObject &render_object : render_objects_) {
-      render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
+      render_object.shadow_model.Rebind();
       glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
                   scene_->objects()[render_object.object_index].mesh->material.dissolve);
 

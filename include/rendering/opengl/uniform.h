@@ -34,11 +34,14 @@ class Uniform<glm::mat4> {
     value_ = value;
     glUniformMatrix4fv(location_, 1, GL_FALSE, glm::value_ptr(value));
   }
+
+  void Rebind() {
+    glUniformMatrix4fv(location_, 1, GL_FALSE, glm::value_ptr(value_));
+  }
  private:
   glm::mat4 value_;
   GLint location_;
 };
-
 
 template<>
 class Uniform<glm::mat3> {
@@ -56,6 +59,10 @@ class Uniform<glm::mat3> {
   void UpdateValue(glm::mat3 value) {
     value_ = value;
     glUniformMatrix3fv(location_, 1, GL_FALSE, glm::value_ptr(value));
+  }
+
+  void Rebind() {
+    glUniformMatrix3fv(location_, 1, GL_FALSE, glm::value_ptr(value_));
   }
  private:
   glm::mat3 value_;
@@ -77,6 +84,10 @@ class Uniform<glm::vec3> {
     value_ = value;
     glUniform3fv(location_, 1, glm::value_ptr(value));
   }
+
+  void Rebind() {
+    glUniform3fv(location_, 1, glm::value_ptr(value_));
+  }
  private:
   glm::vec3 value_;
   GLint location_;
@@ -97,6 +108,10 @@ class Uniform<glm::vec4> {
     value_ = value;
     glUniform4fv(location_, 1, glm::value_ptr(value));
   }
+
+  void Rebind() {
+    glUniform4fv(location_, 1, glm::value_ptr(value_));
+  }
  private:
   glm::vec4 value_;
   GLint location_;
@@ -115,6 +130,10 @@ class Uniform<float> {
 
   void UpdateValue(float value) {
     value_ = value;
+    glUniform1f(location_, value_);
+  }
+
+  void Rebind() const {
     glUniform1f(location_, value_);
   }
  private:

@@ -2,6 +2,7 @@
 #define LABSEXTRA_INCLUDE_OBJECTS_SCENE_H_
 
 #include <vector>
+#include <absl/container/flat_hash_map.h>
 
 #include "game_object.h"
 #include "camera.h"
@@ -22,6 +23,7 @@ class Scene {
   [[nodiscard]] const Camera &camera() const { return camera_; };
 
   void AddObject(const rendering::Mesh &mesh, Transform transform);
+  void AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform);
   void SetDirectionalLight(DirectionalLight light);
   void AddLight(PointLight light);
   void AddLight(SpotLight light);
@@ -40,6 +42,7 @@ class Scene {
 
   // store all transforms here for cache coherency
   std::vector<Transform> transforms_{};
+  absl::flat_hash_map<Transform *, std::vector<Transform *>> children_{};
 
   DirectionalLight directional_light_{};
   std::vector<PointLight> point_lights_{};

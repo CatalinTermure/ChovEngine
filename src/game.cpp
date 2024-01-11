@@ -24,36 +24,27 @@ Game::Game(RendererType renderer_type) : window_(static_cast<SDL_WindowFlags>(SD
 
   objects::Scene scene;
   scene.camera() = objects::Camera(
-      {0.0F, 0.0F, -1.0F, 1.0F},
-      {0.0F, 0.0F, 1.0F},
+      glm::vec4{0.0F, 0.0F, -1.0F, 1.0F},
+      glm::vec3{0.0F, 0.0F, 1.0F},
       glm::radians(55.0F),
       static_cast<float>(window_.width()) / static_cast<float>(window_.height()),
       0.1F,
       100000.0F);
 
-  for (auto &mesh : nanosuit) {
-    scene.AddObject(mesh, {nanosuit_position,
-                           glm::identity<glm::quat>(),
-                           glm::vec3(1.0f, 1.0f, 1.0f),
-                           glm::vec3(0.0f, 0.0f, 0.0f),
-                           glm::identity<glm::quat>()});
-  }
+  scene.AddObject(nanosuit, objects::Transform{nanosuit_position,
+                                               glm::identity<glm::quat>(),
+                                               glm::vec3(1.0F),
+                                               nullptr});
 
-  for (auto &mesh : cube) {
-    scene.AddObject(mesh, {cube_position,
-                           glm::identity<glm::quat>(),
-                           glm::vec3(1.0f, 1.0f, 1.0f),
-                           glm::vec3(0.0f, 0.0f, 0.0f),
-                           glm::identity<glm::quat>()});
-  }
+  scene.AddObject(cube, objects::Transform{cube_position,
+                                           glm::identity<glm::quat>(),
+                                           glm::vec3(1.0F),
+                                           nullptr});
 
-  for (auto &mesh : sponza) {
-    scene.AddObject(mesh, {glm::vec3(0.0f, 0.0f, 0.0f),
-                           glm::identity<glm::quat>(),
-                           sponza_scale,
-                           glm::vec3(0.0f, 0.0f, 0.0f),
-                           glm::identity<glm::quat>()});
-  }
+  scene.AddObject(sponza, objects::Transform{glm::vec3(0.0F),
+                                             glm::identity<glm::quat>(),
+                                             sponza_scale,
+                                             nullptr});
   scene.SetDirectionalLight({glm::vec3(0.01F, 1.0F, 0.01F),
                              glm::vec3(1.0F, 1.0F, 1.0F)});
 
@@ -100,13 +91,10 @@ void Game::HandleInput() {
                                                glm::vec3(1.0F, 1.0F, 1.0F)});
           break;
         case SDLK_i:
-          for (auto &mesh : nanosuit) {
-            current_scene().AddObject(mesh, {current_scene().camera().position(),
-                                             glm::identity<glm::quat>(),
-                                             glm::vec3(1.0f, 1.0f, 1.0f),
-                                             glm::vec3(0.0f, 0.0f, 0.0f),
-                                             glm::identity<glm::quat>()});
-          }
+          current_scene().AddObject(nanosuit, objects::Transform{current_scene().camera().position(),
+                                                                 glm::identity<glm::quat>(),
+                                                                 glm::vec3(1.0f, 1.0f, 1.0f),
+                                                                 nullptr});
         default:break;
       }
     } else if (event.type == SDL_KEYUP) {
