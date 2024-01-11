@@ -12,8 +12,7 @@ namespace chove {
 class Application {
  public:
   void Run();
-
-
+  
   void SetCurrentScene(std::string scene_name);
 
   [[nodiscard]] objects::Scene &current_scene() { return scenes_.at(current_scene_name_); }

@@ -11,7 +11,7 @@
 #include <absl/log/log_sink.h>
 #include <absl/log/log_sink_registry.h>
 
-#include "game.h"
+#include "demo_game.h"
 
 class StdoutLogSink final : public absl::LogSink {
   void Send(const absl::LogEntry &entry) override {
@@ -39,7 +39,8 @@ int main() {
   absl::AddLogSink(&log_sink);
   absl::InitializeLog();
 
-  chove::Game game{chove::RendererType::kOpenGL};
+  chove::DemoGame game{chove::RendererType::kOpenGL};
+  game.Initialize();
   game.Run();
 
   SDL_Quit();

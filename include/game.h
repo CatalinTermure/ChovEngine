@@ -18,15 +18,9 @@ class Game : public Application {
  public:
   explicit Game(RendererType renderer_type);
 
-  void HandleInput() override;
-  void HandlePhysics(std::chrono::duration<long long, std::ratio<1, 1'000'000'000>> delta_time) override;
- private:
+  virtual void Initialize() = 0;
+ protected:
   rendering::Window window_;
-  glm::vec3 camera_velocity_{};
-
-  std::vector<rendering::Mesh> nanosuit;
-  std::vector<rendering::Mesh> sponza;
-  std::vector<rendering::Mesh> cube;
 };
 }  // namespace chove
 

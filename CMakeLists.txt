@@ -38,6 +38,7 @@ target_link_libraries(ProjectApplication ProjectObjects ProjectRendering absl::b
 
 add_executable(LabsExtra src/main.cpp
         src/game.cpp
+        src/demo_game.cpp
 )
 target_include_directories(LabsExtra PUBLIC include)
 
