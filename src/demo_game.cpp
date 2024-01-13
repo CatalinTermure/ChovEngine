@@ -51,6 +51,7 @@ void DemoGame::Initialize() {
       10000.0F);
 
   scene.SetDirectionalLight({glm::vec3(0.01F, 1.0F, 0.01F),
+                             0.2F,
                              glm::vec3(1.0F, 1.0F, 1.0F)});
 
   scene.AddLight(objects::PointLight{1.0F,
@@ -59,7 +60,8 @@ void DemoGame::Initialize() {
                                      0.01F,
                                      glm::vec3(2.5F, 6.0F, 0.0F),
                                      100.0F,
-                                     glm::vec3(1.0F, 1.0F, 1.0F)
+                                     glm::vec3(1.0F, 1.0F, 1.0F),
+                                     0.2F,
   });
 
   scenes_["main"] = std::move(scene);
@@ -91,6 +93,7 @@ void DemoGame::HandleInput() {
           break;
         case SDLK_l:
           current_scene().SetDirectionalLight({-current_scene().camera().look_direction(),
+                                               0.2F,
                                                glm::vec3(1.0F, 1.0F, 1.0F)});
           break;
         case SDLK_i:

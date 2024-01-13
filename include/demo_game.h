@@ -17,9 +17,9 @@ class DemoGame : public Game {
  private:
   glm::vec3 camera_velocity_{};
 
-  objects::Transform *nanosuit;
-  objects::Transform *sponza;
-  objects::Transform *cube;
+  objects::Transform *nanosuit{};
+  objects::Transform *sponza{};
+  objects::Transform *cube{};
 
   objects::ObjectManager object_manager_{};
 };

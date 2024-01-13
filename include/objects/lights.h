@@ -7,6 +7,7 @@ namespace chove::objects {
 
 struct DirectionalLight {
   alignas(16) glm::vec3 direction;
+  float ambient;
   alignas(16) glm::vec3 color;
 };
 
@@ -18,6 +19,7 @@ struct PointLight {
   alignas(16) glm::vec3 position;
   float far_plane;
   alignas(16) glm::vec3 color;
+  float ambient;
   alignas(16) glm::vec3 positionEyeSpace;
 };
 
@@ -29,6 +31,7 @@ struct SpotLight {
   alignas(16) glm::vec3 position;
   float outer_cutoff;
   alignas(16) glm::vec3 direction;
+  float ambient;
   alignas(16) glm::vec3 color;
 };
 

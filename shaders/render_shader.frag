@@ -2,10 +2,10 @@ out vec4 outColor;
 
 struct DirectionalLight {
     vec3 direction;
-    float pad0;
+    float ambient;
 
     vec3 color;
-    float pad1;
+    float pad0;
 };
 
 struct PointLight {
@@ -18,10 +18,10 @@ struct PointLight {
     float far_plane;
 
     vec3 color;
-    float pad0;
+    float ambient;
 
     vec3 positionEyeSpace;
-    float pad1;
+    float pad0;
 };
 
 struct SpotLight {
@@ -34,10 +34,10 @@ struct SpotLight {
     float outerCutoff;
 
     vec3 direction;
-    float pad0;
+    float ambient;
 
     vec3 color;
-    float pad1;
+    float pad0;
 };
 
 uniform sampler2D ambientTexture;
@@ -92,7 +92,6 @@ in mat3 TBN;
 in vec4 fragPosLightSpace[DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT];
 #endif
 
-float ambientStrength = 0.2f;
 float specularStrength = 0.5f;
 
 vec2 texCoord = vec2(0.0f);
@@ -151,7 +150,7 @@ void ComputeDirectionalLight() {
     for (int i = 0; i < DIRECTIONAL_LIGHT_COUNT; ++i) {
         vec3 lightDirN = normalize(directionalLights[i].direction);  // compute light direction
         vec3 halfVector = normalize(lightDirN + viewDirN);  // compute half vector
-        ambient = ambientStrength * directionalLights[i].color;
+        ambient = directionalLights[i].ambient * directionalLights[i].color;
 
         vec3 depthMapCoordinates = ((fragPosLightSpace[i].xyz / fragPosLightSpace[i].w) * 0.5f + 0.5) - vec3(0.0f, 0.0f, directionalDepthBias);
 
@@ -227,7 +226,7 @@ void ComputePointLight() {
         }
         float shadow = totalShadow / 16.0f;
 
-        ambient = attenuation * ambientStrength * pointLights[i].color;
+        ambient = attenuation * pointLights[i].ambient * pointLights[i].color;
         diffuse = shadow * attenuation * max(dot(normalEye, lightDirN), 0.0f) * pointLights[i].color;
 
         #ifdef NO_SHININESS_TEXTURE
