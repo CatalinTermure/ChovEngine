@@ -2,6 +2,8 @@
 #define LABSEXTRA_INCLUDE_DEMO_GAME_H_
 
 #include "game.h"
+#include "objects/object_manager.h"
+#include "objects/transform.h"
 
 namespace chove {
 class DemoGame : public Game {
@@ -15,9 +17,11 @@ class DemoGame : public Game {
  private:
   glm::vec3 camera_velocity_{};
 
-  std::vector<rendering::Mesh> nanosuit;
-  std::vector<rendering::Mesh> sponza;
-  std::vector<rendering::Mesh> cube;
+  objects::Transform *nanosuit;
+  objects::Transform *sponza;
+  objects::Transform *cube;
+
+  objects::ObjectManager object_manager_{};
 };
 }  // namespace chove
 

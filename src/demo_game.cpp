@@ -10,38 +10,46 @@ constexpr float kCameraRotationSpeed = 0.1F;
 }
 
 using rendering::Mesh;
+using objects::Scene;
+using objects::Camera;
+using objects::Transform;
+using objects::DirectionalLight;
+using objects::PointLight;
+using objects::SpotLight;
 
 void DemoGame::Initialize() {
-  nanosuit = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "bricks" / "plane.obj");
-  cube = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "bricks" / "plane2.obj");
-  sponza = Mesh::ImportFromObj(std::filesystem::current_path() / "models" / "sponza.obj");
+  objects::Scene scene;
   glm::vec3 nanosuit_position = {0.0F, 1.0F, 0.0F};
   glm::vec3 cube_position = {2.0F, 1.0F, 0.0F};
   glm::vec3 sponza_scale = glm::vec3(0.01F, 0.01F, 0.01F);
 
-  objects::Scene scene;
+  nanosuit = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane.obj",
+                                          Transform{nanosuit_position,
+                                                    glm::identity<glm::quat>(),
+                                                    glm::vec3(1.0F),
+                                                    nullptr},
+                                          scene);
+  cube = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane2.obj",
+                                      Transform{cube_position,
+                                                glm::identity<glm::quat>(),
+                                                glm::vec3(1.0F),
+                                                nullptr},
+                                      scene);
+  sponza = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "sponza.obj",
+                                        Transform{glm::vec3(0.0F),
+                                                  glm::identity<glm::quat>(),
+                                                  sponza_scale,
+                                                  nullptr},
+                                        scene);
+
   scene.camera() = objects::Camera(
       glm::vec4{0.0F, 0.0F, -1.0F, 1.0F},
       glm::vec3{0.0F, 0.0F, 1.0F},
       glm::radians(55.0F),
       static_cast<float>(window_.width()) / static_cast<float>(window_.height()),
       0.1F,
-      100000.0F);
+      10000.0F);
 
-  scene.AddObject(nanosuit, objects::Transform{nanosuit_position,
-                                               glm::identity<glm::quat>(),
-                                               glm::vec3(1.0F),
-                                               nullptr});
-
-  scene.AddObject(cube, objects::Transform{cube_position,
-                                           glm::identity<glm::quat>(),
-                                           glm::vec3(1.0F),
-                                           nullptr});
-
-  scene.AddObject(sponza, objects::Transform{glm::vec3(0.0F),
-                                             glm::identity<glm::quat>(),
-                                             sponza_scale,
-                                             nullptr});
   scene.SetDirectionalLight({glm::vec3(0.01F, 1.0F, 0.01F),
                              glm::vec3(1.0F, 1.0F, 1.0F)});
 
@@ -86,10 +94,11 @@ void DemoGame::HandleInput() {
                                                glm::vec3(1.0F, 1.0F, 1.0F)});
           break;
         case SDLK_i:
-          current_scene().AddObject(nanosuit, objects::Transform{current_scene().camera().position(),
-                                                                 glm::identity<glm::quat>(),
-                                                                 glm::vec3(1.0f, 1.0f, 1.0f),
-                                                                 nullptr});
+          object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane.obj",
+                                       objects::Transform{current_scene().camera().position(),
+                                                          glm::identity<glm::quat>(),
+                                                          glm::vec3(1.0f, 1.0f, 1.0f),
+                                                          nullptr}, current_scene());
         default:break;
       }
     } else if (event.type == SDL_KEYUP) {

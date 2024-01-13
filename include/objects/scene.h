@@ -23,7 +23,7 @@ class Scene {
   [[nodiscard]] const Camera &camera() const { return camera_; };
 
   void AddObject(const rendering::Mesh &mesh, Transform transform);
-  void AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform);
+  Transform *AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform);
   void SetDirectionalLight(DirectionalLight light);
   void AddLight(PointLight light);
   void AddLight(SpotLight light);

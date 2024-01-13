@@ -9,7 +9,8 @@ find_package(glm REQUIRED)
 find_package(absl CONFIG REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
 
-add_library(ProjectObjects src/objects/scene.cpp)
+add_library(ProjectObjects src/objects/scene.cpp
+        src/objects/object_manager.cpp)
 target_include_directories(ProjectObjects PUBLIC include)
 target_link_libraries(ProjectObjects glm::glm absl::base absl::hash absl::log absl::status)
 

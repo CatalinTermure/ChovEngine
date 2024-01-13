@@ -8,7 +8,7 @@ void Scene::AddObject(const rendering::Mesh &mesh, Transform transform) {
   SetDirtyBit();
 }
 
-void Scene::AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform) {
+Transform *Scene::AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform) {
   transforms_.push_back(transform);
   Transform *parent = &transforms_.back();
   for (const auto &mesh : meshes) {
@@ -16,6 +16,7 @@ void Scene::AddObject(const std::vector<rendering::Mesh> &meshes, Transform tran
     objects_.push_back(GameObject{&mesh, &transforms_.back()});
   }
   SetDirtyBit();
+  return parent;
 }
 
 // TODO: fix this hack, needed for the pointers to be stable(up to 10k objects), will need to use indices into the vector,
