@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_OBJECTS_APPLICATION_H_
-#define LABSEXTRA_INCLUDE_OBJECTS_APPLICATION_H_
+#ifndef CHOVENGINE_INCLUDE_OBJECTS_APPLICATION_H_
+#define CHOVENGINE_INCLUDE_OBJECTS_APPLICATION_H_
 
 #include "objects/scene.h"
 #include "rendering/renderer.h"
@@ -35,4 +35,4 @@ class Application {
 };
 }  // namespace chove::objects
 
-#endif //LABSEXTRA_INCLUDE_OBJECTS_APPLICATION_H_
+#endif //CHOVENGINE_INCLUDE_OBJECTS_APPLICATION_H_

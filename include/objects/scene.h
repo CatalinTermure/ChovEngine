@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_OBJECTS_SCENE_H_
-#define LABSEXTRA_INCLUDE_OBJECTS_SCENE_H_
+#ifndef CHOVENGINE_INCLUDE_OBJECTS_SCENE_H_
+#define CHOVENGINE_INCLUDE_OBJECTS_SCENE_H_
 
 #include <vector>
 #include <absl/container/flat_hash_map.h>
@@ -53,4 +53,4 @@ class Scene {
 
 } // namespace chove::objects
 
-#endif //LABSEXTRA_INCLUDE_OBJECTS_SCENE_H_
+#endif //CHOVENGINE_INCLUDE_OBJECTS_SCENE_H_

@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_PG_APPLICATION_H_
-#define LABSEXTRA_INCLUDE_PG_APPLICATION_H_
+#ifndef CHOVENGINE_INCLUDE_PG_APPLICATION_H_
+#define CHOVENGINE_INCLUDE_PG_APPLICATION_H_
 
 #include "application.h"
 #include "rendering/window.h"
@@ -24,4 +24,4 @@ class Game : public Application {
 };
 }  // namespace chove
 
-#endif //LABSEXTRA_INCLUDE_PG_APPLICATION_H_
+#endif //CHOVENGINE_INCLUDE_PG_APPLICATION_H_

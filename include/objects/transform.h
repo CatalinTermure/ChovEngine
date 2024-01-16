@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_OBJECTS_TRANSFORM_H_
-#define LABSEXTRA_INCLUDE_OBJECTS_TRANSFORM_H_
+#ifndef CHOVENGINE_INCLUDE_OBJECTS_TRANSFORM_H_
+#define CHOVENGINE_INCLUDE_OBJECTS_TRANSFORM_H_
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -38,4 +38,4 @@ struct Transform {
 
 }  // namespace chove::objects
 
-#endif //LABSEXTRA_INCLUDE_OBJECTS_TRANSFORM_H_
+#endif //CHOVENGINE_INCLUDE_OBJECTS_TRANSFORM_H_

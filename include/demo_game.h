@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_DEMO_GAME_H_
-#define LABSEXTRA_INCLUDE_DEMO_GAME_H_
+#ifndef CHOVENGINE_INCLUDE_DEMO_GAME_H_
+#define CHOVENGINE_INCLUDE_DEMO_GAME_H_
 
 #include "game.h"
 #include "objects/object_manager.h"
@@ -25,4 +25,4 @@ class DemoGame : public Game {
 };
 }  // namespace chove
 
-#endif //LABSEXTRA_INCLUDE_DEMO_GAME_H_
+#endif //CHOVENGINE_INCLUDE_DEMO_GAME_H_

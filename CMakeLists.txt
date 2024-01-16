@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.25)
-project(LabsExtra)
+STRING(REGEX REPLACE "\\\\" "/" VCPKG_DIR $ENV{VCPKG_ROOT})
+set(CMAKE_TOOLCHAIN_FILE "${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake") # Change this if you aren't using vcpkg
+
+project(ChovEngine)
 
 set(CMAKE_CXX_STANDARD 20)
-set(SDL2_DIR "SDL2-2.26.5/cmake") # Set this to the directory containing SDL2Config.cmake
-find_package(SDL2 REQUIRED)
 
-find_package(glm REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(absl CONFIG REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
 
@@ -37,11 +39,11 @@ add_library(ProjectApplication src/application.cpp)
 target_include_directories(ProjectApplication PUBLIC include)
 target_link_libraries(ProjectApplication ProjectObjects ProjectRendering absl::base absl::hash absl::log absl::status)
 
-add_executable(LabsExtra src/main.cpp
+add_executable(ChovEngine src/main.cpp
         src/game.cpp
         src/demo_game.cpp
 )
-target_include_directories(LabsExtra PUBLIC include)
+target_include_directories(ChovEngine PUBLIC include)
 
 set(GLSLC_EXECUTABLE "glslc.exe")
 set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vulkan)
@@ -63,10 +65,10 @@ endforeach ()
 
 add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
 
-add_dependencies(LabsExtra shaders)
+add_dependencies(ChovEngine shaders)
 
 find_package(Vulkan)
 include_directories("${Vulkan_INCLUDE_DIRS}")
-target_link_libraries(LabsExtra ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
-target_link_libraries(LabsExtra ProjectApplication ProjectRenderingOpenGL)
-target_include_directories(LabsExtra PUBLIC include)
+target_link_libraries(ChovEngine ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
+target_link_libraries(ChovEngine ProjectApplication ProjectRenderingOpenGL)
+target_include_directories(ChovEngine PUBLIC include)

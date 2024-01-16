@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_OBJECTS_GAME_OBJECT_H_
-#define LABSEXTRA_INCLUDE_OBJECTS_GAME_OBJECT_H_
+#ifndef CHOVENGINE_INCLUDE_OBJECTS_GAME_OBJECT_H_
+#define CHOVENGINE_INCLUDE_OBJECTS_GAME_OBJECT_H_
 
 #include "rendering/mesh.h"
 #include "objects/transform.h"
@@ -13,4 +13,4 @@ struct GameObject {
 
 } // namespace chove::objects
 
-#endif //LABSEXTRA_INCLUDE_OBJECTS_GAME_OBJECT_H_
+#endif //CHOVENGINE_INCLUDE_OBJECTS_GAME_OBJECT_H_

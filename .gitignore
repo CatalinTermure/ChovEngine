@@ -3,7 +3,6 @@
 /.idea/
 /build/
 /.vscode/
-SDL2-2.26.5/
-/glm/
 *.spv
 log.txt
+/vcpkg_installed/

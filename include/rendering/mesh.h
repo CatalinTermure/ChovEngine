@@ -1,5 +1,5 @@
-#ifndef LABSEXTRA_INCLUDE_RENDERING_MESH_H_
-#define LABSEXTRA_INCLUDE_RENDERING_MESH_H_
+#ifndef CHOVENGINE_INCLUDE_RENDERING_MESH_H_
+#define CHOVENGINE_INCLUDE_RENDERING_MESH_H_
 
 #include <vector>
 #include <filesystem>
@@ -34,4 +34,4 @@ struct Mesh {
 };
 } // namespace chove::rendering
 
-#endif //LABSEXTRA_INCLUDE_RENDERING_MESH_H_
+#endif //CHOVENGINE_INCLUDE_RENDERING_MESH_H_
