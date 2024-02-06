@@ -2,12 +2,6 @@
 
 namespace chove::objects {
 
-void Scene::AddObject(const rendering::Mesh &mesh, Transform transform) {
-  transforms_.push_back(transform);
-  objects_.push_back(GameObject{&mesh, &transforms_.back()});
-  SetDirtyBit();
-}
-
 Transform *Scene::AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform) {
   transforms_.push_back(transform);
   Transform *parent = &transforms_.back();

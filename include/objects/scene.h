@@ -2,6 +2,7 @@
 #define CHOVENGINE_INCLUDE_OBJECTS_SCENE_H_
 
 #include <vector>
+
 #include <absl/container/flat_hash_map.h>
 
 #include "game_object.h"
@@ -22,7 +23,6 @@ class Scene {
   [[nodiscard]] Camera &camera() { return camera_; };
   [[nodiscard]] const Camera &camera() const { return camera_; };
 
-  void AddObject(const rendering::Mesh &mesh, Transform transform);
   Transform *AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform);
   void SetDirectionalLight(DirectionalLight light);
   void AddLight(PointLight light);
