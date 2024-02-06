@@ -21,13 +21,13 @@ class Renderer : public rendering::Renderer {
   Renderer(Renderer &&) noexcept = default;
   Renderer &operator=(Renderer &&) noexcept = default;
 
-  explicit Renderer(windowing::Window *window);
+  explicit Renderer(const windowing::Window *window);
 
   void Render() override;
   void SetupScene(const objects::Scene &scene) override;
 
  private:
-  windowing::Window *window_;
+  const windowing::Window *window_;
   const objects::Scene *scene_;
 
   std::unique_ptr<TextureAllocator> texture_allocator_;

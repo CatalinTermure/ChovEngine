@@ -206,7 +206,7 @@ using objects::Scene;
 using objects::GameObject;
 using windowing::Window;
 
-Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
+Renderer::Renderer(const Window *window) : window_(window), scene_(nullptr) {
   glewExperimental = GL_TRUE;
   glewInit();
 

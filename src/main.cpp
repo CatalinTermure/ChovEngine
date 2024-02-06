@@ -28,7 +28,7 @@ int main() {
   absl::AddLogSink(&log_sink);
   absl::InitializeLog();
 
-  chove::DemoGame game{chove::windowing::RendererType::kOpenGL};
+  chove::DemoGame game{chove::windowing::RendererType::kVulkan};
   game.Initialize();
   game.Run();
 

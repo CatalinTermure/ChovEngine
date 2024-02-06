@@ -34,7 +34,7 @@ class Application {
 
   std::chrono::time_point<std::chrono::high_resolution_clock> physics_time_;
 
-  bool is_running_;
+  bool is_running_ = false;
   int target_frame_rate_;
 
 };

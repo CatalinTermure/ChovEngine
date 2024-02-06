@@ -1,5 +1,6 @@
 #include "application.h"
 #include "rendering/opengl/renderer.h"
+#include "rendering/vulkan/vulkan_renderer.h"
 
 #include <absl/log/log.h>
 #include <thread>
@@ -30,9 +31,20 @@ void Application::Run() {
   }
 }
 Application::Application(windowing::RendererType renderer_type) : window_(windowing::Window::Create("Chove",
-                                                                                                    {800, 600},
+                                                                                                    {1024, 800},
                                                                                                     renderer_type)) {
-  renderer_ = std::make_unique<rendering::opengl::Renderer>(&window_);
+  if (renderer_type == windowing::RendererType::kOpenGL) {
+    renderer_ = std::make_unique<rendering::opengl::Renderer>(&window_);
+  } else if (renderer_type == windowing::RendererType::kVulkan) {
+    auto vulkan_renderer = rendering::vulkan::VulkanRenderer::Create(window_);
+    if (vulkan_renderer.ok()) {
+      renderer_ = std::make_unique<rendering::vulkan::VulkanRenderer>(std::move(vulkan_renderer).value());
+    } else {
+      LOG(FATAL) << "Failed to create Vulkan renderer.";
+    }
+  } else {
+    LOG(FATAL) << "Renderer type not supported.";
+  }
   target_frame_rate_ = 60;
 }
-}  // namespace chove::objects
+}  // namespace chove
