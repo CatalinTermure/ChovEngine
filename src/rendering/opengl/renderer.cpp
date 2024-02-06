@@ -1,7 +1,38 @@
 #include "rendering/opengl/renderer.h"
 
 #include <GL/glew.h>
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <filesystem>
+#include <format>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/log/log.h"
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/geometric.hpp"
+#include "glm/gtx/norm.hpp"
+#include "glm/trigonometric.hpp"
+#include "objects/game_object.h"
+#include "objects/lights.h"
+#include "objects/scene.h"
+#include "rendering/material.h"
+#include "rendering/mesh.h"
+#include "rendering/opengl/render_object.h"
+#include "rendering/opengl/shader.h"
+#include "rendering/opengl/shader_allocator.h"
+#include "rendering/opengl/shader_flags.h"
+#include "rendering/opengl/texture.h"
+#include "rendering/opengl/texture_allocator.h"
+#include "rendering/opengl/uniform.h"
+#include "windowing/window.h"
 
 namespace chove::rendering::opengl {
 namespace {
@@ -19,70 +50,97 @@ void GLAPIENTRY MessageCallback(GLenum source,
   msg += std::format("Debug message ({}): {}\n", id, message);
 
   switch (source) {
-    case GL_DEBUG_SOURCE_API: msg += "Source: API";
+    case GL_DEBUG_SOURCE_API:
+      msg += "Source: API";
       break;
-    case GL_DEBUG_SOURCE_WINDOW_SYSTEM: msg += "Source: Window System";
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+      msg += "Source: Window System";
       break;
-    case GL_DEBUG_SOURCE_SHADER_COMPILER: msg += "Source: Shader Compiler";
+    case GL_DEBUG_SOURCE_SHADER_COMPILER:
+      msg += "Source: Shader Compiler";
       break;
-    case GL_DEBUG_SOURCE_THIRD_PARTY: msg += "Source: Third Party";
+    case GL_DEBUG_SOURCE_THIRD_PARTY:
+      msg += "Source: Third Party";
       break;
-    case GL_DEBUG_SOURCE_APPLICATION: msg += "Source: Application";
+    case GL_DEBUG_SOURCE_APPLICATION:
+      msg += "Source: Application";
       break;
-    case GL_DEBUG_SOURCE_OTHER: msg += "Source: Other";
+    case GL_DEBUG_SOURCE_OTHER:
+      msg += "Source: Other";
       break;
-    default: msg += "Source: Unknown";
+    default:
+      msg += "Source: Unknown";
       break;
   }
   msg += "\n";
 
   switch (type) {
-    case GL_DEBUG_TYPE_ERROR: msg += "Type: Error";
+    case GL_DEBUG_TYPE_ERROR:
+      msg += "Type: Error";
       break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: msg += "Type: Deprecated Behaviour";
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+      msg += "Type: Deprecated Behaviour";
       break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: msg += "Type: Undefined Behaviour";
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+      msg += "Type: Undefined Behaviour";
       break;
-    case GL_DEBUG_TYPE_PORTABILITY: msg += "Type: Portability";
+    case GL_DEBUG_TYPE_PORTABILITY:
+      msg += "Type: Portability";
       break;
-    case GL_DEBUG_TYPE_PERFORMANCE: msg += "Type: Performance";
+    case GL_DEBUG_TYPE_PERFORMANCE:
+      msg += "Type: Performance";
       break;
-    case GL_DEBUG_TYPE_MARKER: msg += "Type: Marker";
+    case GL_DEBUG_TYPE_MARKER:
+      msg += "Type: Marker";
       break;
-    case GL_DEBUG_TYPE_PUSH_GROUP: msg += "Type: Push Group";
+    case GL_DEBUG_TYPE_PUSH_GROUP:
+      msg += "Type: Push Group";
       break;
-    case GL_DEBUG_TYPE_POP_GROUP: msg += "Type: Pop Group";
+    case GL_DEBUG_TYPE_POP_GROUP:
+      msg += "Type: Pop Group";
       break;
-    case GL_DEBUG_TYPE_OTHER: msg += "Type: Other";
+    case GL_DEBUG_TYPE_OTHER:
+      msg += "Type: Other";
       break;
-    default: msg += "Type: Unknown";
+    default:
+      msg += "Type: Unknown";
       break;
   }
   msg += "\n";
 
   switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH: msg += "Severity: high";
+    case GL_DEBUG_SEVERITY_HIGH:
+      msg += "Severity: high";
       break;
-    case GL_DEBUG_SEVERITY_MEDIUM: msg += "Severity: medium";
+    case GL_DEBUG_SEVERITY_MEDIUM:
+      msg += "Severity: medium";
       break;
-    case GL_DEBUG_SEVERITY_LOW: msg += "Severity: low";
+    case GL_DEBUG_SEVERITY_LOW:
+      msg += "Severity: low";
       break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION: msg += "Severity: notification";
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+      msg += "Severity: notification";
       break;
-    default: msg += "Severity: unknown";
+    default:
+      msg += "Severity: unknown";
       break;
   }
   msg += "\n-------------------------------------------------------------";
   switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH: LOG(ERROR) << msg;
+    case GL_DEBUG_SEVERITY_HIGH:
+      LOG(ERROR) << msg;
       break;
-    case GL_DEBUG_SEVERITY_MEDIUM: LOG(WARNING) << msg;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+      LOG(WARNING) << msg;
       break;
-    case GL_DEBUG_SEVERITY_LOW: LOG(INFO) << msg;
+    case GL_DEBUG_SEVERITY_LOW:
+      LOG(INFO) << msg;
       break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION: LOG(INFO) << msg;
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+      LOG(INFO) << msg;
       break;
-    default: LOG(INFO) << msg;
+    default:
+      LOG(INFO) << msg;
       break;
   }
 }
@@ -109,7 +167,7 @@ constexpr int kLightSpaceMatricesUBOBindingPoint = 3;
 
 constexpr int kShadowMapSize = 2048;
 
-constexpr glm::vec3 kCubeMapDirections[6] = {
+constexpr std::array<glm::vec3, 6> kCubeMapDirections = {
     glm::vec3(1.0F, 0.0F, 0.0F),
     glm::vec3(-1.0F, 0.0F, 0.0F),
     glm::vec3(0.0F, 1.0F, 0.0F),
@@ -118,7 +176,7 @@ constexpr glm::vec3 kCubeMapDirections[6] = {
     glm::vec3(0.0F, 0.0F, -1.0F)
 };
 
-constexpr glm::vec3 kCubeMapUpVectors[6] = {
+constexpr std::array<glm::vec3, 6> kCubeMapUpVectors = {
     glm::vec3(0.0F, -1.0F, 0.0F),
     glm::vec3(0.0F, -1.0F, 0.0F),
     glm::vec3(0.0F, 0.0F, 1.0F),
@@ -139,22 +197,21 @@ void InsertionSort(std::vector<RenderObject> &objects) {
   }
 }
 
-}
+}  // namespace
 
 using objects::PointLight;
 using objects::DirectionalLight;
 using objects::SpotLight;
 using objects::Scene;
 using objects::GameObject;
+using windowing::Window;
 
 Renderer::Renderer(Window *window) : window_(window), scene_(nullptr) {
-  context_ = SDL_GL_CreateContext(*window_);
-
   glewExperimental = GL_TRUE;
   glewInit();
 
-  glClearColor(0.3f, 0.3f, 0.3f, 1.0);
-  glViewport(0, 0, window_->width(), window_->height());
+  glClearColor(0.3F, 0.3F, 0.3F, 1.0F);
+  glViewport(0, 0, window_->extent().width, window_->extent().height);
 
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
@@ -215,10 +272,10 @@ void Renderer::Render() {
   glUniform1i(glGetUniformLocation(depth_map_shader_->program(), "alphaTexture"), 0);
   for (int i = 0; i < scene_->point_lights().size(); ++i) {
     glBindFramebuffer(GL_FRAMEBUFFER, point_shadow_framebuffers_[i]);
-    glm::mat4 light_projection = glm::perspective(glm::radians(90.0F),
-                                                  1.0F,
-                                                  scene_->point_lights()[i].near_plane,
-                                                  scene_->point_lights()[i].far_plane);
+    const glm::mat4 light_projection = glm::perspective(glm::radians(90.0F),
+                                                        1.0F,
+                                                        scene_->point_lights()[i].near_plane,
+                                                        scene_->point_lights()[i].far_plane);
     for (int j = 0; j < 6; j++) {
       glFramebufferTexture2D(GL_FRAMEBUFFER,
                              GL_DEPTH_ATTACHMENT,
@@ -227,10 +284,10 @@ void Renderer::Render() {
                              0);
       glClear(GL_DEPTH_BUFFER_BIT);
 
-      glm::mat4 light_view = glm::lookAt(scene_->point_lights()[i].position,
-                                         scene_->point_lights()[i].position + kCubeMapDirections[j],
-                                         kCubeMapUpVectors[j]);
-      glm::mat4 light_space_matrix = light_projection * light_view;
+      const glm::mat4 light_view = glm::lookAt(scene_->point_lights()[i].position,
+                                               scene_->point_lights()[i].position + kCubeMapDirections[j],
+                                               kCubeMapUpVectors[j]);
+      const glm::mat4 light_space_matrix = light_projection * light_view;
       Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
                                                     "lightSpaceMatrix",
                                                     light_space_matrix);
@@ -264,7 +321,7 @@ void Renderer::Render() {
   depth_map_shader_->Use();
   {
     glBindFramebuffer(GL_FRAMEBUFFER, directional_shadow_framebuffers_[0]);
-    glm::mat4 light_projection = glm::ortho(-20.0F, 20.0F, -20.0F, 20.0F, 0.1F, 100.0F);
+    const glm::mat4 light_projection = glm::ortho(-20.0F, 20.0F, -20.0F, 20.0F, 0.1F, 100.0F);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER,
                            GL_DEPTH_ATTACHMENT,
@@ -272,9 +329,9 @@ void Renderer::Render() {
                            directional_depth_maps_[0].texture(),
                            0);
     glClear(GL_DEPTH_BUFFER_BIT);
-    glm::mat4 light_view = glm::lookAt(10.0F * glm::normalize(scene_->directional_light().direction),
-                                       glm::vec3(0.0F),
-                                       glm::vec3(0.0F, 1.0F, 0.0F));
+    const glm::mat4 light_view = glm::lookAt(10.0F * glm::normalize(scene_->directional_light().direction),
+                                             glm::vec3(0.0F),
+                                             glm::vec3(0.0F, 1.0F, 0.0F));
     glm::mat4 light_space_matrix = light_projection * light_view;
     Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
                                                   "lightSpaceMatrix",
@@ -311,10 +368,10 @@ void Renderer::Render() {
   depth_map_shader_->Use();
   for (int i = 0; i < scene_->spot_lights().size(); ++i) {
     glBindFramebuffer(GL_FRAMEBUFFER, spot_shadow_framebuffers_[i]);
-    glm::mat4 light_projection = glm::perspective(glm::radians(scene_->spot_lights()[i].outer_cutoff * 2.0F),
-                                                  1.0F,
-                                                  0.1F,
-                                                  10.0F);
+    const glm::mat4 light_projection = glm::perspective(glm::radians(scene_->spot_lights()[i].outer_cutoff * 2.0F),
+                                                        1.0F,
+                                                        0.1F,
+                                                        10.0F);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER,
                            GL_DEPTH_ATTACHMENT,
@@ -322,9 +379,9 @@ void Renderer::Render() {
                            spot_depth_maps_[i].texture(),
                            0);
     glClear(GL_DEPTH_BUFFER_BIT);
-    glm::mat4 light_view = glm::lookAt(scene_->spot_lights()[i].position,
-                                       scene_->spot_lights()[i].position + scene_->spot_lights()[i].direction,
-                                       glm::vec3(0.0F, 1.0F, 0.0F));
+    const glm::mat4 light_view = glm::lookAt(scene_->spot_lights()[i].position,
+                                             scene_->spot_lights()[i].position + scene_->spot_lights()[i].direction,
+                                             glm::vec3(0.0F, 1.0F, 0.0F));
     glm::mat4 light_space_matrix = light_projection * light_view;
     Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
                                                   "lightSpaceMatrix",
@@ -364,7 +421,7 @@ void Renderer::Render() {
 
   // Start actual rendering pass
 
-  glViewport(0, 0, window_->width(), window_->height());
+  glViewport(0, 0, window_->extent().width, window_->extent().height);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -462,8 +519,8 @@ void Renderer::Render() {
 
     for (int i = 0; i < render_object.textures.size(); ++i) {
       glActiveTexture(GL_TEXTURE0 + texture_index);
-      int location = glGetUniformLocation(shaders_[render_object.shader_index].program(),
-                                          render_object.textures[i].name().c_str());
+      const int location = glGetUniformLocation(shaders_[render_object.shader_index].program(),
+                                                render_object.textures[i].name().c_str());
       glUniform1i(location, texture_index);
       glBindTexture(GL_TEXTURE_2D, render_object.textures[i].texture());
       texture_index++;
@@ -482,7 +539,7 @@ void Renderer::Render() {
     }
   }
 
-  SDL_GL_SwapWindow(*window_);
+  window_->SwapBuffers();
 }
 
 void Renderer::SetupScene(const Scene &scene) {
@@ -632,8 +689,8 @@ void Renderer::AttachMaterial(RenderObject &render_object, const Material &mater
   std::vector<ShaderFlag> vertex_shader_flags{};
   std::vector<ShaderFlag> fragment_shader_flags{};
 
-  std::vector<ShaderFlag> shadow_vertex_shader_flags{};
-  std::vector<ShaderFlag> shadow_fragment_shader_flags{};
+  const std::vector<ShaderFlag> shadow_vertex_shader_flags{};
+  const std::vector<ShaderFlag> shadow_fragment_shader_flags{};
 
   if (material.ambient_texture.has_value()) {
     render_object.textures.emplace_back(material.ambient_texture.value(), "ambientTexture", *texture_allocator_);
@@ -679,13 +736,14 @@ void Renderer::AttachMaterial(RenderObject &render_object, const Material &mater
     fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoDisplacementTexture, 1);
   }
 
-  fragment_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, scene_->point_lights().size());
+  fragment_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount,
+                                     static_cast<int>(scene_->point_lights().size()));
   fragment_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
-  fragment_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, scene_->spot_lights().size());
+  fragment_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, static_cast<int>(scene_->spot_lights().size()));
 
-  vertex_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, scene_->point_lights().size());
+  vertex_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, static_cast<int>(scene_->point_lights().size()));
   vertex_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
-  vertex_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, scene_->spot_lights().size());
+  vertex_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, static_cast<int>(scene_->spot_lights().size()));
 
   shaders_.emplace_back("shaders/render_shader.vert",
                         vertex_shader_flags,
@@ -697,4 +755,4 @@ void Renderer::AttachMaterial(RenderObject &render_object, const Material &mater
   render_object.material_data = UniformBuffer(sizeof(MaterialUBOData));
   render_object.material_data.Bind(shaders_.back().program(), "Material", kMaterialUBOBindingPoint);
 }
-}
+}  // namespace chove::rendering::opengl

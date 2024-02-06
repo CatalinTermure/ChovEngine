@@ -3,11 +3,10 @@
 
 #include <memory>
 
-#include <vulkan/vulkan_raii.hpp>
-#include <vulkan/vulkan.hpp>
-#include <SDL2/SDL.h>
+#include "windowing/window.h"
 #include <absl/status/statusor.h>
-#include "rendering/window.h"
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 namespace chove::rendering::vulkan {
 
@@ -27,7 +26,7 @@ class Context {
   [[nodiscard]] vk::Instance instance() const { return *instance_; }
   [[nodiscard]] static constexpr uint32_t GetVulkanVersion() { return VK_API_VERSION_1_3; }
 
-  [[nodiscard]] static absl::StatusOr<Context> CreateContext(Window &window);
+  [[nodiscard]] static absl::StatusOr<Context> CreateContext(windowing::Window &window);
 
  private:
   vk::raii::Context context_;

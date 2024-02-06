@@ -4,24 +4,30 @@ set(CMAKE_TOOLCHAIN_FILE "${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake") # Chan
 
 project(ChovEngine)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
-find_package(SDL2 CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(absl CONFIG REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
+find_package(Vulkan)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 add_library(ProjectObjects src/objects/scene.cpp
         src/objects/object_manager.cpp)
 target_include_directories(ProjectObjects PUBLIC include)
 target_link_libraries(ProjectObjects glm::glm absl::base absl::hash absl::log absl::status)
 
+add_library(ProjectWindowing src/windowing/events.cpp
+        src/windowing/window.cpp)
+target_include_directories(ProjectWindowing PUBLIC include)
+target_link_libraries(ProjectWindowing glfw GLEW::GLEW Vulkan::Vulkan absl::base absl::hash absl::log absl::status)
+
 add_library(ProjectRendering src/rendering/mesh.cpp
-        src/rendering/window.cpp
         src/rendering/camera.cpp
         src/rendering/libraries_initializer.cpp)
 target_include_directories(ProjectRendering PUBLIC include)
-target_link_libraries(ProjectRendering glm::glm absl::base absl::hash absl::log absl::status)
+target_link_libraries(ProjectRendering ProjectWindowing glm::glm absl::base absl::hash absl::log absl::status)
 
 add_library(ProjectRenderingOpenGL
         src/rendering/opengl/renderer.cpp
@@ -32,15 +38,28 @@ add_library(ProjectRenderingOpenGL
         src/rendering/opengl/render_object.cpp
         src/rendering/opengl/shader_allocator.cpp
         src/rendering/opengl/uniform.cpp)
-target_link_libraries(ProjectRenderingOpenGL GLEW::GLEW absl::base absl::log)
+target_link_libraries(ProjectRenderingOpenGL ProjectRendering GLEW::GLEW absl::base absl::log)
 target_include_directories(ProjectRenderingOpenGL PUBLIC include)
+
+add_library(ProjectRenderingVulkan
+        src/rendering/vulkan/allocator.cpp
+        src/rendering/vulkan/buffer.cpp
+        src/rendering/vulkan/context.cpp
+        src/rendering/vulkan/image.cpp
+        src/rendering/vulkan/libraries_initializer.cpp
+        src/rendering/vulkan/pipeline_builder.cpp
+        src/rendering/vulkan/shader.cpp
+        src/rendering/vulkan/swapchain.cpp
+        src/rendering/vulkan/texture.cpp
+        src/rendering/vulkan/vulkan_renderer.cpp)
+target_link_libraries(ProjectRenderingVulkan ProjectRendering Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator absl::base absl::log)
+target_include_directories(ProjectRenderingVulkan PUBLIC "${Vulkan_INCLUDE_DIRS}" include)
 
 add_library(ProjectApplication src/application.cpp)
 target_include_directories(ProjectApplication PUBLIC include)
-target_link_libraries(ProjectApplication ProjectObjects ProjectRendering absl::base absl::hash absl::log absl::status)
+target_link_libraries(ProjectApplication ProjectObjects ProjectRenderingOpenGL ProjectRenderingVulkan absl::base absl::hash absl::log absl::status)
 
 add_executable(ChovEngine src/main.cpp
-        src/game.cpp
         src/demo_game.cpp
 )
 target_include_directories(ChovEngine PUBLIC include)
@@ -67,8 +86,5 @@ add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
 
 add_dependencies(ChovEngine shaders)
 
-find_package(Vulkan)
-include_directories("${Vulkan_INCLUDE_DIRS}")
-target_link_libraries(ChovEngine ${SDL2_LIBRARIES} glm::glm absl::base absl::log absl::status)
-target_link_libraries(ChovEngine ProjectApplication ProjectRenderingOpenGL)
+target_link_libraries(ChovEngine ProjectApplication glm::glm absl::base absl::log absl::status)
 target_include_directories(ChovEngine PUBLIC include)

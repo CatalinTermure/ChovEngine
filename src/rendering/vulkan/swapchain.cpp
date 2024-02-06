@@ -1,9 +1,10 @@
 #include "rendering/vulkan/swapchain.h"
 
 #include <absl/log/log.h>
-#include <SDL2/SDL_vulkan.h>
 
 namespace chove::rendering::vulkan {
+
+using windowing::Window;
 
 namespace {
 
@@ -22,19 +23,16 @@ vk::SurfaceFormatKHR GetBGRA8SurfaceFormat(const vk::SurfaceKHR &surface, const 
   return surface_format;
 }
 
-vk::Extent2D GetSurfaceExtent(SDL_Window *window, vk::SurfaceCapabilitiesKHR &surface_capabilities) {
-  int window_width = 0;
-  int window_height = 0;
-  SDL_Vulkan_GetDrawableSize(window, &window_width, &window_height);
+vk::Extent2D GetSurfaceExtent(const Window &window, vk::SurfaceCapabilitiesKHR &surface_capabilities) {
+  auto window_extent = window.extent();
   uint32_t surface_width = surface_capabilities.currentExtent.width;
   uint32_t surface_height = surface_capabilities.currentExtent.height;
   if (surface_width == 0xFFFFFFFFU || surface_height == 0xFFFFFFFFU) {
-    surface_width = window_width;
-    surface_height = window_height;
+    surface_width = window_extent.width;
+    surface_height = window_extent.height;
   }
-  if (surface_width != static_cast<uint32_t>(window_width) || surface_height != static_cast<uint32_t>(window_height)) {
-    LOG(FATAL) << std::format("SDL and Vulkan disagree on surface size. SDL: %dx%d. Vulkan %ux%u", window_width,
-                              window_height, surface_width, surface_height);
+  if (surface_width != static_cast<uint32_t>(window_extent.width) || surface_height != static_cast<uint32_t>(window_extent.height)) {
+    throw std::runtime_error("Window size does not match surface size.");
   }
   vk::Extent2D surface_extent = {surface_width, surface_height};
   surface_capabilities.currentExtent = surface_extent;
@@ -50,7 +48,7 @@ std::pair<vk::Result, SwapchainImage> Swapchain::AcquireNextImage(uint64_t timeo
   return {result, SwapchainImage{*swapchain_image_views_[index], swapchain_images_[index], index}};
 }
 
-absl::StatusOr<Swapchain> Swapchain::CreateSwapchain(Context &context, Window &window, uint32_t image_count) {
+absl::StatusOr<Swapchain> Swapchain::CreateSwapchain(Context &context, windowing::Window &window, uint32_t image_count) {
   const vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;  // no checks needed for FIFO mode
   vk::SurfaceCapabilitiesKHR
       surface_capabilities = context.physical_device().getSurfaceCapabilitiesKHR(context.surface());

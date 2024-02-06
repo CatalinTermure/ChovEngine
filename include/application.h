@@ -3,16 +3,20 @@
 
 #include "objects/scene.h"
 #include "rendering/renderer.h"
-#include "rendering/window.h"
+#include "windowing/window.h"
 
-#include <chrono>
 #include <absl/container/flat_hash_map.h>
 
+#include <chrono>
+
 namespace chove {
+
 class Application {
  public:
+  explicit Application(windowing::RendererType renderer_type);
   void Run();
-  
+
+  virtual void Initialize() = 0;
   void SetCurrentScene(std::string scene_name);
 
   [[nodiscard]] objects::Scene &current_scene() { return scenes_.at(current_scene_name_); }
@@ -26,6 +30,7 @@ class Application {
   std::string current_scene_name_;
 
   std::unique_ptr<rendering::Renderer> renderer_;
+  windowing::Window window_;
 
   std::chrono::time_point<std::chrono::high_resolution_clock> physics_time_;
 
@@ -33,6 +38,6 @@ class Application {
   int target_frame_rate_;
 
 };
-}  // namespace chove::objects
+}  // namespace chove
 
 #endif //CHOVENGINE_INCLUDE_OBJECTS_APPLICATION_H_

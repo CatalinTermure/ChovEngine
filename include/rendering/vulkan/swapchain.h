@@ -5,7 +5,7 @@
 #include <vulkan/vulkan_raii.hpp>
 
 #include "context.h"
-#include "rendering/window.h"
+#include "windowing/window.h"
 
 namespace chove::rendering::vulkan {
 
@@ -22,7 +22,7 @@ class Swapchain {
   Swapchain(Swapchain &&) noexcept = default;
   Swapchain &operator=(Swapchain &&) noexcept = default;
 
-  static absl::StatusOr<Swapchain> CreateSwapchain(Context &context, Window &window, uint32_t image_count);
+  static absl::StatusOr<Swapchain> CreateSwapchain(Context &context, windowing::Window &window, uint32_t image_count);
 
   [[nodiscard]] std::pair<vk::Result, SwapchainImage> AcquireNextImage(uint64_t timeout,
                                                                        vk::Semaphore semaphore,

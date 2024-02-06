@@ -35,7 +35,7 @@ std::vector<vk::raii::CommandBuffer> AllocateCommandBuffers(const vk::raii::Devi
 }
 }
 
-void VulkanRenderer::Render(const objects::Scene &scene) {
+void VulkanRenderer::Render() {
   auto result = context_.device().waitForFences(*rendering_complete_fence_, true, kTargetFrameTimeNs);
   if (result == vk::Result::eTimeout) {
     LOG(WARNING) << "Previous frame did not present in time.";
@@ -140,7 +140,7 @@ void VulkanRenderer::Render(const objects::Scene &scene) {
                                             *transfer_complete_fence_);
   }
 
-  glm::mat4 view_matrix = scene.camera().GetTransformMatrix();
+  glm::mat4 view_matrix = scene_->camera().GetProjectionMatrix() * scene_->camera().GetViewMatrix();
 
   // acquire a swapchain image
   auto [image_result, next_image] =
@@ -369,7 +369,7 @@ VulkanRenderer::VulkanRenderer(Context context,
     command_buffers_(std::move(command_buffers)),
     gpu_memory_allocator_(std::move(gpu_memory_allocator)) {}
 
-absl::StatusOr<VulkanRenderer> VulkanRenderer::Create(Window &window) {
+absl::StatusOr<VulkanRenderer> VulkanRenderer::Create(windowing::Window &window) {
   absl::StatusOr<Context> context = Context::CreateContext(window);
   if (!context.ok()) {
     return context.status();
@@ -437,6 +437,8 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
   descriptor_set_layouts_.clear();
   descriptor_pools_.clear();
   descriptor_sets_.clear();
+
+  scene_ = &scene;
 
   // Create buffers
   for (const auto &object : scene.objects()) {

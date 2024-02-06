@@ -2,12 +2,12 @@
 #define CHOVENGINE_INCLUDE_RENDERING_OPENGL_RENDERER_H_
 
 #include "rendering/renderer.h"
-#include "rendering/window.h"
 #include "objects/scene.h"
-#include "rendering/opengl/uniform.h"
-#include "rendering/opengl/render_object.h"
 #include "rendering/opengl/pipeline.h"
+#include "rendering/opengl/render_object.h"
 #include "rendering/opengl/texture_allocator.h"
+#include "rendering/opengl/uniform.h"
+#include "windowing/window.h"
 
 #include <memory>
 
@@ -21,16 +21,14 @@ class Renderer : public rendering::Renderer {
   Renderer(Renderer &&) noexcept = default;
   Renderer &operator=(Renderer &&) noexcept = default;
 
-  explicit Renderer(Window *window);
+  explicit Renderer(windowing::Window *window);
 
   void Render() override;
   void SetupScene(const objects::Scene &scene) override;
 
  private:
-  Window *window_;
+  windowing::Window *window_;
   const objects::Scene *scene_;
-
-  SDL_GLContext context_;
 
   std::unique_ptr<TextureAllocator> texture_allocator_;
   std::unique_ptr<ShaderAllocator> shader_allocator_;

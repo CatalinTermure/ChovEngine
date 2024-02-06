@@ -1,14 +1,14 @@
 #ifndef CHOVENGINE_INCLUDE_DEMO_GAME_H_
 #define CHOVENGINE_INCLUDE_DEMO_GAME_H_
 
-#include "game.h"
 #include "objects/object_manager.h"
+#include "application.h"
 #include "objects/transform.h"
 
 namespace chove {
-class DemoGame : public Game {
+class DemoGame : public Application {
  public:
-  explicit DemoGame(RendererType renderer_type);
+  explicit DemoGame(windowing::RendererType renderer_type);
 
   void Initialize() override;
 
@@ -22,6 +22,8 @@ class DemoGame : public Game {
   objects::Transform *cube{};
 
   objects::ObjectManager object_manager_{};
+
+  windowing::WindowPosition last_mouse_position_{};
 };
 }  // namespace chove
 

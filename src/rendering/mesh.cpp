@@ -2,7 +2,7 @@
 
 #include <absl/log/log.h>
 #include <absl/container/flat_hash_map.h>
-#include <tiny_obj_loader.h>
+#include "external/tiny_obj_loader.h"
 
 namespace chove::rendering {
 namespace {

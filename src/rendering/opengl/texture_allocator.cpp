@@ -1,6 +1,6 @@
 #include "rendering/opengl/texture_allocator.h"
 
-#include <stb_image.h>
+#include "external/stb_image.h"
 #include <absl/log/log.h>
 
 namespace chove::rendering::opengl {

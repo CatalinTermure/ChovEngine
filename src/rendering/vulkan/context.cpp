@@ -3,7 +3,6 @@
 #include <memory>
 
 #include <vulkan/vulkan_raii.hpp>
-#include <SDL2/SDL_vulkan.h>
 #include <absl/log/log.h>
 #include <absl/status/statusor.h>
 
@@ -11,31 +10,14 @@ namespace chove::rendering::vulkan {
 
 namespace {
 
-
-std::vector<const char *> GetSDLRequiredExtensions(SDL_Window *window) {
-  // Get WSI extensions from SDL (we can add more if we like - we just can't
-  // remove these)
-  unsigned int extension_count = 0;
-  if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, nullptr)) {
-    LOG(FATAL) << "Could not get number of required instance extensions from SDL.";
-    return {};
-  }
-  std::vector<const char *> extensions(extension_count);
-  if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions.data())) {
-    LOG(FATAL) << "Could not get names of required instance extensions from SDL.";
-    return {};
-  }
-  return extensions;
-}
-
 std::vector<const char *> GetValidationLayers() {
   std::vector<const char *> layers;
   layers.push_back("VK_LAYER_KHRONOS_validation");
   return layers;
 }
 
-vk::raii::Instance CreateInstance(const vk::raii::Context &context, SDL_Window *window) {
-  std::vector<const char *> extensions = GetSDLRequiredExtensions(window);
+vk::raii::Instance CreateInstance(const vk::raii::Context &context) {
+  std::vector<const char *> extensions = chove::windowing::Window::GetRequiredVulkanExtensions();
   extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
   const std::vector<const char *> layers = GetValidationLayers();
   const vk::ApplicationInfo app_info = vk::ApplicationInfo()
@@ -114,15 +96,11 @@ vk::raii::Device CreateLogicalDevice(const vk::raii::PhysicalDevice &physical_de
 }
 }
 
-absl::StatusOr<Context> Context::CreateContext(Window &window) {
+absl::StatusOr<Context> Context::CreateContext(windowing::Window &window) {
   vk::raii::Context vulkan_context{};
-  vk::raii::Instance instance = CreateInstance(vulkan_context, window);
+  vk::raii::Instance instance = CreateInstance(vulkan_context);
 
-  VkSurfaceKHR c_surface = VK_NULL_HANDLE;
-  if (!SDL_Vulkan_CreateSurface(window, *instance, &c_surface)) {
-    LOG(FATAL) << "SDL could not create Vulkan surface.";
-    return absl::Status(absl::StatusCode::kInternal, "SDL could not create Vulkan surface.");
-  }
+  VkSurfaceKHR c_surface = window.CreateSurface(static_cast<VkInstance>(*instance));
   vk::raii::SurfaceKHR surface{instance, c_surface};
 
   vk::raii::PhysicalDevice physical_device = PickPhysicalDevice(instance);

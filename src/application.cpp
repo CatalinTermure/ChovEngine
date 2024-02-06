@@ -1,4 +1,5 @@
 #include "application.h"
+#include "rendering/opengl/renderer.h"
 
 #include <absl/log/log.h>
 #include <thread>
@@ -23,11 +24,15 @@ void Application::Run() {
 
     std::chrono::duration target_frame_time = std::chrono::nanoseconds(1'000'000'000 / target_frame_rate_);
     if (end_frame_time - start_frame_time > target_frame_time) {
-      LOG(INFO) << std::format("Frame time: {} ns.",
-                               duration_cast<std::chrono::nanoseconds>(end_frame_time - start_frame_time).count());
-    } else {
-      std::this_thread::sleep_for(target_frame_time - (end_frame_time - start_frame_time));
+      LOG(INFO) << std::format("Frame time: {} ms.",
+                               duration_cast<std::chrono::milliseconds>(end_frame_time - start_frame_time).count());
     }
   }
+}
+Application::Application(windowing::RendererType renderer_type) : window_(windowing::Window::Create("Chove",
+                                                                                                    {800, 600},
+                                                                                                    renderer_type)) {
+  renderer_ = std::make_unique<rendering::opengl::Renderer>(&window_);
+  target_frame_rate_ = 60;
 }
 }  // namespace chove::objects

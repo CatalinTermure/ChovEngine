@@ -2,7 +2,7 @@
 #define CHOVENGINE_INCLUDE_RENDERING_VULKAN_VULKAN_RENDERER_H_
 
 #include "rendering/renderer.h"
-#include "rendering/window.h"
+#include "windowing/window.h"
 #include "context.h"
 #include "swapchain.h"
 #include "buffer.h"
@@ -24,9 +24,9 @@ class VulkanRenderer : public Renderer {
   VulkanRenderer(VulkanRenderer &&) noexcept;
   VulkanRenderer &operator=(VulkanRenderer &&) noexcept;
 
-  static absl::StatusOr<VulkanRenderer> Create(Window &window);
+  static absl::StatusOr<VulkanRenderer> Create(windowing::Window &window);
 
-  void Render(const objects::Scene &scene) override;
+  void Render() override;
   void SetupScene(const objects::Scene &scene) override;
 
   [[nodiscard]] const Context &context() const { return context_; }
@@ -84,6 +84,7 @@ class VulkanRenderer : public Renderer {
   std::vector<vk::raii::DescriptorPool> descriptor_pools_;
   std::vector<vk::DescriptorSetLayout> descriptor_set_layouts_;
   std::vector<vk::raii::DescriptorSet> descriptor_sets_;
+  const objects::Scene *scene_;
 };
 } // namespace chove::rendering::vulkan
 

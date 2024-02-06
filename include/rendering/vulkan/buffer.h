@@ -6,7 +6,7 @@
 #include <absl/status/statusor.h>
 #include "swapchain.h"
 #include "context.h"
-#include "rendering/window.h"
+#include "windowing/window.h"
 #include "rendering/renderer.h"
 
 namespace chove::rendering::vulkan {
