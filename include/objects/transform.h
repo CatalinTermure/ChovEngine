@@ -13,7 +13,7 @@ struct Transform {
         rotation(rotation),
         scale(scale),
         parent(parent),
-        velocity(glm::vec3(0.0f)),
+        velocity(glm::vec3(0.0F)),
         angular_velocity(glm::identity<glm::quat>()) {}
 
   glm::vec3 location{};
@@ -31,8 +31,12 @@ struct Transform {
     glm::mat4 current_matrix =
         glm::translate(glm::identity<glm::mat4>(), location) * glm::scale(glm::identity<glm::mat4>(), scale)
             * glm::toMat4(rotation);
-    if (parent == nullptr) return current_matrix;
-    return parent->GetMatrix() * current_matrix;
+    Transform *transform = this->parent;
+    while (transform != nullptr) {
+      current_matrix = transform->GetMatrix() * current_matrix;
+      transform = transform->parent;
+    }
+    return current_matrix;
   }
 };
 
