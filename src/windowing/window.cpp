@@ -208,7 +208,7 @@ Window Window::Create(const std::string &title, WindowExtent extent, RendererTyp
     fsim_window->mouse_position_ = {static_cast<int>(x_pos), static_cast<int>(y_pos)};
   });
 
-  return {window_ptr};
+  return Window{window_ptr};
 }
 
 WindowExtent Window::extent() const {
