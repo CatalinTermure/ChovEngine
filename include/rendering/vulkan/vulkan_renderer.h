@@ -6,24 +6,28 @@
 
 #include <absl/status/statusor.h>
 #include <vma/vk_mem_alloc.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace chove::rendering::vulkan {
 class VulkanRenderer : public Renderer {
  public:
   VulkanRenderer(const VulkanRenderer &) = delete;
   VulkanRenderer &operator=(const VulkanRenderer &) = delete;
-  VulkanRenderer(VulkanRenderer &&) noexcept = default;
-  VulkanRenderer &operator=(VulkanRenderer &&) noexcept = default;
+  VulkanRenderer(VulkanRenderer &&other) noexcept;
+  VulkanRenderer &operator=(VulkanRenderer &&other) noexcept;
 
-  static absl::StatusOr<VulkanRenderer> Create(windowing::Window &window);
+  static VulkanRenderer Create(windowing::Window &window);
 
   void Render() override;
   void SetupScene(const objects::Scene &scene) override;
 
   ~VulkanRenderer() override;
  private:
-  VulkanRenderer() = default;
+  explicit VulkanRenderer(vk::Instance instance, vk::SurfaceKHR surface, vk::Device device);
+
+  vk::Instance instance_ = VK_NULL_HANDLE;
+  vk::SurfaceKHR surface_ = VK_NULL_HANDLE;
+  vk::Device device_ = VK_NULL_HANDLE;
 };
 } // namespace chove::rendering::vulkan
 

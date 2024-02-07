@@ -36,12 +36,7 @@ Application::Application(windowing::RendererType renderer_type) : window_(window
   if (renderer_type == windowing::RendererType::kOpenGL) {
     renderer_ = std::make_unique<rendering::opengl::Renderer>(&window_);
   } else if (renderer_type == windowing::RendererType::kVulkan) {
-    auto vulkan_renderer = rendering::vulkan::VulkanRenderer::Create(window_);
-    if (vulkan_renderer.ok()) {
-      renderer_ = std::make_unique<rendering::vulkan::VulkanRenderer>(std::move(vulkan_renderer).value());
-    } else {
-      LOG(FATAL) << "Failed to create Vulkan renderer.";
-    }
+    renderer_ = std::make_unique<rendering::vulkan::VulkanRenderer>(rendering::vulkan::VulkanRenderer::Create(window_));
   } else {
     LOG(FATAL) << "Renderer type not supported.";
   }
