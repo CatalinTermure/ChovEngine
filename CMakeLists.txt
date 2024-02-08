@@ -42,7 +42,8 @@ target_link_libraries(ProjectRenderingOpenGL ProjectRendering GLEW::GLEW absl::b
 target_include_directories(ProjectRenderingOpenGL PUBLIC include)
 
 add_library(ProjectRenderingVulkan
-        src/rendering/vulkan/vulkan_renderer.cpp)
+        src/rendering/vulkan/vulkan_renderer.cpp
+        src/rendering/vulkan/libraries_initializer.cpp)
 target_link_libraries(ProjectRenderingVulkan ProjectRendering Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator absl::base absl::log)
 target_include_directories(ProjectRenderingVulkan PUBLIC "${Vulkan_INCLUDE_DIRS}" include)
 

@@ -4,8 +4,8 @@ namespace chove::windowing {
 
 WindowResizeEvent::WindowResizeEvent(WindowExtent new_extent) : new_extent_(new_extent) {}
 EventType WindowResizeEvent::type() const { return EventType::kWindowResize; }
-int WindowResizeEvent::new_width() const { return new_extent_.width; }
-int WindowResizeEvent::new_height() const { return new_extent_.height; }
+uint32_t WindowResizeEvent::new_width() const { return new_extent_.width; }
+uint32_t WindowResizeEvent::new_height() const { return new_extent_.height; }
 WindowExtent WindowResizeEvent::new_extent() const { return new_extent_; }
 
 EventType WindowCloseEvent::type() const { return EventType::kWindowClose; }

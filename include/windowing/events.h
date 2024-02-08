@@ -6,8 +6,8 @@
 namespace chove::windowing {
 
 struct WindowExtent {
-  int width;
-  int height;
+  uint32_t width;
+  uint32_t height;
 };
 
 struct WindowPosition {
@@ -131,8 +131,8 @@ class WindowResizeEvent : public Event {
 
   [[nodiscard]] EventType type() const override;
 
-  [[nodiscard]] int new_width() const;
-  [[nodiscard]] int new_height() const;
+  [[nodiscard]] uint32_t new_width() const;
+  [[nodiscard]] uint32_t new_height() const;
   [[nodiscard]] WindowExtent new_extent() const;
  private:
   WindowExtent new_extent_;
@@ -182,6 +182,6 @@ class MouseButtonReleasedEvent : public Event {
   MouseButton button_;
 };
 
-} // namespace fsim::windowing
+} // namespace chove::windowing
 
 #endif //FLUIDSIM_INCLUDE_WINDOWING_EVENTS_H_

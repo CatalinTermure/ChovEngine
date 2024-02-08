@@ -215,7 +215,7 @@ WindowExtent Window::extent() const {
   int width = 0;
   int height = 0;
   glfwGetWindowSize(window_ptr_, &width, &height);
-  return {width, height};
+  return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 }
 
 Event *Window::GetEvent() const {

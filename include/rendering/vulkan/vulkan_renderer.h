@@ -23,11 +23,24 @@ class VulkanRenderer : public Renderer {
 
   ~VulkanRenderer() override;
  private:
-  explicit VulkanRenderer(vk::Instance instance, vk::SurfaceKHR surface, vk::Device device);
+  VulkanRenderer(vk::Instance instance,
+                 vk::SurfaceKHR surface,
+                 vk::Device device,
+                 uint32_t graphics_queue_family_index,
+                 vk::CommandPool graphics_command_pool,
+                 vk::RenderPass render_pass,
+                 vk::SwapchainKHR swapchain,
+                 VmaAllocator allocator);
 
   vk::Instance instance_ = VK_NULL_HANDLE;
   vk::SurfaceKHR surface_ = VK_NULL_HANDLE;
   vk::Device device_ = VK_NULL_HANDLE;
+  vk::Queue graphics_queue_ = VK_NULL_HANDLE;
+  uint32_t graphics_queue_family_index_ = 0;
+  vk::CommandPool graphics_command_pool_ = VK_NULL_HANDLE;
+  vk::RenderPass render_pass_ = VK_NULL_HANDLE;
+  vk::SwapchainKHR swapchain_ = VK_NULL_HANDLE;
+  VmaAllocator allocator_ = VK_NULL_HANDLE;
 };
 } // namespace chove::rendering::vulkan
 
