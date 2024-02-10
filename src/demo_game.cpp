@@ -162,6 +162,7 @@ void DemoGame::HandleInput() {
     } else if (event->type() == EventType::kMouseButtonPressed || event->type() == EventType::kMouseButtonReleased) {
       // pass
     } else {
+      window_.ReturnEvent(event);
       break;
     }
     window_.HandleEvent(event);

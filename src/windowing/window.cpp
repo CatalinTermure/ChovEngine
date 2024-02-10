@@ -201,6 +201,20 @@ Window Window::Create(const std::string &title, WindowExtent extent, RendererTyp
 
   glfwSetKeyCallback(window_ptr, KeyCallback);
   glfwSetMouseButtonCallback(window_ptr, MouseButtonCallback);
+  glfwSetWindowSizeCallback(window_ptr, [](GLFWwindow *window, int width, int height) {
+    auto *fsim_window =
+        reinterpret_cast<Window *>(glfwGetWindowUserPointer(window)); // NOLINT(*-pro-type-reinterpret-cast)
+    while (!fsim_window->event_queue_mutex_.try_lock()) {
+      // Wait for the event queue to be unlocked
+    }
+    while (!fsim_window->event_queue_.empty()
+        && fsim_window->event_queue_.front()->type() == EventType::kWindowResize) {
+      fsim_window->event_queue_.pop_front();
+    }
+    fsim_window->PushEvent(std::make_unique<WindowResizeEvent>(WindowExtent{static_cast<uint32_t>(width),
+                                                                            static_cast<uint32_t>(height)}));
+    fsim_window->event_queue_mutex_.unlock();
+  });
 
   glfwSetCursorPosCallback(window_ptr, [](GLFWwindow *window, double x_pos, double y_pos) {
     auto *fsim_window =
@@ -218,7 +232,10 @@ WindowExtent Window::extent() const {
   return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 }
 
-Event *Window::GetEvent() const {
+Event *Window::GetEvent() {
+  if (!event_queue_mutex_.try_lock()) {
+    return nullptr;
+  }
   if (event_queue_.empty()) {
     return nullptr;
   }
@@ -249,6 +266,7 @@ void Window::HandleEvent(Event *event) {
     throw std::runtime_error("Event is not the front of the queue");
   }
   event_queue_.pop_front();
+  event_queue_mutex_.unlock();
 }
 
 VkSurfaceKHR Window::CreateSurface(VkInstance instance) const {
@@ -291,6 +309,10 @@ Window::~Window() {
 
 void Window::SwapBuffers() const {
   glfwSwapBuffers(window_ptr_);
+}
+
+void Window::ReturnEvent(Event * /*event*/) {
+  event_queue_mutex_.unlock();
 }
 
 } // namespace chove::windowing

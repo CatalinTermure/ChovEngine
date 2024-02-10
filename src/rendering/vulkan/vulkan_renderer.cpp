@@ -314,7 +314,8 @@ void VulkanRenderer::Render() {
     swapchain_ = CreateSwapchain(*window_, surface_, physical_device_, graphics_queue_family_index_, device_);
     render_attachments_ = CreateFramebuffers(window_->extent(), device_, allocator_, render_pass_, swapchain_);
     window_->HandleEvent(event);
-    return;
+  } else {
+    window_->ReturnEvent(event);
   }
 }
 

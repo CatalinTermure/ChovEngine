@@ -11,12 +11,13 @@
 
 #include <deque>
 #include <memory>
+#include <mutex>
 #include <string_view>
 #include <vector>
 
 namespace chove::windowing {
 
-enum class RendererType {
+enum class RendererType : uint8_t {
   kOpenGL,
   kVulkan
 };
@@ -31,12 +32,13 @@ class Window {
   Window &operator=(Window &&) = delete;
   ~Window();
 
-  [[nodiscard]] Event *GetEvent() const;
+  [[nodiscard]] Event *GetEvent();
   [[nodiscard]] WindowExtent extent() const;
   [[nodiscard]] WindowPosition mouse_position() const;
 
   void PushEvent(std::unique_ptr<Event> event);
   void HandleEvent(Event *event);
+  void ReturnEvent(Event *event);
 
   void PollEvents();
 
@@ -46,7 +48,7 @@ class Window {
   [[nodiscard]] static std::vector<const char *> GetRequiredVulkanExtensions();
  private:
   std::deque<std::unique_ptr<Event>> event_queue_;
-  WindowExtent extent_;
+  std::mutex event_queue_mutex_{};
   WindowPosition mouse_position_{};
   GLFWwindow *window_ptr_;
 
