@@ -3,6 +3,9 @@
 #include "rendering/vulkan/allocator.h"
 #include "windowing/events.h"
 
+#include <filesystem>
+#include <fstream>
+
 #include <absl/log/log.h>
 
 namespace chove::rendering::vulkan {
@@ -302,6 +305,7 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
 }
 
 void VulkanRenderer::Render() {
+  // Check if resizing is necessary
   windowing::Event *event = window_->GetEvent();
   if (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
     for (const auto &render_attachment : render_attachments_) {
@@ -323,6 +327,10 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
 }
 
 VulkanRenderer::~VulkanRenderer() {
+  if (device_) {
+    device_.waitIdle();
+  }
+
   if (device_) {
     for (const auto &render_attachment : render_attachments_) {
       device_.destroyImageView(render_attachment.color_attachment_view);

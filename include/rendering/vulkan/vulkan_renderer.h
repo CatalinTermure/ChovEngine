@@ -48,15 +48,17 @@ class VulkanRenderer : public Renderer {
   vk::SurfaceKHR surface_ = VK_NULL_HANDLE;
   vk::Device device_ = VK_NULL_HANDLE;
   vk::PhysicalDevice physical_device_ = VK_NULL_HANDLE;
+
+  Allocator allocator_;
+  windowing::Window *window_ = nullptr;
+
+  vk::SwapchainKHR swapchain_ = VK_NULL_HANDLE;
+  std::array<RenderAttachments, kMaxFramesInFlight> render_attachments_;
+
   vk::Queue graphics_queue_ = VK_NULL_HANDLE;
   uint32_t graphics_queue_family_index_ = 0;
   vk::CommandPool graphics_command_pool_ = VK_NULL_HANDLE;
   vk::RenderPass render_pass_ = VK_NULL_HANDLE;
-  vk::SwapchainKHR swapchain_ = VK_NULL_HANDLE;
-  Allocator allocator_{};
-  windowing::Window *window_ = nullptr;
-
-  std::array<RenderAttachments, kMaxFramesInFlight> render_attachments_;
 
   static std::array<RenderAttachments, kMaxFramesInFlight>
   CreateFramebuffers(const windowing::WindowExtent &window_extent,
