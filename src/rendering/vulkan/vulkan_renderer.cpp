@@ -41,7 +41,7 @@ vk::PhysicalDevice PickPhysicalDevice(const vk::Instance &instance) {
   if (physical_devices.empty()) {
     throw std::runtime_error("No physical devices found.");
   }
-  vk::PhysicalDevice physical_device = physical_devices[0];
+  vk::PhysicalDevice physical_device = physical_devices.front();
   for (const auto &potential_device : physical_devices) {
     vk::PhysicalDeviceProperties properties = potential_device.getProperties();
     if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
@@ -296,6 +296,7 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
   std::array<RenderAttachments, kMaxFramesInFlight> render_attachments;
   for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
     render_attachments.at(i) = RenderAttachments{
+        depth_buffers.at(i),
         swapchain_image_views.at(i),
         depth_buffer_views.at(i),
         framebuffers.at(i)
@@ -311,6 +312,7 @@ void VulkanRenderer::Render() {
     for (const auto &render_attachment : render_attachments_) {
       device_.destroyImageView(render_attachment.color_attachment_view);
       device_.destroyImageView(render_attachment.depth_attachment_view);
+      allocator_.Deallocate(render_attachment.depth_attachment);
       device_.destroyFramebuffer(render_attachment.framebuffer);
     }
     device_.destroySwapchainKHR(swapchain_);

@@ -19,6 +19,7 @@ class Allocator {
   static Allocator Create(vk::Instance instance, vk::PhysicalDevice physical_device, vk::Device device);
 
   ~Allocator();
+  void Deallocate(vk::Image image);
   void DeallocateAll(); // TODO: move this to destructor, this is needed for now because of the way the renderer is implemented
 
   vk::Image AllocateImage(vk::ImageCreateInfo image_create_info, const VmaAllocationCreateInfo &allocation_create_info);

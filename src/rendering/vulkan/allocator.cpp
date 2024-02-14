@@ -57,4 +57,13 @@ void Allocator::DeallocateAll() {
   }
   image_allocations_.clear();
 }
+
+void Allocator::Deallocate(vk::Image image) {
+  auto iter = image_allocations_.find(image);
+  if (iter != image_allocations_.end()) {
+    vmaDestroyImage(allocator_, image, iter->second);
+    image_allocations_.erase(iter);
+  }
+}
+
 } // namespace chove::rendering::vulkan

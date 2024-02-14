@@ -27,6 +27,7 @@ class VulkanRenderer : public Renderer {
   static constexpr int kMaxFramesInFlight = 3;
  private:
   struct RenderAttachments {
+    vk::Image depth_attachment;
     vk::ImageView color_attachment_view;
     vk::ImageView depth_attachment_view;
     vk::Framebuffer framebuffer;
