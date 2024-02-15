@@ -18,8 +18,8 @@ class Shader {
   Shader &operator=(Shader &&) noexcept;
 
   [[nodiscard]] vk::ShaderModule &module() { return shader_; }
-  [[nodiscard]] std::span<vk::DescriptorSetLayout> descriptor_set_layouts() { return descriptor_set_layouts_; }
-  [[nodiscard]] std::span<vk::PushConstantRange> push_constant_ranges() { return push_constant_ranges_; }
+  [[nodiscard]] const std::vector<vk::DescriptorSetLayout> &descriptor_set_layouts() const { return descriptor_set_layouts_; }
+  [[nodiscard]] const std::vector<vk::PushConstantRange> &push_constant_ranges() const { return push_constant_ranges_; }
 
   vk::DescriptorSetLayout AddDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &bindings);
   void AddPushConstantRanges(const std::vector<vk::PushConstantRange> &ranges);

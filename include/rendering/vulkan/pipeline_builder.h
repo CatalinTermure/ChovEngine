@@ -10,8 +10,9 @@ class PipelineBuilder {
  public:
   explicit PipelineBuilder(vk::Device device);
 
-  PipelineBuilder &SetVertexShader(std::unique_ptr<Shader> shader);
-  PipelineBuilder &SetFragmentShader(std::unique_ptr<Shader> shader);
+  PipelineBuilder &SetVertexShader(Shader shader);
+  PipelineBuilder &SetGeometryShader(Shader shader);
+  PipelineBuilder &SetFragmentShader(Shader shader);
   PipelineBuilder &AddInputBufferDescription(const vk::VertexInputBindingDescription &binding_description,
                                              const std::vector<vk::VertexInputAttributeDescription> &attribute_descriptions);
   PipelineBuilder &SetInputTopology(vk::PrimitiveTopology topology);
@@ -28,16 +29,14 @@ class PipelineBuilder {
  private:
   vk::Device device_;
 
-  std::unique_ptr<Shader> vertex_shader_;
-  std::unique_ptr<Shader> fragment_shader_;
-  vk::PipelineShaderStageCreateInfo vertex_shader_stage_;
-  vk::PipelineShaderStageCreateInfo fragment_shader_stage_;
+  std::vector<Shader> shaders_;
+  std::vector<vk::PipelineShaderStageCreateInfo> shader_stages_;
 
   std::vector<vk::VertexInputBindingDescription> vertex_input_binding_descriptions_;
   std::vector<vk::VertexInputAttributeDescription> vertex_input_attribute_descriptions_;
 
   vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info_;
-  vk::PipelineTessellationStateCreateInfo tessellation_state_create_info_;
+  vk::PipelineTessellationStateCreateInfo tessellation_state_create_info_{};
   vk::Viewport viewport_;
   vk::Rect2D scissor_;
 
