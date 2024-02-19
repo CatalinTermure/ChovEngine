@@ -17,7 +17,7 @@ class Shader {
   Shader(Shader &&) noexcept;
   Shader &operator=(Shader &&) noexcept;
 
-  [[nodiscard]] vk::ShaderModule &module() { return shader_; }
+  [[nodiscard]] vk::ShaderModule module() const { return shader_; }
   [[nodiscard]] const std::vector<vk::DescriptorSetLayout> &descriptor_set_layouts() const { return descriptor_set_layouts_; }
   [[nodiscard]] const std::vector<vk::PushConstantRange> &push_constant_ranges() const { return push_constant_ranges_; }
 

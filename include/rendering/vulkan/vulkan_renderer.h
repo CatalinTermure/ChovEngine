@@ -3,7 +3,9 @@
 
 #include "rendering/renderer.h"
 #include "rendering/vulkan/allocator.h"
+#include "rendering/vulkan/shader.h"
 #include "windowing/window.h"
+#include "context.h"
 
 #include <absl/status/statusor.h>
 #include <vma/vk_mem_alloc.h>
@@ -45,9 +47,8 @@ class VulkanRenderer : public Renderer {
                  Allocator allocator,
                  std::array<RenderAttachments, kMaxFramesInFlight> render_attachments);
 
-  vk::Instance instance_ = VK_NULL_HANDLE;
+  Context context_;
   vk::SurfaceKHR surface_ = VK_NULL_HANDLE;
-  vk::Device device_ = VK_NULL_HANDLE;
   vk::PhysicalDevice physical_device_ = VK_NULL_HANDLE;
 
   Allocator allocator_;
@@ -60,6 +61,10 @@ class VulkanRenderer : public Renderer {
   uint32_t graphics_queue_family_index_ = 0;
   vk::CommandPool graphics_command_pool_ = VK_NULL_HANDLE;
   vk::RenderPass render_pass_ = VK_NULL_HANDLE;
+
+  std::vector<Shader> shaders_;
+  std::vector<vk::Pipeline> pipelines_;
+  std::vector<vk::PipelineLayout> pipeline_layouts_;
 
   static std::array<RenderAttachments, kMaxFramesInFlight>
   CreateFramebuffers(const windowing::WindowExtent &window_extent,

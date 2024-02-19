@@ -32,7 +32,7 @@ PipelineBuilder::PipelineBuilder(vk::Device device) : device_(device) {
       true,
       true,
       vk::CompareOp::eLess,
-      true,
+      false,
       false,
       vk::StencilOpState{},
       vk::StencilOpState{},
@@ -41,36 +41,36 @@ PipelineBuilder::PipelineBuilder(vk::Device device) : device_(device) {
   };
 }
 
-PipelineBuilder &PipelineBuilder::SetVertexShader(Shader shader) {
+PipelineBuilder &PipelineBuilder::SetVertexShader(const Shader &shader) {
   shader_stages_.emplace_back(
       vk::PipelineShaderStageCreateFlags{},
       vk::ShaderStageFlagBits::eVertex,
       shader.module(),
       "main"
   );
-  shaders_.push_back(std::move(shader));
+  shaders_.push_back(&shader);
   return *this;
 }
 
-PipelineBuilder &PipelineBuilder::SetGeometryShader(Shader shader) {
+PipelineBuilder &PipelineBuilder::SetGeometryShader(const Shader &shader) {
   shader_stages_.emplace_back(
       vk::PipelineShaderStageCreateFlags{},
       vk::ShaderStageFlagBits::eGeometry,
       shader.module(),
       "main"
   );
-  shaders_.push_back(std::move(shader));
+  shaders_.push_back(&shader);
   return *this;
 }
 
-PipelineBuilder &PipelineBuilder::SetFragmentShader(Shader shader) {
+PipelineBuilder &PipelineBuilder::SetFragmentShader(const Shader &shader) {
   shader_stages_.emplace_back(
       vk::PipelineShaderStageCreateFlags{},
       vk::ShaderStageFlagBits::eFragment,
       shader.module(),
       "main"
   );
-  shaders_.push_back(std::move(shader));
+  shaders_.push_back(&shader);
   return *this;
 }
 
@@ -97,11 +97,11 @@ std::pair<vk::Pipeline, vk::PipelineLayout> PipelineBuilder::build(vk::RenderPas
   std::vector<vk::PushConstantRange> push_constant_ranges;
   for (const auto &shader : shaders_) {
     descriptor_set_layouts.insert(descriptor_set_layouts.end(),
-                                  shader.descriptor_set_layouts().begin(),
-                                  shader.descriptor_set_layouts().end());
+                                  shader->descriptor_set_layouts().begin(),
+                                  shader->descriptor_set_layouts().end());
     push_constant_ranges.insert(push_constant_ranges.end(),
-                                shader.push_constant_ranges().begin(),
-                                shader.push_constant_ranges().end());
+                                shader->push_constant_ranges().begin(),
+                                shader->push_constant_ranges().end());
   }
   vk::PipelineLayout layout = device_.createPipelineLayout(
       vk::PipelineLayoutCreateInfo{
@@ -173,7 +173,6 @@ PipelineBuilder &PipelineBuilder::SetColorBlendEnable(bool enable) {
 PipelineBuilder &PipelineBuilder::SetDepthTestEnable(bool enable) {
   pipeline_depth_stencil_state_.depthTestEnable = enable;
   pipeline_depth_stencil_state_.depthWriteEnable = enable;
-  pipeline_depth_stencil_state_.depthBoundsTestEnable = enable;
   return *this;
 }
 

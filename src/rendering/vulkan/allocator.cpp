@@ -47,15 +47,11 @@ Allocator::Allocator(VmaAllocator allocator) : allocator_(allocator) {}
 
 Allocator::~Allocator() {
   if (allocator_ != VK_NULL_HANDLE) {
+    for (const auto &[image, allocation] : image_allocations_) {
+      vmaDestroyImage(allocator_, image, allocation);
+    }
     vmaDestroyAllocator(allocator_);
   }
-}
-
-void Allocator::DeallocateAll() {
-  for (const auto &[image, allocation] : image_allocations_) {
-    vmaDestroyImage(allocator_, image, allocation);
-  }
-  image_allocations_.clear();
 }
 
 void Allocator::Deallocate(vk::Image image) {

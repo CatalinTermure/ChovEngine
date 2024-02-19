@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
 #include <span>
 #include <stdexcept>
 
@@ -237,6 +238,7 @@ Event *Window::GetEvent() {
     return nullptr;
   }
   if (event_queue_.empty()) {
+    event_queue_mutex_.unlock();
     return nullptr;
   }
   return event_queue_.front().get();

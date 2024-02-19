@@ -26,8 +26,8 @@ using windowing::WindowPosition;
 
 void DemoGame::Initialize() {
   objects::Scene scene;
-  glm::vec3 nanosuit_position = {0.0F, 1.0F, 0.0F};
-  glm::vec3 cube_position = {2.0F, 1.0F, 0.0F};
+  glm::vec3 nanosuit_position = {0.0F, -0.5F, -1.0F};
+  glm::vec3 cube_position = {2.0F, -0.5F, -1.0F};
   glm::vec3 sponza_scale = glm::vec3(0.01F, 0.01F, 0.01F);
 
   nanosuit = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane.obj",
@@ -42,12 +42,12 @@ void DemoGame::Initialize() {
                                                 glm::vec3(1.0F),
                                                 nullptr},
                                       scene);
-//  sponza = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "sponza.obj",
-//                                        Transform{glm::vec3(0.0F),
-//                                                  glm::identity<glm::quat>(),
-//                                                  sponza_scale,
-//                                                  nullptr},
-//                                        scene);
+  sponza = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "sponza.obj",
+                                        Transform{glm::vec3(0.0F),
+                                                  glm::identity<glm::quat>(),
+                                                  sponza_scale,
+                                                  nullptr},
+                                        scene);
 
   scene.camera() = objects::Camera(
       glm::vec4{0.0F, 0.0F, -1.0F, 1.0F},

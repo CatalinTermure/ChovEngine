@@ -1,6 +1,9 @@
 #include "rendering/vulkan/vulkan_renderer.h"
 
+#include "rendering/mesh.h"
 #include "rendering/vulkan/allocator.h"
+#include "rendering/vulkan/pipeline_builder.h"
+#include "rendering/vulkan/shader.h"
 #include "windowing/events.h"
 
 #include <filesystem>
@@ -310,56 +313,102 @@ void VulkanRenderer::Render() {
   windowing::Event *event = window_->GetEvent();
   if (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
     for (const auto &render_attachment : render_attachments_) {
-      device_.destroyImageView(render_attachment.color_attachment_view);
-      device_.destroyImageView(render_attachment.depth_attachment_view);
+      context_.device.destroyImageView(render_attachment.color_attachment_view);
+      context_.device.destroyImageView(render_attachment.depth_attachment_view);
       allocator_.Deallocate(render_attachment.depth_attachment);
-      device_.destroyFramebuffer(render_attachment.framebuffer);
+      context_.device.destroyFramebuffer(render_attachment.framebuffer);
     }
-    device_.destroySwapchainKHR(swapchain_);
+    context_.device.destroySwapchainKHR(swapchain_);
 
-    swapchain_ = CreateSwapchain(*window_, surface_, physical_device_, graphics_queue_family_index_, device_);
-    render_attachments_ = CreateFramebuffers(window_->extent(), device_, allocator_, render_pass_, swapchain_);
+    swapchain_ = CreateSwapchain(*window_, surface_, physical_device_, graphics_queue_family_index_, context_.device);
+    render_attachments_ = CreateFramebuffers(window_->extent(), context_.device, allocator_, render_pass_, swapchain_);
     window_->HandleEvent(event);
-  } else {
+  } else if (event != nullptr) {
     window_->ReturnEvent(event);
   }
 }
 
 void VulkanRenderer::SetupScene(const objects::Scene &scene) {
+  Shader vertex_shader{"shaders/vulkan/vulkan_shader.vert.spv", context_.device};
+  vertex_shader.AddPushConstantRanges({vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)}});
+  vertex_shader.AddDescriptorSetLayout({vk::DescriptorSetLayoutBinding{
+      0,
+      vk::DescriptorType::eUniformBuffer,
+      1,
+      vk::ShaderStageFlagBits::eVertex
+  }});
+  vk::VertexInputBindingDescription vertex_binding_description{
+      0,
+      sizeof(rendering::Mesh::Vertex),
+      vk::VertexInputRate::eVertex
+  };
+  vk::VertexInputAttributeDescription position_attribute_description{
+      0,
+      0,
+      vk::Format::eR32G32B32Sfloat,
+      static_cast<uint32_t>(offsetof(rendering::Mesh::Vertex, position))
+  };
+  vk::VertexInputAttributeDescription normal_attribute_description{
+      1,
+      0,
+      vk::Format::eR32G32B32Sfloat,
+      static_cast<uint32_t>(offsetof(rendering::Mesh::Vertex, normal))
+  };
+  Shader fragment_shader{"shaders/vulkan/vulkan_shader.frag.spv", context_.device};
+  PipelineBuilder pipeline_builder{context_.device};
+  auto [pipeline, layout] = pipeline_builder.SetVertexShader(vertex_shader)
+      .SetFragmentShader(fragment_shader)
+      .SetInputTopology(vk::PrimitiveTopology::eTriangleList)
+      .AddInputBufferDescription(vertex_binding_description,
+                                 {position_attribute_description, normal_attribute_description})
+      .SetViewport(vk::Viewport{0.0F,
+                                0.0F,
+                                static_cast<float>(window_->extent().width),
+                                static_cast<float>(window_->extent().height),
+                                0.0F,
+                                1.0F})
+      .SetScissor(vk::Rect2D{{0, 0}, vk::Extent2D{window_->extent().width, window_->extent().height}})
+      .SetFillMode(vk::PolygonMode::eFill)
+      .SetColorBlendEnable(false)
+      .SetDepthTestEnable(true)
+      .build(render_pass_, 0);
+  pipelines_.push_back(pipeline);
+  pipeline_layouts_.push_back(layout);
+  shaders_.push_back(std::move(vertex_shader));
+  shaders_.push_back(std::move(fragment_shader));
 }
 
 VulkanRenderer::~VulkanRenderer() {
-  if (device_) {
-    device_.waitIdle();
+  if (!context_.device) {
+    return;
+  }
+  context_.device.waitIdle();
+
+  for (const auto &pipeline : pipelines_) {
+    context_.device.destroyPipeline(pipeline);
+  }
+  for (const auto &layout : pipeline_layouts_) {
+    context_.device.destroyPipelineLayout(layout);
   }
 
-  if (device_) {
-    for (const auto &render_attachment : render_attachments_) {
-      device_.destroyImageView(render_attachment.color_attachment_view);
-      device_.destroyImageView(render_attachment.depth_attachment_view);
-      device_.destroyFramebuffer(render_attachment.framebuffer);
-    }
+  for (const auto &render_attachment : render_attachments_) {
+    context_.device.destroyImageView(render_attachment.color_attachment_view);
+    context_.device.destroyImageView(render_attachment.depth_attachment_view);
+    context_.device.destroyFramebuffer(render_attachment.framebuffer);
   }
 
   if (swapchain_) {
-    device_.destroySwapchainKHR(swapchain_);
+    context_.device.destroySwapchainKHR(swapchain_);
   }
-  allocator_.DeallocateAll();
 
   if (render_pass_) {
-    device_.destroyRenderPass(render_pass_);
+    context_.device.destroyRenderPass(render_pass_);
   }
   if (graphics_command_pool_) {
-    device_.destroyCommandPool(graphics_command_pool_);
-  }
-  if (device_) {
-    device_.destroy();
+    context_.device.destroyCommandPool(graphics_command_pool_);
   }
   if (surface_) {
-    instance_.destroySurfaceKHR(surface_);
-  }
-  if (instance_) {
-    instance_.destroy();
+    context_.instance.destroySurfaceKHR(surface_);
   }
 }
 
@@ -375,9 +424,8 @@ VulkanRenderer::VulkanRenderer(windowing::Window *window,
                                Allocator allocator,
                                std::array<RenderAttachments, kMaxFramesInFlight> render_attachments)
     : window_(window),
-      instance_(instance),
+      context_(device, instance),
       surface_(surface),
-      device_(device),
       physical_device_(physical_device),
       graphics_queue_family_index_(graphics_queue_family_index),
       graphics_command_pool_(graphics_command_pool),
@@ -385,7 +433,7 @@ VulkanRenderer::VulkanRenderer(windowing::Window *window,
       swapchain_(swapchain),
       allocator_(std::move(allocator)),
       render_attachments_(render_attachments) {
-  graphics_queue_ = device_.getQueue(graphics_queue_family_index, 0);
+  graphics_queue_ = context_.device.getQueue(graphics_queue_family_index, 0);
 }
 
 VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept {
@@ -395,9 +443,7 @@ VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept {
 VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
   if (this != &other) {
     window_ = other.window_;
-    instance_ = other.instance_;
     surface_ = other.surface_;
-    device_ = other.device_;
     physical_device_ = other.physical_device_;
     graphics_queue_ = other.graphics_queue_;
     graphics_queue_family_index_ = other.graphics_queue_family_index_;
@@ -406,11 +452,13 @@ VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
     swapchain_ = other.swapchain_;
     allocator_ = std::move(other.allocator_);
     render_attachments_ = other.render_attachments_;
+    shaders_ = std::move(other.shaders_);
+    pipelines_ = std::move(other.pipelines_);
+    pipeline_layouts_ = std::move(other.pipeline_layouts_);
+    context_ = std::move(other.context_);
 
     other.window_ = nullptr;
-    other.instance_ = VK_NULL_HANDLE;
     other.surface_ = VK_NULL_HANDLE;
-    other.device_ = VK_NULL_HANDLE;
     other.physical_device_ = VK_NULL_HANDLE;
     other.graphics_queue_ = VK_NULL_HANDLE;
     other.graphics_queue_family_index_ = -1;

@@ -10,9 +10,9 @@ class PipelineBuilder {
  public:
   explicit PipelineBuilder(vk::Device device);
 
-  PipelineBuilder &SetVertexShader(Shader shader);
-  PipelineBuilder &SetGeometryShader(Shader shader);
-  PipelineBuilder &SetFragmentShader(Shader shader);
+  PipelineBuilder &SetVertexShader(const Shader &shader);
+  PipelineBuilder &SetGeometryShader(const Shader &shader);
+  PipelineBuilder &SetFragmentShader(const Shader &shader);
   PipelineBuilder &AddInputBufferDescription(const vk::VertexInputBindingDescription &binding_description,
                                              const std::vector<vk::VertexInputAttributeDescription> &attribute_descriptions);
   PipelineBuilder &SetInputTopology(vk::PrimitiveTopology topology);
@@ -29,7 +29,7 @@ class PipelineBuilder {
  private:
   vk::Device device_;
 
-  std::vector<Shader> shaders_;
+  std::vector<const Shader*> shaders_;
   std::vector<vk::PipelineShaderStageCreateInfo> shader_stages_;
 
   std::vector<vk::VertexInputBindingDescription> vertex_input_binding_descriptions_;
