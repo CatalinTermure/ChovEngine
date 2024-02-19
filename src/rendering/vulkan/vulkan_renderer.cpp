@@ -374,6 +374,22 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
       .build(render_pass_, 0);
   pipelines_.push_back(pipeline);
   pipeline_layouts_.push_back(layout);
+
+  scene_ = &scene;
+
+  vk::DescriptorPoolSize pool_size{vk::DescriptorType::eUniformBuffer, 1};
+  descriptor_pool_ = context_.device.createDescriptorPool(vk::DescriptorPoolCreateInfo{
+      vk::DescriptorPoolCreateFlags{},
+      1,
+      pool_size
+  });
+
+  vk::DescriptorSetLayout descriptor_set_layout = vertex_shader.descriptor_set_layouts().front();
+  descriptor_sets_.push_back(context_.device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo{
+      descriptor_pool_,
+      descriptor_set_layout
+  }).front());
+
   shaders_.push_back(std::move(vertex_shader));
   shaders_.push_back(std::move(fragment_shader));
 }
@@ -406,6 +422,9 @@ VulkanRenderer::~VulkanRenderer() {
   }
   if (graphics_command_pool_) {
     context_.device.destroyCommandPool(graphics_command_pool_);
+  }
+  if (descriptor_pool_) {
+    context_.device.destroyDescriptorPool(descriptor_pool_);
   }
   if (surface_) {
     context_.instance.destroySurfaceKHR(surface_);
@@ -456,6 +475,9 @@ VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
     pipelines_ = std::move(other.pipelines_);
     pipeline_layouts_ = std::move(other.pipeline_layouts_);
     context_ = std::move(other.context_);
+    descriptor_pool_ = other.descriptor_pool_;
+    descriptor_sets_ = std::move(other.descriptor_sets_);
+    scene_ = other.scene_;
 
     other.window_ = nullptr;
     other.surface_ = VK_NULL_HANDLE;
@@ -466,6 +488,8 @@ VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
     other.render_pass_ = VK_NULL_HANDLE;
     other.swapchain_ = VK_NULL_HANDLE;
     other.render_attachments_ = {};
+    other.descriptor_pool_ = VK_NULL_HANDLE;
+    other.scene_ = nullptr;
   }
   return *this;
 }

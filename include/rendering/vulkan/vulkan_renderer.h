@@ -1,11 +1,12 @@
 #ifndef CHOVENGINE_INCLUDE_RENDERING_VULKAN_VULKAN_RENDERER_H_
 #define CHOVENGINE_INCLUDE_RENDERING_VULKAN_VULKAN_RENDERER_H_
 
+#include "objects/scene.h"
 #include "rendering/renderer.h"
 #include "rendering/vulkan/allocator.h"
+#include "rendering/vulkan/context.h"
 #include "rendering/vulkan/shader.h"
 #include "windowing/window.h"
-#include "context.h"
 
 #include <absl/status/statusor.h>
 #include <vma/vk_mem_alloc.h>
@@ -61,10 +62,14 @@ class VulkanRenderer : public Renderer {
   uint32_t graphics_queue_family_index_ = 0;
   vk::CommandPool graphics_command_pool_ = VK_NULL_HANDLE;
   vk::RenderPass render_pass_ = VK_NULL_HANDLE;
+  vk::DescriptorPool descriptor_pool_ = VK_NULL_HANDLE;
+  std::vector<vk::DescriptorSet> descriptor_sets_;
 
   std::vector<Shader> shaders_;
   std::vector<vk::Pipeline> pipelines_;
   std::vector<vk::PipelineLayout> pipeline_layouts_;
+
+  const objects::Scene *scene_ = nullptr;
 
   static std::array<RenderAttachments, kMaxFramesInFlight>
   CreateFramebuffers(const windowing::WindowExtent &window_extent,
