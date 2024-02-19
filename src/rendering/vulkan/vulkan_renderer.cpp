@@ -82,6 +82,21 @@ vk::Device CreateDevice(const vk::PhysicalDevice &physical_device, uint32_t grap
   };
 
   std::vector<const char *> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+  std::vector<const char *> optional_device_extensions = {VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME};
+  std::vector<vk::ExtensionProperties> supported_extensions = physical_device.enumerateDeviceExtensionProperties();
+
+  for (const auto &optional_extension : optional_device_extensions) {
+    bool found = false;
+    for (const auto &supported_extension : supported_extensions) {
+      if (std::strcmp(supported_extension.extensionName, optional_extension) == 0) {
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      device_extensions.push_back(optional_extension);
+    }
+  }
 
   vk::Device device = physical_device.createDevice(vk::DeviceCreateInfo{
       vk::DeviceCreateFlags{},
@@ -215,8 +230,9 @@ vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &alloca
       vk::ImageLayout::eUndefined
   };
   VmaAllocationCreateInfo allocation_create_info = {};
-  allocation_create_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-  allocation_create_info.memoryTypeBits = UINT32_MAX;
+  allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+  allocation_create_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+  allocation_create_info.priority = 1.0F;
   vk::Image depth_buffer = allocator.AllocateImage(image_create_info, allocation_create_info);
   return depth_buffer;
 }

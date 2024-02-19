@@ -5,6 +5,7 @@ namespace chove::rendering::vulkan {
 Allocator Allocator::Create(vk::Instance instance, vk::PhysicalDevice physical_device, vk::Device device) {
   VmaAllocator allocator = VK_NULL_HANDLE;
   VmaAllocatorCreateInfo allocator_create_info = {};
+  allocator_create_info.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT;
   allocator_create_info.instance = instance;
   allocator_create_info.physicalDevice = physical_device;
   allocator_create_info.device = device;
