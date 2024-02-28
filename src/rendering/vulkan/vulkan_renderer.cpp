@@ -10,13 +10,13 @@
 #include <fstream>
 
 #include <absl/log/log.h>
+#include <glm/glm.hpp>
 
 namespace chove::rendering::vulkan {
-
-using chove::windowing::WindowExtent;
+using windowing::WindowExtent;
+using rendering::Mesh;
 
 namespace {
-
 constexpr vk::Format kColorFormat = vk::Format::eB8G8R8A8Unorm;
 constexpr vk::Format kDepthFormat = vk::Format::eD24UnormS8Uint;
 
@@ -236,7 +236,6 @@ vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &alloca
   vk::Image depth_buffer = allocator.AllocateImage(image_create_info, allocation_create_info);
   return depth_buffer;
 }
-
 } // namespace
 
 VulkanRenderer VulkanRenderer::Create(windowing::Window &window) {
@@ -269,7 +268,6 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
     Allocator &allocator,
     const vk::RenderPass &render_pass,
     vk::SwapchainKHR &swapchain) {
-
   std::vector<vk::Image> swapchain_images = device.getSwapchainImagesKHR(swapchain);
   std::vector<vk::ImageView> swapchain_image_views;
   for (const auto &image : swapchain_images) {
@@ -342,6 +340,72 @@ void VulkanRenderer::Render() {
   } else if (event != nullptr) {
     window_->ReturnEvent(event);
   }
+
+  chove::windowing::WindowExtent window_extent = window_->extent();
+
+  const std::vector<vk::CommandBuffer> command_buffers = context_.device.allocateCommandBuffers(
+      vk::CommandBufferAllocateInfo{
+          graphics_command_pool_,
+          vk::CommandBufferLevel::ePrimary,
+          1
+      });
+  vk::CommandBuffer draw_cmd = command_buffers.front();
+
+  uint32_t image_index = 0;
+  {
+    vk::ResultValue<uint32_t> result = context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{
+        swapchain_,
+        UINT64_MAX,
+        VK_NULL_HANDLE, // TODO: semaphore
+        VK_NULL_HANDLE // TODO: fence
+    });
+    if (result.result != vk::Result::eSuccess) {
+      throw std::runtime_error("Failed to acquire next image.");
+    }
+    image_index = result.value;
+  }
+
+  draw_cmd.begin(vk::CommandBufferBeginInfo{
+      vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+      nullptr
+  });
+
+  {
+    vk::ClearValue clear_color{std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F}};
+    vk::ClearValue clear_depth{vk::ClearDepthStencilValue{1.0F, 0}};
+    std::vector clear_values = {clear_color, clear_depth};
+    draw_cmd.beginRenderPass(vk::RenderPassBeginInfo{
+        render_pass_,
+        render_attachments_.at(image_index).framebuffer,
+        vk::Rect2D{{0, 0}, {window_extent.width, window_extent.height}},
+        clear_values
+    }, vk::SubpassContents::eInline);
+
+    draw_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines_.front());
+    draw_cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                pipeline_layouts_.front(),
+                                0,
+                                descriptor_sets_.front(),
+                                nullptr);
+
+    for (const auto &obj : scene_->objects()) {
+      glm::mat4 model_matrix = obj.transform->GetMatrix();
+      draw_cmd.pushConstants(pipeline_layouts_.front(),
+                             vk::ShaderStageFlagBits::eVertex,
+                             0,
+                             sizeof(glm::mat4),
+                             &model_matrix);
+      // TODO: bind vertex buffer
+      draw_cmd.draw(obj.mesh->vertices.size(), 1, 0, 0);
+    }
+
+    draw_cmd.endRenderPass();
+  }
+
+  draw_cmd.end();
+
+  context_.device.freeCommandBuffers(graphics_command_pool_, command_buffers);
+  context_.device.resetCommandPool(graphics_command_pool_, vk::CommandPoolResetFlagBits::eReleaseResources);
 }
 
 void VulkanRenderer::SetupScene(const objects::Scene &scene) {
@@ -355,20 +419,20 @@ void VulkanRenderer::SetupScene(const objects::Scene &scene) {
   }});
   vk::VertexInputBindingDescription vertex_binding_description{
       0,
-      sizeof(rendering::Mesh::Vertex),
+      static_cast<uint32_t>(sizeof(Mesh::Vertex)),
       vk::VertexInputRate::eVertex
   };
   vk::VertexInputAttributeDescription position_attribute_description{
       0,
       0,
       vk::Format::eR32G32B32Sfloat,
-      static_cast<uint32_t>(offsetof(rendering::Mesh::Vertex, position))
+      static_cast<uint32_t>(offsetof(Mesh::Vertex, position))
   };
   vk::VertexInputAttributeDescription normal_attribute_description{
       1,
       0,
       vk::Format::eR32G32B32Sfloat,
-      static_cast<uint32_t>(offsetof(rendering::Mesh::Vertex, normal))
+      static_cast<uint32_t>(offsetof(Mesh::Vertex, normal))
   };
   Shader fragment_shader{"shaders/vulkan/vulkan_shader.frag.spv", context_.device};
   PipelineBuilder pipeline_builder{context_.device};
@@ -457,17 +521,17 @@ VulkanRenderer::VulkanRenderer(windowing::Window *window,
                                vk::RenderPass render_pass,
                                vk::SwapchainKHR swapchain,
                                Allocator allocator,
-                               std::array<RenderAttachments, kMaxFramesInFlight> render_attachments)
-    : window_(window),
-      context_(device, instance),
+                               const std::array<RenderAttachments, kMaxFramesInFlight> &render_attachments)
+    : context_(device, instance),
       surface_(surface),
       physical_device_(physical_device),
+      allocator_(std::move(allocator)),
+      window_(window),
+      swapchain_(swapchain),
+      render_attachments_(render_attachments),
       graphics_queue_family_index_(graphics_queue_family_index),
       graphics_command_pool_(graphics_command_pool),
-      render_pass_(render_pass),
-      swapchain_(swapchain),
-      allocator_(std::move(allocator)),
-      render_attachments_(render_attachments) {
+      render_pass_(render_pass) {
   graphics_queue_ = context_.device.getQueue(graphics_queue_family_index, 0);
 }
 

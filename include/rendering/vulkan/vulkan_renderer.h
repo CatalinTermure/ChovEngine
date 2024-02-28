@@ -46,7 +46,7 @@ class VulkanRenderer : public Renderer {
                  vk::RenderPass render_pass,
                  vk::SwapchainKHR swapchain,
                  Allocator allocator,
-                 std::array<RenderAttachments, kMaxFramesInFlight> render_attachments);
+                 const std::array<RenderAttachments, kMaxFramesInFlight>& render_attachments);
 
   Context context_;
   vk::SurfaceKHR surface_ = VK_NULL_HANDLE;

@@ -48,7 +48,7 @@ add_library(ProjectRenderingVulkan
         src/rendering/vulkan/pipeline_builder.cpp
         src/rendering/vulkan/shader.cpp
         src/rendering/vulkan/context.cpp)
-target_link_libraries(ProjectRenderingVulkan ProjectRendering Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator absl::base absl::log)
+target_link_libraries(ProjectRenderingVulkan ProjectRendering glm::glm Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator absl::base absl::log)
 target_include_directories(ProjectRenderingVulkan PUBLIC "${Vulkan_INCLUDE_DIRS}" include)
 
 add_library(ProjectApplication src/application.cpp)
