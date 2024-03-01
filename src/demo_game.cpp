@@ -169,7 +169,7 @@ void DemoGame::HandleInput() {
     event = window_.GetEvent();
   }
 }
-void DemoGame::HandlePhysics(std::chrono::duration<long long int, std::ratio<1, 1'000'000'000>> delta_time) {
+void DemoGame::HandlePhysics(Duration delta_time) {
   current_scene().camera().Move(objects::Camera::Direction::eForward,
                                 camera_velocity_.y * static_cast<float>(std::chrono::nanoseconds(delta_time).count())
                                     / kCameraVelocityConstant);

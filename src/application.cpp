@@ -14,14 +14,14 @@ void Application::SetCurrentScene(std::string scene_name) {
 void Application::Run() {
   physics_time_ = std::chrono::high_resolution_clock::now();
   while (is_running_) {
-    auto start_frame_time = std::chrono::high_resolution_clock::now();
+    TimePoint start_frame_time = std::chrono::high_resolution_clock::now();
     HandleInput();
-    auto delta_time = std::chrono::high_resolution_clock::now() - physics_time_;
+    Duration delta_time = std::chrono::high_resolution_clock::now() - physics_time_;
     HandlePhysics(delta_time);
 
     physics_time_ += delta_time;
     renderer_->Render();
-    auto end_frame_time = std::chrono::high_resolution_clock::now();
+    TimePoint end_frame_time = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration target_frame_time = std::chrono::nanoseconds(1'000'000'000 / target_frame_rate_);
     if (end_frame_time - start_frame_time > target_frame_time) {
@@ -40,6 +40,5 @@ Application::Application(windowing::RendererType renderer_type) : window_(window
   } else {
     LOG(FATAL) << "Renderer type not supported.";
   }
-  target_frame_rate_ = 60;
 }
 }  // namespace chove

@@ -13,7 +13,7 @@ class DemoGame : public Application {
   void Initialize() override;
 
   void HandleInput() override;
-  void HandlePhysics(std::chrono::duration<long long, std::ratio<1, 1'000'000'000>> delta_time) override;
+  void HandlePhysics(Duration delta_time) override;
  private:
   glm::vec3 camera_velocity_{};
 

@@ -11,6 +11,9 @@
 
 namespace chove {
 
+using Duration = std::chrono::duration<long long, std::ratio<1, 1'000'000'000>>;
+using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+
 class Application {
  public:
   explicit Application(windowing::RendererType renderer_type);
@@ -24,7 +27,7 @@ class Application {
 
  protected:
   virtual void HandleInput() = 0;
-  virtual void HandlePhysics(std::chrono::duration<long long, std::ratio<1, 1'000'000'000>> delta_time) = 0;
+  virtual void HandlePhysics(Duration delta_time) = 0;
 
   absl::flat_hash_map<std::string, objects::Scene> scenes_;
   std::string current_scene_name_;
@@ -32,10 +35,10 @@ class Application {
   std::unique_ptr<rendering::Renderer> renderer_;
   windowing::Window window_;
 
-  std::chrono::time_point<std::chrono::high_resolution_clock> physics_time_;
+  TimePoint physics_time_;
 
   bool is_running_ = false;
-  int target_frame_rate_;
+  int target_frame_rate_ = 60;
 
 };
 }  // namespace chove
