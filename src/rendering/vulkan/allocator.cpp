@@ -63,4 +63,28 @@ void Allocator::Deallocate(vk::Image image) {
   }
 }
 
+void Allocator::Deallocate(vk::Buffer buffer) {
+  auto iter = buffer_allocations_.find(buffer);
+  if (iter != buffer_allocations_.end()) {
+    vmaDestroyBuffer(allocator_, buffer, iter->second);
+    buffer_allocations_.erase(iter);
+  }
+}
+
+vk::Buffer Allocator::AllocateBuffer(vk::BufferCreateInfo buffer_create_info,
+                                     const VmaAllocationCreateInfo &allocation_create_info) {
+  VkBufferCreateInfo buffer_create_info_c = buffer_create_info;
+  VkBuffer buffer = VK_NULL_HANDLE;
+  VmaAllocation allocation = VK_NULL_HANDLE;
+  VkResult result = vmaCreateBuffer(allocator_, &buffer_create_info_c, &allocation_create_info,
+                                    &buffer, &allocation, nullptr);
+  if (result != VK_SUCCESS) {
+    throw std::runtime_error("Failed to create buffer.");
+  }
+
+  buffer_allocations_[buffer] = allocation;
+
+  return buffer;
+}
+
 } // namespace chove::rendering::vulkan

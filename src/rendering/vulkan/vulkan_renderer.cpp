@@ -357,7 +357,8 @@ void VulkanRenderer::Render() {
         swapchain_,
         UINT64_MAX,
         VK_NULL_HANDLE, // TODO: semaphore
-        VK_NULL_HANDLE // TODO: fence
+        VK_NULL_HANDLE, // TODO: fence
+        UINT32_MAX
     });
     if (result.result != vk::Result::eSuccess) {
       throw std::runtime_error("Failed to acquire next image.");

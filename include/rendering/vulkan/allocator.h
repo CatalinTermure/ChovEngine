@@ -20,8 +20,11 @@ class Allocator {
 
   ~Allocator();
   void Deallocate(vk::Image image);
+  void Deallocate(vk::Buffer buffer);
 
   vk::Image AllocateImage(vk::ImageCreateInfo image_create_info, const VmaAllocationCreateInfo &allocation_create_info);
+  vk::Buffer AllocateBuffer(vk::BufferCreateInfo buffer_create_info,
+                            const VmaAllocationCreateInfo &allocation_create_info);
 
  private:
   explicit Allocator(VmaAllocator allocator);
@@ -29,6 +32,7 @@ class Allocator {
   VmaAllocator allocator_ = VK_NULL_HANDLE;
 
   std::unordered_map<VkImage, VmaAllocation> image_allocations_;
+  std::unordered_map<VkBuffer, VmaAllocation> buffer_allocations_;
 };
 
 } // namespace chove::rendering::vulkan
