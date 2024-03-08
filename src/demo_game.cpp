@@ -15,6 +15,7 @@ using rendering::Mesh;
 using objects::Scene;
 using objects::Camera;
 using objects::Transform;
+using objects::GameObject;
 using objects::DirectionalLight;
 using objects::PointLight;
 using objects::SpotLight;
@@ -23,60 +24,6 @@ using windowing::EventType;
 using windowing::KeyPressedEvent;
 using windowing::KeyCode;
 using windowing::WindowPosition;
-
-void DemoGame::Initialize() {
-  objects::Scene scene;
-  glm::vec3 nanosuit_position = {0.0F, -0.5F, -1.0F};
-  glm::vec3 cube_position = {2.0F, -0.5F, -1.0F};
-  glm::vec3 sponza_scale = glm::vec3(0.01F, 0.01F, 0.01F);
-
-  nanosuit = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane.obj",
-                                          Transform{nanosuit_position,
-                                                    glm::identity<glm::quat>(),
-                                                    glm::vec3(1.0F),
-                                                    nullptr},
-                                          scene);
-  cube = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane2.obj",
-                                      Transform{cube_position,
-                                                glm::identity<glm::quat>(),
-                                                glm::vec3(1.0F),
-                                                nullptr},
-                                      scene);
-  sponza = object_manager_.ImportObject(std::filesystem::current_path() / "models" / "sponza.obj",
-                                        Transform{glm::vec3(0.0F),
-                                                  glm::identity<glm::quat>(),
-                                                  sponza_scale,
-                                                  nullptr},
-                                        scene);
-
-  scene.camera() = objects::Camera(
-      glm::vec4{0.0F, 0.0F, -1.0F, 1.0F},
-      glm::vec3{0.0F, 0.0F, 1.0F},
-      glm::radians(55.0F),
-      static_cast<float>(window_.extent().width) / static_cast<float>(window_.extent().height),
-      0.1F,
-      10000.0F);
-
-  scene.SetDirectionalLight({glm::vec3(0.01F, 1.0F, 0.01F),
-                             0.2F,
-                             glm::vec3(1.0F, 1.0F, 1.0F)});
-
-  scene.AddLight(objects::PointLight{1.0F,
-                                     0.0014F,
-                                     0.00007F,
-                                     0.01F,
-                                     glm::vec3(2.5F, 6.0F, 0.0F),
-                                     100.0F,
-                                     glm::vec3(1.0F, 1.0F, 1.0F),
-                                     0.2F,
-  });
-
-  scenes_["main"] = std::move(scene);
-
-  SetCurrentScene("main");
-
-  is_running_ = true;
-}
 
 void DemoGame::HandleInput() {
   window_.PollEvents();
@@ -119,9 +66,7 @@ void DemoGame::HandleInput() {
           camera_velocity_.z = -kCameraSpeed;
           break;
         case KeyCode::kL:
-          current_scene().SetDirectionalLight({-current_scene().camera().look_direction(),
-                                               0.2F,
-                                               glm::vec3(1.0F, 1.0F, 1.0F)});
+          sun_.GetComponent<DirectionalLight>().direction = current_scene().camera().look_direction();
           break;
         case KeyCode::kI:
           object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane.obj",
@@ -181,5 +126,60 @@ void DemoGame::HandlePhysics(Duration delta_time) {
                                     / kCameraVelocityConstant);
 }
 
-DemoGame::DemoGame(windowing::RendererType renderer_type) : Application(renderer_type) {}
+DemoGame::DemoGame(windowing::RendererType renderer_type) : Application(renderer_type) {
+  objects::Scene scene;
+  glm::vec3 nanosuit_position = {0.0F, -0.5F, -1.0F};
+  glm::vec3 cube_position = {2.0F, -0.5F, -1.0F};
+  glm::vec3 sponza_scale = glm::vec3(0.01F, 0.01F, 0.01F);
+  glm::vec3 sponza_position = glm::vec3(0.0F, -1.0F, 0.0F);
+
+  object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane.obj",
+                               Transform{nanosuit_position,
+                                         glm::identity<glm::quat>(),
+                                         glm::vec3(1.0F),
+                                         nullptr},
+                               scene);
+  object_manager_.ImportObject(std::filesystem::current_path() / "models" / "bricks" / "plane2.obj",
+                               Transform{cube_position,
+                                         glm::identity<glm::quat>(),
+                                         glm::vec3(1.0F),
+                                         nullptr},
+                               scene);
+  object_manager_.ImportObject(std::filesystem::current_path() / "models" / "sponza.obj",
+                               Transform{sponza_position,
+                                         glm::identity<glm::quat>(),
+                                         sponza_scale,
+                                         nullptr},
+                               scene);
+
+  GameObject camera = scene.AddObject(Transform{glm::vec3(0.0F, 0.0F, -1.0F)});
+  camera.AddComponent<Camera>(glm::vec4{0.0F, 0.0F, -1.0F, 1.0F},
+                              glm::vec3{0.0F, 0.0F, 1.0F},
+                              glm::radians(55.0F),
+                              static_cast<float>(window_.extent().width) / static_cast<float>(window_.extent().height),
+                              0.1F,
+                              10000.0F);
+  scene.SetMainCamera(camera.GetComponent<Camera>());
+
+  sun_ = scene.AddObject(Transform{glm::vec3(0.0F, 0.0F, 0.0F)});
+  sun_.AddComponent<DirectionalLight>(glm::vec3(0.01F, 1.0F, 0.01F),
+                                      0.2F,
+                                      glm::vec3(1.0F, 1.0F, 1.0F));
+
+  scene.AddObject(Transform{glm::vec3(2.5F, 6.0F, 0.0F)})
+      .AddComponent<PointLight>(1.0F,
+                                0.0014F,
+                                0.00007F,
+                                0.01F,
+                                glm::vec3(2.5F, 6.0F, 0.0F),
+                                100.0F,
+                                glm::vec3(1.0F, 1.0F, 1.0F),
+                                0.2F);
+
+  scenes_["main"] = std::move(scene);
+
+  SetCurrentScene("main");
+
+  is_running_ = true;
+}
 }  // namespace chove

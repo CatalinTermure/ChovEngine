@@ -1,35 +1,29 @@
 #include "objects/scene.h"
 
+#include "objects/game_object.h"
+#include "rendering/mesh.h"
+
 namespace chove::objects {
 
-Transform *Scene::AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform) {
-  transforms_.push_back(transform);
-  Transform *parent = &transforms_.back();
-  for (const auto &mesh : meshes) {
-    transforms_.emplace_back(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), parent);
-    objects_.push_back(GameObject{&mesh, &transforms_.back()});
+using rendering::Mesh;
+
+GameObject Scene::AddObject(std::vector<rendering::Mesh> &meshes, Transform transform) {
+  GameObject game_object{this, registry_.create()};
+  Transform *parent = &game_object.AddComponent<Transform>(transform);
+  for (auto &mesh : meshes) {
+    GameObject sub_object{this, registry_.create()};
+    sub_object.AddComponent<Transform>(glm::vec3(0.0F), parent);
+    sub_object.AddComponent<Mesh *>(&mesh);
   }
   SetDirtyBit();
-  return parent;
+  return game_object;
 }
 
-// TODO: fix this hack, needed for the pointers to be stable(up to 10k objects), will need to use indices into the vector,
-// but that implementation will need an "Application" class or some sort of global context to not pass around and store scene references everywhere.
-Scene::Scene() {
-  transforms_.reserve(10000);
-}
-
-void Scene::AddLight(PointLight light) {
-  point_lights_.push_back(light);
+GameObject Scene::AddObject(Transform transform) {
+  GameObject game_object{this, registry_.create()};
+  game_object.AddComponent<Transform>(transform);
   SetDirtyBit();
+  return game_object;
 }
 
-void Scene::AddLight(SpotLight light) {
-  spot_lights_.push_back(light);
-  SetDirtyBit();
-}
-
-void Scene::SetDirectionalLight(DirectionalLight light) {
-  directional_light_ = light;
-}
 }  // namespace chove::objects

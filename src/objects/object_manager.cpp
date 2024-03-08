@@ -2,7 +2,7 @@
 
 namespace chove::objects {
 
-Transform *ObjectManager::ImportObject(const std::filesystem::path &path, Transform transform, Scene &scene) {
+GameObject ObjectManager::ImportObject(const std::filesystem::path &path, Transform transform, Scene &scene) {
   if (!mesh_cache_.contains(path)) {
     mesh_cache_[path] = rendering::Mesh::ImportFromObj(path);
   }

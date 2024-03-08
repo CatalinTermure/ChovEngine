@@ -14,7 +14,8 @@ find_package(Vulkan)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 add_library(ProjectObjects src/objects/scene.cpp
-        src/objects/object_manager.cpp)
+        src/objects/object_manager.cpp
+        src/objects/game_object.cpp)
 target_include_directories(ProjectObjects PUBLIC include)
 target_link_libraries(ProjectObjects glm::glm absl::base absl::hash absl::log absl::status)
 

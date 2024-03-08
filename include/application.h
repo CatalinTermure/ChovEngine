@@ -19,7 +19,6 @@ class Application {
   explicit Application(windowing::RendererType renderer_type);
   void Run();
 
-  virtual void Initialize() = 0;
   void SetCurrentScene(std::string scene_name);
 
   [[nodiscard]] objects::Scene &current_scene() { return scenes_.at(current_scene_name_); }
@@ -29,10 +28,11 @@ class Application {
   virtual void HandleInput() = 0;
   virtual void HandlePhysics(Duration delta_time) = 0;
 
+  std::unique_ptr<rendering::Renderer> renderer_;
+
   absl::flat_hash_map<std::string, objects::Scene> scenes_;
   std::string current_scene_name_;
 
-  std::unique_ptr<rendering::Renderer> renderer_;
   windowing::Window window_;
 
   TimePoint physics_time_;

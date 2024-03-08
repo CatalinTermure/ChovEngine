@@ -20,15 +20,16 @@ class Renderer : public rendering::Renderer {
   Renderer &operator=(const Renderer &) = delete;
   Renderer(Renderer &&) noexcept = default;
   Renderer &operator=(Renderer &&) noexcept = default;
+  ~Renderer() override = default;
 
   explicit Renderer(const windowing::Window *window);
 
   void Render() override;
-  void SetupScene(const objects::Scene &scene) override;
+  void SetupScene(objects::Scene &scene) override;
 
  private:
   const windowing::Window *window_;
-  const objects::Scene *scene_;
+  objects::Scene *scene_;
 
   std::unique_ptr<TextureAllocator> texture_allocator_;
   std::unique_ptr<ShaderAllocator> shader_allocator_;
@@ -36,21 +37,15 @@ class Renderer : public rendering::Renderer {
   UniformBuffer matrices_ubo_{};
   UniformBuffer lights_{};
 
-  std::vector<RenderObject> render_objects_;
   std::vector<Shader> shaders_;
   std::unique_ptr<Shader> depth_map_shader_;
-  std::vector<Texture> point_depth_maps_;
-  std::vector<Texture> directional_depth_maps_;
-  std::vector<Texture> spot_depth_maps_;
   std::unique_ptr<Texture> white_pixel_;
 
-  std::vector<GLuint> spot_shadow_framebuffers_;
-  std::vector<GLuint> directional_shadow_framebuffers_;
-  std::vector<GLuint> point_shadow_framebuffers_;
   UniformBuffer light_space_matrices_{};
 
   void AttachMaterial(RenderObject &render_object, const Material &material);
+  void RenderDepthMap();
 };
-}
+} // namespace chove::rendering::opengl
 
 #endif //CHOVENGINE_INCLUDE_RENDERING_OPENGL_RENDERER_H_

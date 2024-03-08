@@ -2,7 +2,6 @@
 
 #include <GL/glew.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <filesystem>
@@ -35,6 +34,15 @@
 #include "windowing/window.h"
 
 namespace chove::rendering::opengl {
+
+using objects::Transform;
+using objects::PointLight;
+using objects::DirectionalLight;
+using objects::SpotLight;
+using objects::Scene;
+using objects::GameObject;
+using windowing::Window;
+
 namespace {
 void GLAPIENTRY MessageCallback(GLenum source,
                                 GLenum type,
@@ -185,26 +193,28 @@ constexpr std::array<glm::vec3, 6> kCubeMapUpVectors = {
     glm::vec3(0.0F, -1.0F, 0.0F)
 };
 
-void InsertionSort(std::vector<RenderObject> &objects) {
-  for (size_t i = 1; i < objects.size(); ++i) {
-    RenderObject key = std::move(objects[i]);
-    size_t j = i;
-    while (j > 0 && objects[j - 1].dist < key.dist) {
-      objects[j] = std::move(objects[j - 1]);
-      --j;
-    }
-    objects[j] = std::move(key);
-  }
+auto GetRenderInfo(Scene *scene) {
+  return scene->GetAllObjectsWith<RenderObject, Transform, Mesh *>();
+}
+
+std::tuple<DirectionalLight, Texture &, GLuint> GetDirectionalLightInfo(Scene *scene) {
+  auto view = scene->GetAllObjectsWith<DirectionalLight, Texture, GLuint>();
+  DirectionalLight directional_light = view.get<DirectionalLight>(view.front());
+  Texture &depth_map = view.get<Texture>(view.front());
+  GLuint framebuffer = view.get<GLuint>(view.front());
+
+  return {directional_light, depth_map, framebuffer};
+}
+
+auto GetPointLightsInfo(Scene *scene) {
+  return scene->GetAllObjectsWith<PointLight, Texture, GLuint>();
+}
+
+auto GetSpotLightsInfo(Scene *scene) {
+  return scene->GetAllObjectsWith<SpotLight, Texture, GLuint>();
 }
 
 }  // namespace
-
-using objects::PointLight;
-using objects::DirectionalLight;
-using objects::SpotLight;
-using objects::Scene;
-using objects::GameObject;
-using windowing::Window;
 
 Renderer::Renderer(const Window *window) : window_(window), scene_(nullptr) {
   glewExperimental = GL_TRUE;
@@ -240,6 +250,31 @@ Renderer::Renderer(const Window *window) : window_(window), scene_(nullptr) {
                                            *texture_allocator_);
 }
 
+void Renderer::RenderDepthMap() {
+  for (auto &&[_, render_info, transform, mesh] : GetRenderInfo(scene_).each()) {
+    render_info.shadow_model.UpdateValue(transform.GetMatrix());
+    glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"), mesh->material.dissolve);
+
+    // find alphaTexture in textures
+    auto alphaTexture =
+        std::find_if(render_info.textures.begin(), render_info.textures.end(), [](const Texture &texture) {
+          return texture.name() == "alphaTexture";
+        });
+    if (alphaTexture == render_info.textures.end()) {
+      glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
+    } else {
+      glBindTexture(GL_TEXTURE_2D, alphaTexture->texture());
+    }
+
+    glBindVertexArray(render_info.vao);
+    glDrawElements(GL_TRIANGLES,
+                   static_cast<GLsizei>(mesh->indices.size()),
+                   GL_UNSIGNED_INT,
+                   nullptr);
+    glBindVertexArray(0);
+  }
+}
+
 void Renderer::Render() {
   if (scene_ == nullptr) return;
 
@@ -248,20 +283,19 @@ void Renderer::Render() {
   }
 
   // Sort objects by distance to camera
-  for (RenderObject &render_object : render_objects_) {
-    if (scene_->objects()[render_object.object_index].mesh->material.dissolve > 0.99F
-        && !scene_->objects()[render_object.object_index].mesh->material.alpha_texture.has_value()) {
-      render_object.dist = std::numeric_limits<float>::max();
-      continue;
+  GetRenderInfo(scene_).each([this](RenderObject &render_info,
+                                    Transform &transform,
+                                    Mesh *&mesh) {
+    if (mesh->material.dissolve > 0.99F && !mesh->material.alpha_texture.has_value()) {
+      render_info.dist = std::numeric_limits<float>::max();
+      return;
     }
 
-    render_object.dist =
-        glm::distance2(scene_->camera().position(),
-                       scene_->objects()[render_object.object_index].transform->location
-                           + scene_->objects()[render_object.object_index].mesh->bounding_box.center());
-  }
-
-  InsertionSort(render_objects_);
+    render_info.dist = glm::distance2(scene_->camera().position(), transform.location + mesh->bounding_box.center());
+  });
+  scene_->registry().sort<RenderObject>([](const RenderObject &lhs, const RenderObject &rhs) {
+    return lhs.dist < rhs.dist;
+  });
 
   // Start depth map render pass
 
@@ -270,66 +304,46 @@ void Renderer::Render() {
   depth_map_shader_->Use();
   glActiveTexture(GL_TEXTURE0);
   glUniform1i(glGetUniformLocation(depth_map_shader_->program(), "alphaTexture"), 0);
-  for (int i = 0; i < scene_->point_lights().size(); ++i) {
-    glBindFramebuffer(GL_FRAMEBUFFER, point_shadow_framebuffers_[i]);
+  for (auto &&[object, point_light, depth_map, framebuffer] : GetPointLightsInfo(scene_).each()) {
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     const glm::mat4 light_projection = glm::perspective(glm::radians(90.0F),
                                                         1.0F,
-                                                        scene_->point_lights()[i].near_plane,
-                                                        scene_->point_lights()[i].far_plane);
+                                                        point_light.near_plane,
+                                                        point_light.far_plane);
     for (int j = 0; j < 6; j++) {
       glFramebufferTexture2D(GL_FRAMEBUFFER,
                              GL_DEPTH_ATTACHMENT,
                              GL_TEXTURE_CUBE_MAP_POSITIVE_X + j,
-                             point_depth_maps_[i].texture(),
+                             depth_map.texture(),
                              0);
       glClear(GL_DEPTH_BUFFER_BIT);
 
-      const glm::mat4 light_view = glm::lookAt(scene_->point_lights()[i].position,
-                                               scene_->point_lights()[i].position + kCubeMapDirections[j],
-                                               kCubeMapUpVectors[j]);
+      const glm::mat4 light_view = glm::lookAt(point_light.position,
+                                               point_light.position + kCubeMapDirections.at(j),
+                                               kCubeMapUpVectors.at(j));
       const glm::mat4 light_space_matrix = light_projection * light_view;
       Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
                                                     "lightSpaceMatrix",
                                                     light_space_matrix);
       light_space_matrix_uniform.UpdateValue(light_space_matrix);
-      for (RenderObject &render_object : render_objects_) {
-        render_object.shadow_model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
-        glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
-                    scene_->objects()[render_object.object_index].mesh->material.dissolve);
 
-        // find alphaTexture in textures
-        auto alphaTexture =
-            std::find_if(render_object.textures.begin(), render_object.textures.end(), [](const Texture &texture) {
-              return texture.name() == "alphaTexture";
-            });
-        if (alphaTexture == render_object.textures.end()) {
-          glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
-        } else {
-          glBindTexture(GL_TEXTURE_2D, alphaTexture->texture());
-        }
-
-        glBindVertexArray(render_object.vao);
-        glDrawElements(GL_TRIANGLES,
-                       static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
-                       GL_UNSIGNED_INT,
-                       nullptr);
-        glBindVertexArray(0);
-      }
+      RenderDepthMap();
     }
   }
 
   depth_map_shader_->Use();
   {
-    glBindFramebuffer(GL_FRAMEBUFFER, directional_shadow_framebuffers_[0]);
+    auto [directional_light, depth_map, framebuffer] = GetDirectionalLightInfo(scene_);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     const glm::mat4 light_projection = glm::ortho(-20.0F, 20.0F, -20.0F, 20.0F, 0.1F, 100.0F);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER,
                            GL_DEPTH_ATTACHMENT,
                            GL_TEXTURE_2D,
-                           directional_depth_maps_[0].texture(),
+                           depth_map.texture(),
                            0);
     glClear(GL_DEPTH_BUFFER_BIT);
-    const glm::mat4 light_view = glm::lookAt(10.0F * glm::normalize(scene_->directional_light().direction),
+    const glm::mat4 light_view = glm::lookAt(10.0F * glm::normalize(directional_light.direction),
                                              glm::vec3(0.0F),
                                              glm::vec3(0.0F, 1.0F, 0.0F));
     glm::mat4 light_space_matrix = light_projection * light_view;
@@ -340,35 +354,14 @@ void Renderer::Render() {
 
     light_space_matrices_.UpdateSubData(&light_space_matrix, 0, sizeof(glm::mat4));
 
-    for (RenderObject &render_object : render_objects_) {
-      render_object.shadow_model.Rebind();
-      glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
-                  scene_->objects()[render_object.object_index].mesh->material.dissolve);
-
-      // find alphaTexture in textures
-      auto alphaTexture =
-          std::find_if(render_object.textures.begin(), render_object.textures.end(), [](const Texture &texture) {
-            return texture.name() == "alphaTexture";
-          });
-      if (alphaTexture == render_object.textures.end()) {
-        glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
-      } else {
-        glBindTexture(GL_TEXTURE_2D, alphaTexture->texture());
-      }
-
-      glBindVertexArray(render_object.vao);
-      glDrawElements(GL_TRIANGLES,
-                     static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
-                     GL_UNSIGNED_INT,
-                     nullptr);
-      glBindVertexArray(0);
-    }
+    RenderDepthMap();
   }
 
   depth_map_shader_->Use();
-  for (int i = 0; i < scene_->spot_lights().size(); ++i) {
-    glBindFramebuffer(GL_FRAMEBUFFER, spot_shadow_framebuffers_[i]);
-    const glm::mat4 light_projection = glm::perspective(glm::radians(scene_->spot_lights()[i].outer_cutoff * 2.0F),
+  size_t light_space_matrix_offset = sizeof(glm::mat4);
+  for (auto &&[object, spot_light, depth_map, framebuffer] : GetSpotLightsInfo(scene_).each()) {
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    const glm::mat4 light_projection = glm::perspective(glm::radians(spot_light.outer_cutoff * 2.0F),
                                                         1.0F,
                                                         0.1F,
                                                         10.0F);
@@ -376,11 +369,11 @@ void Renderer::Render() {
     glFramebufferTexture2D(GL_FRAMEBUFFER,
                            GL_DEPTH_ATTACHMENT,
                            GL_TEXTURE_2D,
-                           spot_depth_maps_[i].texture(),
+                           depth_map.texture(),
                            0);
     glClear(GL_DEPTH_BUFFER_BIT);
-    const glm::mat4 light_view = glm::lookAt(scene_->spot_lights()[i].position,
-                                             scene_->spot_lights()[i].position + scene_->spot_lights()[i].direction,
+    const glm::mat4 light_view = glm::lookAt(spot_light.position,
+                                             spot_light.position + spot_light.direction,
                                              glm::vec3(0.0F, 1.0F, 0.0F));
     glm::mat4 light_space_matrix = light_projection * light_view;
     Uniform<glm::mat4> light_space_matrix_uniform(depth_map_shader_->program(),
@@ -389,32 +382,11 @@ void Renderer::Render() {
     light_space_matrix_uniform.UpdateValue(light_space_matrix);
 
     light_space_matrices_.UpdateSubData(&light_space_matrix,
-                                        sizeof(glm::mat4) + i * sizeof(glm::mat4),
+                                        light_space_matrix_offset,
                                         sizeof(glm::mat4));
+    light_space_matrix_offset += sizeof(glm::mat4);
 
-    for (RenderObject &render_object : render_objects_) {
-      render_object.shadow_model.Rebind();
-      glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"),
-                  scene_->objects()[render_object.object_index].mesh->material.dissolve);
-
-      // find alphaTexture in textures
-      auto alphaTexture =
-          std::find_if(render_object.textures.begin(), render_object.textures.end(), [](const Texture &texture) {
-            return texture.name() == "alphaTexture";
-          });
-      if (alphaTexture == render_object.textures.end()) {
-        glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
-      } else {
-        glBindTexture(GL_TEXTURE_2D, alphaTexture->texture());
-      }
-
-      glBindVertexArray(render_object.vao);
-      glDrawElements(GL_TRIANGLES,
-                     static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
-                     GL_UNSIGNED_INT,
-                     nullptr);
-      glBindVertexArray(0);
-    }
+    RenderDepthMap();
   }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -431,30 +403,33 @@ void Renderer::Render() {
   matrices_ubo_.Rebind();
 
   // Send light data
-
+  size_t lights_uniform_offset = 0;
   {
-    DirectionalLight light = scene_->directional_light();
+    auto view = scene_->GetAllObjectsWith<DirectionalLight>();
+    DirectionalLight light = view.get<DirectionalLight>(view.front());
     light.direction = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(light.direction, 0.0F));
     lights_.UpdateSubData(&light, 0, sizeof(DirectionalLight));
+    lights_uniform_offset += sizeof(DirectionalLight);
   }
 
   {
-    for (int i = 0; i < scene_->point_lights().size(); i++) {
-      PointLight light = scene_->point_lights()[i];
+    for (auto &&[_, point_light] : scene_->GetAllObjectsWith<PointLight>().each()) {
+      PointLight light = point_light;
       light.positionEyeSpace = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(light.position, 1.0F));
-      lights_.UpdateSubData(&light, sizeof(DirectionalLight) + i * sizeof(PointLight), sizeof(PointLight));
+      lights_.UpdateSubData(&light, lights_uniform_offset, sizeof(PointLight));
+      lights_uniform_offset += sizeof(PointLight);
     }
   }
 
   {
-    for (int i = 0; i < scene_->spot_lights().size(); i++) {
-      SpotLight light = scene_->spot_lights()[i];
+    for (auto &&[_, spot_light] : scene_->GetAllObjectsWith<SpotLight>().each()) {
+      SpotLight light = spot_light;
       light.position = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(light.position, 1.0F));
       light.direction = glm::vec3(scene_->camera().GetViewMatrix() * glm::vec4(light.direction, 0.0F));
       lights_.UpdateSubData(&light,
-                            sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
-                                + i * sizeof(SpotLight),
+                            lights_uniform_offset,
                             sizeof(SpotLight));
+      lights_uniform_offset += sizeof(SpotLight);
     }
   }
   lights_.Rebind();
@@ -463,17 +438,16 @@ void Renderer::Render() {
 
   MaterialUBOData material_ubo_data{};
 
-  for (RenderObject &render_object : render_objects_) {
-    shaders_[render_object.shader_index].Use();
+  for (auto &&[_, render_info, transform, mesh] : GetRenderInfo(scene_).each()) {
+    shaders_[render_info.shader_index].Use();
 
     light_space_matrices_.Rebind();
 
-    render_object.model.UpdateValue(scene_->objects()[render_object.object_index].transform->GetMatrix());
-    render_object.normal_matrix.UpdateValue(
-        glm::mat3(glm::inverseTranspose(
-            matrices_ubo_data.view * scene_->objects()[render_object.object_index].transform->GetMatrix())));
+    glm::mat4 model_matrix = transform.GetMatrix();
+    render_info.model.UpdateValue(model_matrix);
+    render_info.normal_matrix.UpdateValue(glm::mat3(glm::inverseTranspose(matrices_ubo_data.view * model_matrix)));
 
-    const Material &material = scene_->objects()[render_object.object_index].mesh->material;
+    const Material &material = mesh->material;
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "UnusedValue"
@@ -486,49 +460,56 @@ void Renderer::Render() {
     material_ubo_data.transmissionFilterColor = material.transmission_filter_color;
 #pragma clang diagnostic pop
 
-    render_object.material_data.UpdateData(&material_ubo_data, sizeof(MaterialUBOData));
-    render_object.material_data.Rebind();
+    render_info.material_data.UpdateData(&material_ubo_data, sizeof(MaterialUBOData));
+    render_info.material_data.Rebind();
 
     // Send shadow map data
 
     int texture_index = 0;
-    for (int i = 0; i < scene_->point_lights().size(); ++i) {
+    int array_index = 0;
+    for (auto &&[_, point_light, depth_map, framebuffer] : GetPointLightsInfo(scene_).each()) {
       glActiveTexture(GL_TEXTURE0 + texture_index);
-      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
-                                       std::format("{}[{}]", point_depth_maps_[i].name(), i).c_str()),
-                  i);
-      glBindTexture(GL_TEXTURE_CUBE_MAP, point_depth_maps_[i].texture());
-      texture_index++;
-    }
-
-    glActiveTexture(GL_TEXTURE0 + texture_index);
-    glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
-                                     std::format("{}[{}]", directional_depth_maps_[0].name(), 0).c_str()),
-                texture_index);
-    glBindTexture(GL_TEXTURE_2D, directional_depth_maps_[0].texture());
-    texture_index++;
-
-    for (int i = 0; i < scene_->spot_lights().size(); ++i) {
-      glActiveTexture(GL_TEXTURE0 + texture_index);
-      glUniform1i(glGetUniformLocation(shaders_[render_object.shader_index].program(),
-                                       std::format("{}[{}]", spot_depth_maps_[i].name(), i).c_str()),
+      glUniform1i(glGetUniformLocation(shaders_[render_info.shader_index].program(),
+                                       std::format("{}[{}]", depth_map.name(), array_index).c_str()),
                   texture_index);
-      glBindTexture(GL_TEXTURE_2D, spot_depth_maps_[i].texture());
+      glBindTexture(GL_TEXTURE_CUBE_MAP, depth_map.texture());
       texture_index++;
+      array_index++;
     }
 
-    for (int i = 0; i < render_object.textures.size(); ++i) {
+    {
+      auto [directional_light, depth_map, framebuffer] = GetDirectionalLightInfo(scene_);
       glActiveTexture(GL_TEXTURE0 + texture_index);
-      const int location = glGetUniformLocation(shaders_[render_object.shader_index].program(),
-                                                render_object.textures[i].name().c_str());
-      glUniform1i(location, texture_index);
-      glBindTexture(GL_TEXTURE_2D, render_object.textures[i].texture());
+      glUniform1i(glGetUniformLocation(shaders_[render_info.shader_index].program(),
+                                       std::format("{}[{}]", depth_map.name(), 0).c_str()),
+                  texture_index);
+      glBindTexture(GL_TEXTURE_2D, depth_map.texture());
       texture_index++;
     }
 
-    glBindVertexArray(render_object.vao);
+    array_index = 0;
+    for (auto &&[_, spot_light, depth_map, framebuffer] : GetSpotLightsInfo(scene_).each()) {
+      glActiveTexture(GL_TEXTURE0 + texture_index);
+      glUniform1i(glGetUniformLocation(shaders_[render_info.shader_index].program(),
+                                       std::format("{}[{}]", depth_map.name(), array_index).c_str()),
+                  texture_index);
+      glBindTexture(GL_TEXTURE_2D, depth_map.texture());
+      texture_index++;
+      array_index++;
+    }
+
+    for (int i = 0; i < render_info.textures.size(); ++i) {
+      glActiveTexture(GL_TEXTURE0 + texture_index);
+      const int location = glGetUniformLocation(shaders_[render_info.shader_index].program(),
+                                                render_info.textures[i].name().c_str());
+      glUniform1i(location, texture_index);
+      glBindTexture(GL_TEXTURE_2D, render_info.textures[i].texture());
+      texture_index++;
+    }
+
+    glBindVertexArray(render_info.vao);
     glDrawElements(GL_TRIANGLES,
-                   static_cast<GLsizei>(scene_->objects()[render_object.object_index].mesh->indices.size()),
+                   static_cast<GLsizei>(mesh->indices.size()),
                    GL_UNSIGNED_INT,
                    nullptr);
     glBindVertexArray(0);
@@ -542,108 +523,110 @@ void Renderer::Render() {
   window_->SwapBuffers();
 }
 
-void Renderer::SetupScene(const Scene &scene) {
+void Renderer::SetupScene(Scene &scene) {
   LOG(INFO) << "Starting setup scene";
   scene_ = &scene;
-  // this const cast is fine, we are not modifying the scene, just clearing the dirty bit
-  const_cast<Scene *>(scene_)->ClearDirtyBit();
-  LOG(INFO) << "Setting up shaders";
+  scene_->ClearDirtyBit();
 
-  LOG(INFO) << "Setting up uniforms";
-
-  render_objects_.clear();
+  scene_->RemoveComponentFromAll<RenderObject>();
   shaders_.clear();
-  directional_depth_maps_.clear();
-  point_depth_maps_.clear();
-  spot_depth_maps_.clear();
+  // Delete depth maps from lights
+  scene_->RemoveComponentFromAll<Texture>();
 
-  glDeleteFramebuffers(static_cast<GLsizei>(directional_shadow_framebuffers_.size()),
-                       directional_shadow_framebuffers_.data());
-  directional_shadow_framebuffers_.clear();
-  glDeleteFramebuffers(static_cast<GLsizei>(point_shadow_framebuffers_.size()), point_shadow_framebuffers_.data());
-  point_shadow_framebuffers_.clear();
-  glDeleteFramebuffers(static_cast<GLsizei>(spot_shadow_framebuffers_.size()), spot_shadow_framebuffers_.data());
-  spot_shadow_framebuffers_.clear();
+  // Delete framebuffers from lights
+  scene_->GetAllObjectsWith<GLuint>().each([](GLuint &framebuffer) {
+    glDeleteBuffers(1, &framebuffer);
+  });
+  scene_->RemoveComponentFromAll<GLuint>();
 
-  render_objects_.reserve(scene.objects().size());
-  shaders_.reserve(scene.objects().size());
+  shaders_.reserve(scene_->GetAllObjectsWith<Mesh *>().size());
 
   matrices_ubo_ = UniformBuffer(2 * sizeof(glm::mat4));
-  light_space_matrices_ = UniformBuffer((1 + scene.spot_lights().size()) * sizeof(glm::mat4));
+  size_t point_light_count = scene_->GetAllObjectsWith<PointLight>().size();
+  size_t spot_light_count = scene_->GetAllObjectsWith<SpotLight>().size();
+
+  light_space_matrices_ = UniformBuffer((1 + spot_light_count) * sizeof(glm::mat4));
   lights_ = UniformBuffer(
-      sizeof(DirectionalLight) + scene_->point_lights().size() * sizeof(PointLight)
-          + scene_->spot_lights().size() * sizeof(SpotLight));
+      sizeof(DirectionalLight) + point_light_count * sizeof(PointLight) + spot_light_count * sizeof(SpotLight));
 
-  point_shadow_framebuffers_.resize(scene_->point_lights().size());
-  glGenFramebuffers(static_cast<GLsizei>(point_shadow_framebuffers_.size()), point_shadow_framebuffers_.data());
-  for (int i = 0; i < scene_->point_lights().size(); ++i) {
-    point_depth_maps_.emplace_back(kShadowMapSize, "pointDepthMaps", *texture_allocator_);
-    glBindFramebuffer(GL_FRAMEBUFFER, point_shadow_framebuffers_[i]);
+  for (auto &&[entity, _] : scene_->GetAllObjectsWith<PointLight>().each()) {
+    GLuint framebuffer = 0;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    Texture depth_map(kShadowMapSize, "pointDepthMaps", *texture_allocator_);
+    scene_->AddComponent<GLuint>(entity, std::move(framebuffer)); // TODO
+    scene_->AddComponent<Texture>(entity, std::move(depth_map));
   }
 
-  directional_shadow_framebuffers_.resize(1);
-  glGenFramebuffers(static_cast<GLsizei>(directional_shadow_framebuffers_.size()),
-                    directional_shadow_framebuffers_.data());
-  directional_depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "directionalDepthMaps", *texture_allocator_);
-  glBindFramebuffer(GL_FRAMEBUFFER, directional_shadow_framebuffers_[0]);
-  glDrawBuffer(GL_NONE);
-  glReadBuffer(GL_NONE);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  spot_shadow_framebuffers_.resize(scene_->spot_lights().size());
-  glGenFramebuffers(static_cast<GLsizei>(spot_shadow_framebuffers_.size()), spot_shadow_framebuffers_.data());
-  for (int i = 0; i < scene_->spot_lights().size(); ++i) {
-    spot_depth_maps_.emplace_back(kShadowMapSize, kShadowMapSize, "spotDepthMaps", *texture_allocator_);
-    glBindFramebuffer(GL_FRAMEBUFFER, spot_shadow_framebuffers_[i]);
+  {
+    auto view = scene_->GetAllObjectsWith<DirectionalLight>();
+    auto entity = view.front();
+    GLuint framebuffer = 0;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    Texture depth_map(kShadowMapSize, kShadowMapSize, "directionalDepthMaps", *texture_allocator_);
+    scene_->AddComponent<GLuint>(entity, std::move(framebuffer)); // TODO
+    scene_->AddComponent<Texture>(entity, std::move(depth_map));
   }
 
-  for (int i = 0; i < scene.objects().size(); ++i) {
-    LOG(INFO) << "Setting up object " << i << " of " << scene.objects().size() << " total objects";
-    const GameObject &object = scene.objects()[i];
-    RenderObject render_object;
+  for (auto &&[entity, _] : scene_->GetAllObjectsWith<SpotLight>().each()) {
+    GLuint framebuffer = 0;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    Texture depth_map(kShadowMapSize, kShadowMapSize, "spotDepthMaps", *texture_allocator_);
+    scene_->AddComponent<GLuint>(entity, std::move(framebuffer)); // TODO
+    scene_->AddComponent<Texture>(entity, std::move(depth_map));
+  }
 
-    AttachMaterial(render_object, object.mesh->material);
-    matrices_ubo_.Bind(shaders_[i].program(), "Matrices", kMatricesUBOBindingPoint);
-    lights_.Bind(shaders_[i].program(), "Lights", kLightsUBOBindingPoint);
-    light_space_matrices_.Bind(shaders_[i].program(), "LightSpaceMatrices", kLightSpaceMatricesUBOBindingPoint);
+  int index = 0;
+  for (auto &&[entity, transform, mesh] : scene_->GetAllObjectsWith<Transform, Mesh *>().each()) {
+    LOG(INFO) << "Setting up object " << index;
+    RenderObject render_info;
 
-    if (object.mesh->material.dissolve > 0.99F && !object.mesh->material.alpha_texture.has_value()) {
-      render_object.dist = std::numeric_limits<float>::max();
+    AttachMaterial(render_info, mesh->material);
+    matrices_ubo_.Bind(shaders_[index].program(), "Matrices", kMatricesUBOBindingPoint);
+    lights_.Bind(shaders_[index].program(), "Lights", kLightsUBOBindingPoint);
+    light_space_matrices_.Bind(shaders_[index].program(), "LightSpaceMatrices", kLightSpaceMatricesUBOBindingPoint);
+
+    if (mesh->material.dissolve > 0.99F && !mesh->material.alpha_texture.has_value()) {
+      render_info.dist = std::numeric_limits<float>::max();
     } else {
-      render_object.dist = glm::distance2(scene_->camera().position(), object.transform->location);
+      render_info.dist = glm::distance2(scene_->camera().position(), transform.location);
     }
 
-    render_object.object_index = i;
-    render_object.shader_index = i;
-    render_object.model = Uniform<glm::mat4>(shaders_[i].program(), "model", object.transform->GetMatrix());
-    render_object.shadow_model =
-        Uniform<glm::mat4>(depth_map_shader_->program(), "model", object.transform->GetMatrix());
-    render_object.normal_matrix = Uniform<glm::mat3>(
-        shaders_[i].program(),
+    render_info.object_index = index;
+    render_info.shader_index = index;
+    render_info.model = Uniform<glm::mat4>(shaders_[index].program(), "model", transform.GetMatrix());
+    render_info.shadow_model = Uniform<glm::mat4>(depth_map_shader_->program(), "model", transform.GetMatrix());
+    render_info.normal_matrix = Uniform<glm::mat3>(
+        shaders_[index].program(),
         "normalMatrix",
         glm::identity<glm::mat3>());
 
-    glGenVertexArrays(1, &render_object.vao);
-    glGenBuffers(1, &render_object.vbo);
-    glGenBuffers(1, &render_object.ebo);
+    glGenVertexArrays(1, &render_info.vao);
+    glGenBuffers(1, &render_info.vbo);
+    glGenBuffers(1, &render_info.ebo);
 
-    glBindVertexArray(render_object.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, render_object.vbo);
+    glBindVertexArray(render_info.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, render_info.vbo);
     glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(object.mesh->vertices.size() * sizeof(Mesh::Vertex)),
-                 object.mesh->vertices.data(),
+                 static_cast<GLsizeiptr>(mesh->vertices.size() * sizeof(Mesh::Vertex)),
+                 mesh->vertices.data(),
                  GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_object.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_info.ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(object.mesh->indices.size() * sizeof(GLuint)),
-                 object.mesh->indices.data(),
+                 static_cast<GLsizeiptr>(mesh->indices.size() * sizeof(GLuint)),
+                 mesh->indices.data(),
                  GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -675,12 +658,9 @@ void Renderer::SetupScene(const Scene &scene) {
 
     glBindVertexArray(0);
 
-    render_objects_.emplace_back(std::move(render_object));
+    scene_->AddComponent<RenderObject>(entity, std::move(render_info));
+    index++;
   }
-
-  std::sort(render_objects_.begin(), render_objects_.end(), [](const RenderObject &lhs, const RenderObject &rhs) {
-    return lhs.dist > rhs.dist;
-  });
 
   LOG(INFO) << "Finished setup scene";
 }
@@ -736,14 +716,13 @@ void Renderer::AttachMaterial(RenderObject &render_object, const Material &mater
     fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoDisplacementTexture, 1);
   }
 
-  fragment_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount,
-                                     static_cast<int>(scene_->point_lights().size()));
+  fragment_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, scene_->GetAllObjectsWith<PointLight>().size());
   fragment_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
-  fragment_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, static_cast<int>(scene_->spot_lights().size()));
+  fragment_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, scene_->GetAllObjectsWith<SpotLight>().size());
 
-  vertex_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, static_cast<int>(scene_->point_lights().size()));
+  vertex_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount, scene_->GetAllObjectsWith<PointLight>().size());
   vertex_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
-  vertex_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, static_cast<int>(scene_->spot_lights().size()));
+  vertex_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount, scene_->GetAllObjectsWith<SpotLight>().size());
 
   shaders_.emplace_back("shaders/render_shader.vert",
                         vertex_shader_flags,

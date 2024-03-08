@@ -10,20 +10,14 @@ class DemoGame : public Application {
  public:
   explicit DemoGame(windowing::RendererType renderer_type);
 
-  void Initialize() override;
-
   void HandleInput() override;
   void HandlePhysics(Duration delta_time) override;
  private:
   glm::vec3 camera_velocity_{};
-
-  objects::Transform *nanosuit{};
-  objects::Transform *sponza{};
-  objects::Transform *cube{};
-
   objects::ObjectManager object_manager_{};
-
   windowing::WindowPosition last_mouse_position_{};
+
+  objects::GameObject sun_{};
 };
 }  // namespace chove
 

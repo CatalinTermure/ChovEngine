@@ -23,7 +23,7 @@ class VulkanRenderer : public Renderer {
   static VulkanRenderer Create(windowing::Window &window);
 
   void Render() override;
-  void SetupScene(const objects::Scene &scene) override;
+  void SetupScene(objects::Scene &scene) override;
 
   ~VulkanRenderer() override;
 
@@ -69,7 +69,7 @@ class VulkanRenderer : public Renderer {
   std::vector<vk::Pipeline> pipelines_;
   std::vector<vk::PipelineLayout> pipeline_layouts_;
 
-  const objects::Scene *scene_ = nullptr;
+  objects::Scene *scene_ = nullptr;
 
   static std::array<RenderAttachments, kMaxFramesInFlight>
   CreateFramebuffers(const windowing::WindowExtent &window_extent,

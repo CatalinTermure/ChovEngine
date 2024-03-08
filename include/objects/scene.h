@@ -4,51 +4,57 @@
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
+#include <entt/entt.hpp>
 
-#include "game_object.h"
-#include "camera.h"
-#include "lights.h"
+#include "objects/camera.h"
+#include "objects/lights.h"
+#include "objects/transform.h"
+#include "rendering/mesh.h"
 
 namespace chove::objects {
 
+class GameObject;
+
 class Scene {
  public:
-  Scene();
+  Scene() = default;
   Scene(const Scene &) = delete;
   Scene &operator=(const Scene &) = delete;
   Scene(Scene &&) noexcept = default;
   Scene &operator=(Scene &&) noexcept = default;
+  ~Scene() = default;
 
-  [[nodiscard]] const std::vector<GameObject> &objects() const { return objects_; };
-  [[nodiscard]] Camera &camera() { return camera_; };
-  [[nodiscard]] const Camera &camera() const { return camera_; };
+  [[nodiscard]] const Camera &camera() const { return *main_camera_; };
+  [[nodiscard]] Camera &camera() { return *main_camera_; };
+  void SetMainCamera(Camera &camera) { main_camera_ = &camera; }
 
-  Transform *AddObject(const std::vector<rendering::Mesh> &meshes, Transform transform);
-  void SetDirectionalLight(DirectionalLight light);
-  void AddLight(PointLight light);
-  void AddLight(SpotLight light);
+  GameObject AddObject(std::vector<rendering::Mesh> &meshes, Transform transform);
+  GameObject AddObject(Transform transform);
 
-  [[nodiscard]] const DirectionalLight &directional_light() const { return directional_light_; };
-  [[nodiscard]] const std::vector<PointLight> &point_lights() const { return point_lights_; };
-  [[nodiscard]] const std::vector<SpotLight> &spot_lights() const { return spot_lights_; };
+  template<typename ...Components>
+  auto GetAllObjectsWith() {
+    return registry_.view<Components...>();
+  }
+
+  template<typename T>
+  void AddComponent(entt::entity entity, T &&component) {
+    registry_.emplace<T>(entity, std::forward<decltype(component)>(component));
+  }
+
+  template<typename T>
+  void RemoveComponentFromAll() {
+    registry_.clear<T>();
+  }
+
+  [[nodiscard]] entt::registry &registry() { return registry_; }
 
   [[nodiscard]] bool dirty_bit() const { return dirty_bit_; };
   void ClearDirtyBit() { dirty_bit_ = false; };
  private:
   void SetDirtyBit() { dirty_bit_ = true; };
-
-  std::vector<GameObject> objects_{};
-  Camera camera_{};
-
-  // store all transforms here for cache coherency
-  std::vector<Transform> transforms_{};
-  absl::flat_hash_map<Transform *, std::vector<Transform *>> children_{};
-
-  DirectionalLight directional_light_{};
-  std::vector<PointLight> point_lights_{};
-  std::vector<SpotLight> spot_lights_{};
-
   bool dirty_bit_{};
+  Camera *main_camera_{};
+  entt::registry registry_{};
 };
 
 } // namespace chove::objects

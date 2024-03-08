@@ -8,6 +8,13 @@ namespace chove::objects {
 
 struct Transform {
   Transform() = default;
+  explicit Transform(glm::vec3 location, Transform *parent = nullptr)
+      : location(location),
+        rotation(glm::identity<glm::quat>()),
+        scale(glm::vec3(1.0F)),
+        parent(parent),
+        velocity(glm::vec3(0.0F)),
+        angular_velocity(glm::identity<glm::quat>()) {}
   Transform(glm::vec3 location, glm::quat rotation, glm::vec3 scale, Transform *parent = nullptr)
       : location(location),
         rotation(rotation),

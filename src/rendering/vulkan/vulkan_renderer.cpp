@@ -389,17 +389,6 @@ void VulkanRenderer::Render() {
                                 descriptor_sets_.front(),
                                 nullptr);
 
-    for (const auto &obj : scene_->objects()) {
-      glm::mat4 model_matrix = obj.transform->GetMatrix();
-      draw_cmd.pushConstants(pipeline_layouts_.front(),
-                             vk::ShaderStageFlagBits::eVertex,
-                             0,
-                             sizeof(glm::mat4),
-                             &model_matrix);
-      // TODO: bind vertex buffer
-      draw_cmd.draw(obj.mesh->vertices.size(), 1, 0, 0);
-    }
-
     draw_cmd.endRenderPass();
   }
 
@@ -409,7 +398,7 @@ void VulkanRenderer::Render() {
   context_.device.resetCommandPool(graphics_command_pool_, vk::CommandPoolResetFlagBits::eReleaseResources);
 }
 
-void VulkanRenderer::SetupScene(const objects::Scene &scene) {
+void VulkanRenderer::SetupScene(objects::Scene &scene) {
   Shader vertex_shader{"shaders/vulkan/vulkan_shader.vert.spv", context_.device};
   vertex_shader.AddPushConstantRanges({vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)}});
   vertex_shader.AddDescriptorSetLayout({vk::DescriptorSetLayoutBinding{
