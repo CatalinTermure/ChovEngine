@@ -5,12 +5,16 @@
 #include "rendering/vulkan/pipeline_builder.h"
 #include "rendering/vulkan/shader.h"
 #include "windowing/events.h"
+#include "windowing/window.h"
 
+#include <cstdint>
 #include <filesystem>
-#include <fstream>
+#include <utility>
+#include <vector>
 
 #include <absl/log/log.h>
 #include <glm/glm.hpp>
+#include <vulkan/vulkan.hpp>
 
 namespace chove::rendering::vulkan {
 using windowing::WindowExtent;
@@ -22,19 +26,10 @@ constexpr vk::Format kDepthFormat = vk::Format::eD24UnormS8Uint;
 
 vk::Instance CreateInstance() {
   std::vector<const char *> required_instance_extensions = windowing::Window::GetRequiredVulkanExtensions();
-  vk::ApplicationInfo application_info{
-      "Demo app",
-      VK_MAKE_VERSION(1, 0, 0),
-      "ChovEngine",
-      VK_MAKE_VERSION(1, 0, 0),
-      VK_API_VERSION_1_3
-  };
-  vk::InstanceCreateInfo instance_create_info{
-      vk::InstanceCreateFlags{},
-      &application_info,
-      nullptr,
-      required_instance_extensions
-  };
+  const vk::ApplicationInfo application_info{"Demo app", VK_MAKE_VERSION(1, 0, 0), "ChovEngine",
+                                             VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3};
+  const vk::InstanceCreateInfo instance_create_info{vk::InstanceCreateFlags{}, &application_info, nullptr,
+                                                    required_instance_extensions};
   vk::Instance instance = vk::createInstance(instance_create_info, nullptr);
   return instance;
 }
@@ -46,7 +41,7 @@ vk::PhysicalDevice PickPhysicalDevice(const vk::Instance &instance) {
   }
   vk::PhysicalDevice physical_device = physical_devices.front();
   for (const auto &potential_device : physical_devices) {
-    vk::PhysicalDeviceProperties properties = potential_device.getProperties();
+    const vk::PhysicalDeviceProperties properties = potential_device.getProperties();
     if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
       LOG(INFO) << "Using discrete GPU: " << properties.deviceName;
       physical_device = potential_device;
@@ -82,8 +77,9 @@ vk::Device CreateDevice(const vk::PhysicalDevice &physical_device, uint32_t grap
   };
 
   std::vector<const char *> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-  std::vector<const char *> optional_device_extensions = {VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME};
-  std::vector<vk::ExtensionProperties> supported_extensions = physical_device.enumerateDeviceExtensionProperties();
+  const std::vector<const char *> optional_device_extensions = {VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME};
+  const std::vector<vk::ExtensionProperties> supported_extensions =
+      physical_device.enumerateDeviceExtensionProperties();
 
   for (const auto &optional_extension : optional_device_extensions) {
     bool found = false;
@@ -109,39 +105,29 @@ vk::Device CreateDevice(const vk::PhysicalDevice &physical_device, uint32_t grap
 }
 
 vk::RenderPass CreateRenderPass(const vk::Device &device) {
-  vk::AttachmentDescription color_attachment{
-      vk::AttachmentDescriptionFlags{},
-      kColorFormat,
-      vk::SampleCountFlagBits::e1,
-      vk::AttachmentLoadOp::eClear,
-      vk::AttachmentStoreOp::eStore,
-      vk::AttachmentLoadOp::eDontCare,
-      vk::AttachmentStoreOp::eDontCare,
-      vk::ImageLayout::eColorAttachmentOptimal,
-      vk::ImageLayout::ePresentSrcKHR
-  };
+  const vk::AttachmentDescription color_attachment{
+      vk::AttachmentDescriptionFlags{}, kColorFormat,
+      vk::SampleCountFlagBits::e1,      vk::AttachmentLoadOp::eClear,
+      vk::AttachmentStoreOp::eStore,    vk::AttachmentLoadOp::eDontCare,
+      vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eColorAttachmentOptimal,
+      vk::ImageLayout::ePresentSrcKHR};
 
   vk::AttachmentReference color_attachment_ref{
       0,
       vk::ImageLayout::eColorAttachmentOptimal
   };
 
-  vk::AttachmentDescription depth_attachment{
-      vk::AttachmentDescriptionFlags{},
-      kDepthFormat,
-      vk::SampleCountFlagBits::e1,
-      vk::AttachmentLoadOp::eClear,
-      vk::AttachmentStoreOp::eDontCare,
-      vk::AttachmentLoadOp::eDontCare,
-      vk::AttachmentStoreOp::eDontCare,
-      vk::ImageLayout::eDepthStencilAttachmentOptimal,
-      vk::ImageLayout::eDepthStencilAttachmentOptimal
-  };
+  const vk::AttachmentDescription depth_attachment{vk::AttachmentDescriptionFlags{},
+                                                   kDepthFormat,
+                                                   vk::SampleCountFlagBits::e1,
+                                                   vk::AttachmentLoadOp::eClear,
+                                                   vk::AttachmentStoreOp::eDontCare,
+                                                   vk::AttachmentLoadOp::eDontCare,
+                                                   vk::AttachmentStoreOp::eDontCare,
+                                                   vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                                                   vk::ImageLayout::eDepthStencilAttachmentOptimal};
 
-  vk::AttachmentReference depth_attachment_ref{
-      1,
-      vk::ImageLayout::eDepthStencilAttachmentOptimal
-  };
+  const vk::AttachmentReference depth_attachment_ref{1, vk::ImageLayout::eDepthStencilAttachmentOptimal};
 
   std::vector<vk::AttachmentDescription> attachments = {color_attachment, depth_attachment};
 
@@ -172,13 +158,13 @@ vk::SwapchainKHR CreateSwapchain(const windowing::Window &window,
   const WindowExtent window_extent = window.extent();
   uint32_t swapchain_width = window_extent.width;
   uint32_t swapchain_height = window_extent.height;
-  vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
+  const vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
   if (surface_capabilities.currentExtent.width != UINT32_MAX) {
     swapchain_width = surface_capabilities.currentExtent.width;
     swapchain_height = surface_capabilities.currentExtent.height;
   }
 
-  std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
+  const std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
   vk::SurfaceFormatKHR surface_format;
   bool found = false;
   for (const auto &format : formats) {
@@ -214,7 +200,7 @@ vk::SwapchainKHR CreateSwapchain(const windowing::Window &window,
 }
 
 vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &allocator) {
-  vk::ImageCreateInfo image_create_info{
+  const vk::ImageCreateInfo image_create_info{
       vk::ImageCreateFlags{},
       vk::ImageType::e2D,
       kDepthFormat,
@@ -227,8 +213,7 @@ vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &alloca
       vk::SharingMode::eExclusive,
       0,
       nullptr,
-      vk::ImageLayout::eUndefined
-  };
+      vk::ImageLayout::eUndefined};
   VmaAllocationCreateInfo allocation_create_info = {};
   allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
   allocation_create_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
@@ -241,22 +226,20 @@ vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &alloca
 VulkanRenderer VulkanRenderer::Create(windowing::Window &window) {
   const WindowExtent window_extent = window.extent();
 
-  vk::Instance instance = CreateInstance();
+  const vk::Instance instance = CreateInstance();
   vk::SurfaceKHR surface = window.CreateSurface(instance);
   const vk::PhysicalDevice physical_device = PickPhysicalDevice(instance);
   const uint32_t graphics_queue_family_index = GetGraphicsQueueFamilyIndex(surface, physical_device);
   const vk::Device device = CreateDevice(physical_device, graphics_queue_family_index);
-  vk::CommandPool graphics_command_pool = device.createCommandPool(vk::CommandPoolCreateInfo{
-      vk::CommandPoolCreateFlags{},
-      graphics_queue_family_index
-  });
+  const vk::CommandPool graphics_command_pool =
+      device.createCommandPool(vk::CommandPoolCreateInfo{vk::CommandPoolCreateFlags{}, graphics_queue_family_index});
   auto allocator = Allocator::Create(instance, physical_device, device);
 
   const vk::RenderPass render_pass = CreateRenderPass(device);
 
   vk::SwapchainKHR swapchain = CreateSwapchain(window, surface, physical_device, graphics_queue_family_index, device);
-  std::array<RenderAttachments, kMaxFramesInFlight>
-      render_attachments = CreateFramebuffers(window_extent, device, allocator, render_pass, swapchain);
+  const std::array<RenderAttachments, kMaxFramesInFlight> render_attachments =
+      CreateFramebuffers(window_extent, device, allocator, render_pass, swapchain);
 
   return VulkanRenderer{&window, instance, surface, physical_device, device, graphics_queue_family_index,
                         graphics_command_pool, render_pass, swapchain, std::move(allocator), render_attachments};
@@ -268,8 +251,9 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
     Allocator &allocator,
     const vk::RenderPass &render_pass,
     vk::SwapchainKHR &swapchain) {
-  std::vector<vk::Image> swapchain_images = device.getSwapchainImagesKHR(swapchain);
+  const std::vector<vk::Image> swapchain_images = device.getSwapchainImagesKHR(swapchain);
   std::vector<vk::ImageView> swapchain_image_views;
+  swapchain_image_views.reserve(swapchain_images.size());
   for (const auto &image : swapchain_images) {
     swapchain_image_views.push_back(device.createImageView(vk::ImageViewCreateInfo{
         vk::ImageViewCreateFlags{},
@@ -286,6 +270,7 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
     depth_buffer = CreateDepthBuffer(window_extent, allocator);
   }
   std::vector<vk::ImageView> depth_buffer_views;
+  depth_buffer_views.reserve(depth_buffers.size());
   for (const auto &depth_buffer : depth_buffers) {
     depth_buffer_views.push_back(device.createImageView(vk::ImageViewCreateInfo{
         vk::ImageViewCreateFlags{},
@@ -341,7 +326,7 @@ void VulkanRenderer::Render() {
     window_->ReturnEvent(event);
   }
 
-  chove::windowing::WindowExtent window_extent = window_->extent();
+  const chove::windowing::WindowExtent window_extent = window_->extent();
 
   const std::vector<vk::CommandBuffer> command_buffers = context_.device.allocateCommandBuffers(
       vk::CommandBufferAllocateInfo{
@@ -349,17 +334,15 @@ void VulkanRenderer::Render() {
           vk::CommandBufferLevel::ePrimary,
           1
       });
-  vk::CommandBuffer draw_cmd = command_buffers.front();
+  const vk::CommandBuffer draw_cmd = command_buffers.front();
 
   uint32_t image_index = 0;
   {
-    vk::ResultValue<uint32_t> result = context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{
-        swapchain_,
-        UINT64_MAX,
-        VK_NULL_HANDLE, // TODO: semaphore
-        VK_NULL_HANDLE, // TODO: fence
-        UINT32_MAX
-    });
+    const vk::ResultValue<uint32_t> result =
+        context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{swapchain_, UINT64_MAX,
+                                                                         VK_NULL_HANDLE,  // TODO: semaphore
+                                                                         VK_NULL_HANDLE,  // TODO: fence
+                                                                         UINT32_MAX});
     if (result.result != vk::Result::eSuccess) {
       throw std::runtime_error("Failed to acquire next image.");
     }
@@ -372,8 +355,8 @@ void VulkanRenderer::Render() {
   });
 
   {
-    vk::ClearValue clear_color{std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F}};
-    vk::ClearValue clear_depth{vk::ClearDepthStencilValue{1.0F, 0}};
+    const vk::ClearValue clear_color{std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F}};
+    const vk::ClearValue clear_depth{vk::ClearDepthStencilValue{1.0F, 0}};
     std::vector clear_values = {clear_color, clear_depth};
     draw_cmd.beginRenderPass(vk::RenderPassBeginInfo{
         render_pass_,
@@ -407,23 +390,12 @@ void VulkanRenderer::SetupScene(objects::Scene &scene) {
       1,
       vk::ShaderStageFlagBits::eVertex
   }});
-  vk::VertexInputBindingDescription vertex_binding_description{
-      0,
-      static_cast<uint32_t>(sizeof(Mesh::Vertex)),
-      vk::VertexInputRate::eVertex
-  };
-  vk::VertexInputAttributeDescription position_attribute_description{
-      0,
-      0,
-      vk::Format::eR32G32B32Sfloat,
-      static_cast<uint32_t>(offsetof(Mesh::Vertex, position))
-  };
-  vk::VertexInputAttributeDescription normal_attribute_description{
-      1,
-      0,
-      vk::Format::eR32G32B32Sfloat,
-      static_cast<uint32_t>(offsetof(Mesh::Vertex, normal))
-  };
+  const vk::VertexInputBindingDescription vertex_binding_description{0, static_cast<uint32_t>(sizeof(Mesh::Vertex)),
+                                                                     vk::VertexInputRate::eVertex};
+  const vk::VertexInputAttributeDescription position_attribute_description{
+      0, 0, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Mesh::Vertex, position))};
+  const vk::VertexInputAttributeDescription normal_attribute_description{
+      1, 0, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Mesh::Vertex, normal))};
   Shader fragment_shader{"shaders/vulkan/vulkan_shader.frag.spv", context_.device};
   PipelineBuilder pipeline_builder{context_.device};
   auto [pipeline, layout] = pipeline_builder.SetVertexShader(vertex_shader)
