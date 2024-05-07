@@ -8,8 +8,6 @@
 #include "rendering/vulkan/shader.h"
 #include "windowing/window.h"
 
-#include <absl/status/statusor.h>
-#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
 namespace chove::rendering::vulkan {
@@ -76,7 +74,7 @@ class VulkanRenderer : public Renderer {
                      const vk::Device &device,
                      Allocator &allocator,
                      const vk::RenderPass &render_pass,
-                     vk::SwapchainKHR &swapchain);
+                     const vk::SwapchainKHR &swapchain);
 };
 } // namespace chove::rendering::vulkan
 

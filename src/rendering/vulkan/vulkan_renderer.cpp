@@ -17,25 +17,26 @@
 #include <vulkan/vulkan.hpp>
 
 namespace chove::rendering::vulkan {
-using windowing::WindowExtent;
+
 using rendering::Mesh;
+using windowing::WindowExtent;
 
 namespace {
-constexpr vk::Format kColorFormat = vk::Format::eB8G8R8A8Unorm;
-constexpr vk::Format kDepthFormat = vk::Format::eD24UnormS8Uint;
+constexpr auto kColorFormat = vk::Format::eB8G8R8A8Unorm;
+constexpr auto kDepthFormat = vk::Format::eD24UnormS8Uint;
 
 vk::Instance CreateInstance() {
   std::vector<const char *> required_instance_extensions = windowing::Window::GetRequiredVulkanExtensions();
-  const vk::ApplicationInfo application_info{"Demo app", VK_MAKE_VERSION(1, 0, 0), "ChovEngine",
-                                             VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3};
-  const vk::InstanceCreateInfo instance_create_info{vk::InstanceCreateFlags{}, &application_info, nullptr,
-                                                    required_instance_extensions};
-  vk::Instance instance = vk::createInstance(instance_create_info, nullptr);
+  constexpr vk::ApplicationInfo application_info{
+      "Demo app", VK_MAKE_VERSION(1, 0, 0), "ChovEngine", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3};
+  const vk::InstanceCreateInfo instance_create_info{
+      vk::InstanceCreateFlags{}, &application_info, nullptr, required_instance_extensions};
+  const vk::Instance instance = createInstance(instance_create_info, nullptr);
   return instance;
 }
 
 vk::PhysicalDevice PickPhysicalDevice(const vk::Instance &instance) {
-  std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
+  const std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
   if (physical_devices.empty()) {
     throw std::runtime_error("No physical devices found.");
   }
@@ -51,12 +52,12 @@ vk::PhysicalDevice PickPhysicalDevice(const vk::Instance &instance) {
   return physical_device;
 }
 
-uint32_t GetGraphicsQueueFamilyIndex(vk::SurfaceKHR &surface, const vk::PhysicalDevice &physical_device) {
-  std::vector<vk::QueueFamilyProperties> queue_family_properties = physical_device.getQueueFamilyProperties();
+uint32_t GetGraphicsQueueFamilyIndex(const vk::SurfaceKHR &surface, const vk::PhysicalDevice &physical_device) {
+  const std::vector<vk::QueueFamilyProperties> queue_family_properties = physical_device.getQueueFamilyProperties();
   uint32_t graphics_queue_family_index = -1;
   for (uint32_t family_index = 0; family_index < queue_family_properties.size(); ++family_index) {
-    if ((queue_family_properties[family_index].queueFlags & vk::QueueFlagBits::eGraphics)
-        && physical_device.getSurfaceSupportKHR(family_index, surface) != 0) {
+    if ((queue_family_properties[family_index].queueFlags & vk::QueueFlagBits::eGraphics) &&
+        physical_device.getSurfaceSupportKHR(family_index, surface) != 0) {
       LOG(INFO) << "Found graphics queue family with presentation support at index " << family_index;
       graphics_queue_family_index = family_index;
       break;
@@ -69,15 +70,12 @@ uint32_t GetGraphicsQueueFamilyIndex(vk::SurfaceKHR &surface, const vk::Physical
 }
 
 vk::Device CreateDevice(const vk::PhysicalDevice &physical_device, uint32_t graphics_queue_family_index) {
-  std::vector<float> queue_priorities = {1.0F};
+  std::vector queue_priorities = {1.0F};
   vk::DeviceQueueCreateInfo graphics_queue_create_info{
-      vk::DeviceQueueCreateFlags{},
-      graphics_queue_family_index,
-      queue_priorities
-  };
+      vk::DeviceQueueCreateFlags{}, graphics_queue_family_index, queue_priorities};
 
-  std::vector<const char *> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-  const std::vector<const char *> optional_device_extensions = {VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME};
+  std::vector device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+  const std::vector optional_device_extensions = {VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME};
   const std::vector<vk::ExtensionProperties> supported_extensions =
       physical_device.enumerateDeviceExtensionProperties();
 
@@ -94,59 +92,48 @@ vk::Device CreateDevice(const vk::PhysicalDevice &physical_device, uint32_t grap
     }
   }
 
-  vk::Device device = physical_device.createDevice(vk::DeviceCreateInfo{
-      vk::DeviceCreateFlags{},
-      graphics_queue_create_info,
-      nullptr,
-      device_extensions,
-      nullptr
-  });
+  const vk::Device device = physical_device.createDevice(
+      vk::DeviceCreateInfo{vk::DeviceCreateFlags{}, graphics_queue_create_info, nullptr, device_extensions, nullptr});
   return device;
 }
 
 vk::RenderPass CreateRenderPass(const vk::Device &device) {
-  const vk::AttachmentDescription color_attachment{
-      vk::AttachmentDescriptionFlags{}, kColorFormat,
-      vk::SampleCountFlagBits::e1,      vk::AttachmentLoadOp::eClear,
-      vk::AttachmentStoreOp::eStore,    vk::AttachmentLoadOp::eDontCare,
-      vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eColorAttachmentOptimal,
-      vk::ImageLayout::ePresentSrcKHR};
+  constexpr vk::AttachmentDescription color_attachment{vk::AttachmentDescriptionFlags{},
+                                                       kColorFormat,
+                                                       vk::SampleCountFlagBits::e1,
+                                                       vk::AttachmentLoadOp::eClear,
+                                                       vk::AttachmentStoreOp::eStore,
+                                                       vk::AttachmentLoadOp::eDontCare,
+                                                       vk::AttachmentStoreOp::eDontCare,
+                                                       vk::ImageLayout::eColorAttachmentOptimal,
+                                                       vk::ImageLayout::ePresentSrcKHR};
 
-  vk::AttachmentReference color_attachment_ref{
-      0,
-      vk::ImageLayout::eColorAttachmentOptimal
-  };
+  vk::AttachmentReference color_attachment_ref{0, vk::ImageLayout::eColorAttachmentOptimal};
 
-  const vk::AttachmentDescription depth_attachment{vk::AttachmentDescriptionFlags{},
-                                                   kDepthFormat,
-                                                   vk::SampleCountFlagBits::e1,
-                                                   vk::AttachmentLoadOp::eClear,
-                                                   vk::AttachmentStoreOp::eDontCare,
-                                                   vk::AttachmentLoadOp::eDontCare,
-                                                   vk::AttachmentStoreOp::eDontCare,
-                                                   vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                                                   vk::ImageLayout::eDepthStencilAttachmentOptimal};
+  constexpr vk::AttachmentDescription depth_attachment{vk::AttachmentDescriptionFlags{},
+                                                       kDepthFormat,
+                                                       vk::SampleCountFlagBits::e1,
+                                                       vk::AttachmentLoadOp::eClear,
+                                                       vk::AttachmentStoreOp::eDontCare,
+                                                       vk::AttachmentLoadOp::eDontCare,
+                                                       vk::AttachmentStoreOp::eDontCare,
+                                                       vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                                                       vk::ImageLayout::eDepthStencilAttachmentOptimal};
 
-  const vk::AttachmentReference depth_attachment_ref{1, vk::ImageLayout::eDepthStencilAttachmentOptimal};
+  constexpr vk::AttachmentReference depth_attachment_ref{1, vk::ImageLayout::eDepthStencilAttachmentOptimal};
 
-  std::vector<vk::AttachmentDescription> attachments = {color_attachment, depth_attachment};
+  std::vector attachments = {color_attachment, depth_attachment};
 
-  vk::SubpassDescription subpass{
-      vk::SubpassDescriptionFlags{},
-      vk::PipelineBindPoint::eGraphics,
-      nullptr,
-      color_attachment_ref,
-      nullptr,
-      &depth_attachment_ref,
-      nullptr
-  };
+  vk::SubpassDescription subpass{vk::SubpassDescriptionFlags{},
+                                 vk::PipelineBindPoint::eGraphics,
+                                 nullptr,
+                                 color_attachment_ref,
+                                 nullptr,
+                                 &depth_attachment_ref,
+                                 nullptr};
 
-  vk::RenderPass render_pass = device.createRenderPass(vk::RenderPassCreateInfo{
-      vk::RenderPassCreateFlags{},
-      attachments,
-      subpass,
-      nullptr
-  });
+  const vk::RenderPass render_pass =
+      device.createRenderPass(vk::RenderPassCreateInfo{vk::RenderPassCreateFlags{}, attachments, subpass, nullptr});
   return render_pass;
 }
 
@@ -155,9 +142,7 @@ vk::SwapchainKHR CreateSwapchain(const windowing::Window &window,
                                  const vk::PhysicalDevice &physical_device,
                                  const uint32_t graphics_queue_family_index,
                                  const vk::Device &device) {
-  const WindowExtent window_extent = window.extent();
-  uint32_t swapchain_width = window_extent.width;
-  uint32_t swapchain_height = window_extent.height;
+  auto [swapchain_width, swapchain_height] = window.extent();
   const vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
   if (surface_capabilities.currentExtent.width != UINT32_MAX) {
     swapchain_width = surface_capabilities.currentExtent.width;
@@ -179,23 +164,22 @@ vk::SwapchainKHR CreateSwapchain(const windowing::Window &window,
     throw std::runtime_error("No suitable surface format found.");
   }
 
-  vk::SwapchainKHR swapchain = device.createSwapchainKHR(vk::SwapchainCreateInfoKHR{
-      vk::SwapchainCreateFlagsKHR{},
-      surface,
-      VulkanRenderer::kMaxFramesInFlight,
-      surface_format.format,
-      surface_format.colorSpace,
-      vk::Extent2D{swapchain_width, swapchain_height},
-      1,
-      vk::ImageUsageFlagBits::eColorAttachment,
-      vk::SharingMode::eExclusive,
-      graphics_queue_family_index,
-      vk::SurfaceTransformFlagBitsKHR::eIdentity,
-      vk::CompositeAlphaFlagBitsKHR::eOpaque,
-      vk::PresentModeKHR::eFifo,
-      VK_TRUE,
-      VK_NULL_HANDLE
-  });
+  const vk::SwapchainKHR swapchain =
+      device.createSwapchainKHR(vk::SwapchainCreateInfoKHR{vk::SwapchainCreateFlagsKHR{},
+                                                           surface,
+                                                           VulkanRenderer::kMaxFramesInFlight,
+                                                           surface_format.format,
+                                                           surface_format.colorSpace,
+                                                           vk::Extent2D{swapchain_width, swapchain_height},
+                                                           1,
+                                                           vk::ImageUsageFlagBits::eColorAttachment,
+                                                           vk::SharingMode::eExclusive,
+                                                           graphics_queue_family_index,
+                                                           vk::SurfaceTransformFlagBitsKHR::eIdentity,
+                                                           vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                                                           vk::PresentModeKHR::eFifo,
+                                                           VK_TRUE,
+                                                           VK_NULL_HANDLE});
   return swapchain;
 }
 
@@ -218,7 +202,7 @@ vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &alloca
   allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
   allocation_create_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
   allocation_create_info.priority = 1.0F;
-  vk::Image depth_buffer = allocator.AllocateImage(image_create_info, allocation_create_info);
+  const vk::Image depth_buffer = allocator.AllocateImage(image_create_info, allocation_create_info);
   return depth_buffer;
 }
 } // namespace
@@ -227,7 +211,7 @@ VulkanRenderer VulkanRenderer::Create(windowing::Window &window) {
   const WindowExtent window_extent = window.extent();
 
   const vk::Instance instance = CreateInstance();
-  vk::SurfaceKHR surface = window.CreateSurface(instance);
+  const vk::SurfaceKHR surface = window.CreateSurface(instance);
   const vk::PhysicalDevice physical_device = PickPhysicalDevice(instance);
   const uint32_t graphics_queue_family_index = GetGraphicsQueueFamilyIndex(surface, physical_device);
   const vk::Device device = CreateDevice(physical_device, graphics_queue_family_index);
@@ -237,12 +221,22 @@ VulkanRenderer VulkanRenderer::Create(windowing::Window &window) {
 
   const vk::RenderPass render_pass = CreateRenderPass(device);
 
-  vk::SwapchainKHR swapchain = CreateSwapchain(window, surface, physical_device, graphics_queue_family_index, device);
+  const vk::SwapchainKHR swapchain =
+      CreateSwapchain(window, surface, physical_device, graphics_queue_family_index, device);
   const std::array<RenderAttachments, kMaxFramesInFlight> render_attachments =
       CreateFramebuffers(window_extent, device, allocator, render_pass, swapchain);
 
-  return VulkanRenderer{&window, instance, surface, physical_device, device, graphics_queue_family_index,
-                        graphics_command_pool, render_pass, swapchain, std::move(allocator), render_attachments};
+  return VulkanRenderer{&window,
+                        instance,
+                        surface,
+                        physical_device,
+                        device,
+                        graphics_queue_family_index,
+                        graphics_command_pool,
+                        render_pass,
+                        swapchain,
+                        std::move(allocator),
+                        render_attachments};
 }
 
 std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight> VulkanRenderer::CreateFramebuffers(
@@ -250,19 +244,18 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
     const vk::Device &device,
     Allocator &allocator,
     const vk::RenderPass &render_pass,
-    vk::SwapchainKHR &swapchain) {
+    const vk::SwapchainKHR &swapchain) {
   const std::vector<vk::Image> swapchain_images = device.getSwapchainImagesKHR(swapchain);
   std::vector<vk::ImageView> swapchain_image_views;
   swapchain_image_views.reserve(swapchain_images.size());
   for (const auto &image : swapchain_images) {
-    swapchain_image_views.push_back(device.createImageView(vk::ImageViewCreateInfo{
-        vk::ImageViewCreateFlags{},
-        image,
-        vk::ImageViewType::e2D,
-        kColorFormat,
-        vk::ComponentMapping{},
-        vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
-    }));
+    swapchain_image_views.push_back(device.createImageView(
+        vk::ImageViewCreateInfo{vk::ImageViewCreateFlags{},
+                                image,
+                                vk::ImageViewType::e2D,
+                                kColorFormat,
+                                vk::ComponentMapping{},
+                                vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}}));
   }
 
   std::array<vk::Image, kMaxFramesInFlight> depth_buffers;
@@ -278,31 +271,20 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
         vk::ImageViewType::e2D,
         kDepthFormat,
         vk::ComponentMapping{},
-        vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1}
-    }));
+        vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1}}));
   }
 
   std::array<vk::Framebuffer, kMaxFramesInFlight> framebuffers;
   for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
-    std::array<vk::ImageView, 2> attachments = {swapchain_image_views.at(i), depth_buffer_views.at(i)};
+    std::array attachments = {swapchain_image_views.at(i), depth_buffer_views.at(i)};
     framebuffers.at(i) = device.createFramebuffer(vk::FramebufferCreateInfo{
-        vk::FramebufferCreateFlags{},
-        render_pass,
-        attachments,
-        window_extent.width,
-        window_extent.height,
-        1
-    });
+        vk::FramebufferCreateFlags{}, render_pass, attachments, window_extent.width, window_extent.height, 1});
   }
 
   std::array<RenderAttachments, kMaxFramesInFlight> render_attachments;
   for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
     render_attachments.at(i) = RenderAttachments{
-        depth_buffers.at(i),
-        swapchain_image_views.at(i),
-        depth_buffer_views.at(i),
-        framebuffers.at(i)
-    };
+        depth_buffers.at(i), swapchain_image_views.at(i), depth_buffer_views.at(i), framebuffers.at(i)};
   }
   return render_attachments;
 }
@@ -311,66 +293,57 @@ void VulkanRenderer::Render() {
   // Check if resizing is necessary
   windowing::Event *event = window_->GetEvent();
   if (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
-    for (const auto &render_attachment : render_attachments_) {
-      context_.device.destroyImageView(render_attachment.color_attachment_view);
-      context_.device.destroyImageView(render_attachment.depth_attachment_view);
-      allocator_.Deallocate(render_attachment.depth_attachment);
-      context_.device.destroyFramebuffer(render_attachment.framebuffer);
+    for (const auto &[depth_attachment, color_attachment_view, depth_attachment_view, framebuffer] :
+         render_attachments_) {
+      context_.device.destroyImageView(color_attachment_view);
+      context_.device.destroyImageView(depth_attachment_view);
+      allocator_.Deallocate(depth_attachment);
+      context_.device.destroyFramebuffer(framebuffer);
     }
     context_.device.destroySwapchainKHR(swapchain_);
 
     swapchain_ = CreateSwapchain(*window_, surface_, physical_device_, graphics_queue_family_index_, context_.device);
     render_attachments_ = CreateFramebuffers(window_->extent(), context_.device, allocator_, render_pass_, swapchain_);
     window_->HandleEvent(event);
-  } else if (event != nullptr) {
+  }
+  else if (event != nullptr) {
     window_->ReturnEvent(event);
   }
 
-  const chove::windowing::WindowExtent window_extent = window_->extent();
+  const auto [window_width, window_height] = window_->extent();
 
   const std::vector<vk::CommandBuffer> command_buffers = context_.device.allocateCommandBuffers(
-      vk::CommandBufferAllocateInfo{
-          graphics_command_pool_,
-          vk::CommandBufferLevel::ePrimary,
-          1
-      });
+      vk::CommandBufferAllocateInfo{graphics_command_pool_, vk::CommandBufferLevel::ePrimary, 1});
   const vk::CommandBuffer draw_cmd = command_buffers.front();
 
-  uint32_t image_index = 0;
-  {
+  const uint32_t image_index = [&] {
     const vk::ResultValue<uint32_t> result =
-        context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{swapchain_, UINT64_MAX,
-                                                                         VK_NULL_HANDLE,  // TODO: semaphore
-                                                                         VK_NULL_HANDLE,  // TODO: fence
-                                                                         UINT32_MAX});
+        context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{swapchain_,
+                                                                         UINT64_MAX,
+                                                                         VK_NULL_HANDLE, // TODO: semaphore
+                                                                         VK_NULL_HANDLE, // TODO: fence
+                                                                         1});
     if (result.result != vk::Result::eSuccess) {
       throw std::runtime_error("Failed to acquire next image.");
     }
-    image_index = result.value;
-  }
+    return result.value;
+  }();
 
-  draw_cmd.begin(vk::CommandBufferBeginInfo{
-      vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
-      nullptr
-  });
+  draw_cmd.begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr});
 
   {
-    const vk::ClearValue clear_color{std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F}};
-    const vk::ClearValue clear_depth{vk::ClearDepthStencilValue{1.0F, 0}};
+    constexpr vk::ClearValue clear_color{std::array{0.0F, 0.0F, 0.0F, 1.0F}};
+    constexpr vk::ClearValue clear_depth{vk::ClearDepthStencilValue{1.0F, 0}};
     std::vector clear_values = {clear_color, clear_depth};
-    draw_cmd.beginRenderPass(vk::RenderPassBeginInfo{
-        render_pass_,
-        render_attachments_.at(image_index).framebuffer,
-        vk::Rect2D{{0, 0}, {window_extent.width, window_extent.height}},
-        clear_values
-    }, vk::SubpassContents::eInline);
+    draw_cmd.beginRenderPass(vk::RenderPassBeginInfo{render_pass_,
+                                                     render_attachments_.at(image_index).framebuffer,
+                                                     vk::Rect2D{{0, 0}, {window_width, window_height}},
+                                                     clear_values},
+                             vk::SubpassContents::eInline);
 
     draw_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines_.front());
-    draw_cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                pipeline_layouts_.front(),
-                                0,
-                                descriptor_sets_.front(),
-                                nullptr);
+    draw_cmd.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics, pipeline_layouts_.front(), 0, descriptor_sets_.front(), nullptr);
 
     draw_cmd.endRenderPass();
   }
@@ -379,58 +352,53 @@ void VulkanRenderer::Render() {
 
   context_.device.freeCommandBuffers(graphics_command_pool_, command_buffers);
   context_.device.resetCommandPool(graphics_command_pool_, vk::CommandPoolResetFlagBits::eReleaseResources);
+
+  context_.device.waitIdle();
 }
 
 void VulkanRenderer::SetupScene(objects::Scene &scene) {
   Shader vertex_shader{"shaders/vulkan/vulkan_shader.vert.spv", context_.device};
   vertex_shader.AddPushConstantRanges({vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)}});
-  vertex_shader.AddDescriptorSetLayout({vk::DescriptorSetLayoutBinding{
-      0,
-      vk::DescriptorType::eUniformBuffer,
-      1,
-      vk::ShaderStageFlagBits::eVertex
-  }});
-  const vk::VertexInputBindingDescription vertex_binding_description{0, static_cast<uint32_t>(sizeof(Mesh::Vertex)),
-                                                                     vk::VertexInputRate::eVertex};
+  vertex_shader.AddDescriptorSetLayout(
+      {vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex}});
+  constexpr vk::VertexInputBindingDescription vertex_binding_description{
+      0, static_cast<uint32_t>(sizeof(Mesh::Vertex)), vk::VertexInputRate::eVertex};
   const vk::VertexInputAttributeDescription position_attribute_description{
       0, 0, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Mesh::Vertex, position))};
   const vk::VertexInputAttributeDescription normal_attribute_description{
       1, 0, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Mesh::Vertex, normal))};
   Shader fragment_shader{"shaders/vulkan/vulkan_shader.frag.spv", context_.device};
   PipelineBuilder pipeline_builder{context_.device};
-  auto [pipeline, layout] = pipeline_builder.SetVertexShader(vertex_shader)
-      .SetFragmentShader(fragment_shader)
-      .SetInputTopology(vk::PrimitiveTopology::eTriangleList)
-      .AddInputBufferDescription(vertex_binding_description,
-                                 {position_attribute_description, normal_attribute_description})
-      .SetViewport(vk::Viewport{0.0F,
-                                0.0F,
-                                static_cast<float>(window_->extent().width),
-                                static_cast<float>(window_->extent().height),
-                                0.0F,
-                                1.0F})
-      .SetScissor(vk::Rect2D{{0, 0}, vk::Extent2D{window_->extent().width, window_->extent().height}})
-      .SetFillMode(vk::PolygonMode::eFill)
-      .SetColorBlendEnable(false)
-      .SetDepthTestEnable(true)
-      .build(render_pass_, 0);
+  auto [pipeline, layout] =
+      pipeline_builder.SetVertexShader(vertex_shader)
+          .SetFragmentShader(fragment_shader)
+          .SetInputTopology(vk::PrimitiveTopology::eTriangleList)
+          .AddInputBufferDescription(vertex_binding_description,
+                                     {position_attribute_description, normal_attribute_description})
+          .SetViewport(vk::Viewport{0.0F,
+                                    0.0F,
+                                    static_cast<float>(window_->extent().width),
+                                    static_cast<float>(window_->extent().height),
+                                    0.0F,
+                                    1.0F})
+          .SetScissor(vk::Rect2D{{0, 0}, vk::Extent2D{window_->extent().width, window_->extent().height}})
+          .SetFillMode(vk::PolygonMode::eFill)
+          .SetColorBlendEnable(false)
+          .SetDepthTestEnable(true)
+          .build(render_pass_, 0);
   pipelines_.push_back(pipeline);
   pipeline_layouts_.push_back(layout);
 
   scene_ = &scene;
 
   vk::DescriptorPoolSize pool_size{vk::DescriptorType::eUniformBuffer, 1};
-  descriptor_pool_ = context_.device.createDescriptorPool(vk::DescriptorPoolCreateInfo{
-      vk::DescriptorPoolCreateFlags{},
-      1,
-      pool_size
-  });
+  descriptor_pool_ =
+      context_.device.createDescriptorPool(vk::DescriptorPoolCreateInfo{vk::DescriptorPoolCreateFlags{}, 1, pool_size});
 
   vk::DescriptorSetLayout descriptor_set_layout = vertex_shader.descriptor_set_layouts().front();
-  descriptor_sets_.push_back(context_.device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo{
-      descriptor_pool_,
-      descriptor_set_layout
-  }).front());
+  descriptor_sets_.push_back(
+      context_.device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo{descriptor_pool_, descriptor_set_layout})
+          .front());
 
   shaders_.push_back(std::move(vertex_shader));
   shaders_.push_back(std::move(fragment_shader));
@@ -449,10 +417,11 @@ VulkanRenderer::~VulkanRenderer() {
     context_.device.destroyPipelineLayout(layout);
   }
 
-  for (const auto &render_attachment : render_attachments_) {
-    context_.device.destroyImageView(render_attachment.color_attachment_view);
-    context_.device.destroyImageView(render_attachment.depth_attachment_view);
-    context_.device.destroyFramebuffer(render_attachment.framebuffer);
+  for (const auto &[depth_attachment, color_attachment_view, depth_attachment_view, framebuffer] :
+       render_attachments_) {
+    context_.device.destroyImageView(color_attachment_view);
+    context_.device.destroyImageView(depth_attachment_view);
+    context_.device.destroyFramebuffer(framebuffer);
   }
 
   if (swapchain_) {
@@ -483,23 +452,21 @@ VulkanRenderer::VulkanRenderer(windowing::Window *window,
                                vk::RenderPass render_pass,
                                vk::SwapchainKHR swapchain,
                                Allocator allocator,
-                               const std::array<RenderAttachments, kMaxFramesInFlight> &render_attachments)
-    : context_(device, instance),
-      surface_(surface),
-      physical_device_(physical_device),
-      allocator_(std::move(allocator)),
-      window_(window),
-      swapchain_(swapchain),
-      render_attachments_(render_attachments),
-      graphics_queue_family_index_(graphics_queue_family_index),
-      graphics_command_pool_(graphics_command_pool),
-      render_pass_(render_pass) {
+                               const std::array<RenderAttachments, kMaxFramesInFlight> &render_attachments) :
+    context_(device, instance),
+    surface_(surface),
+    physical_device_(physical_device),
+    allocator_(std::move(allocator)),
+    window_(window),
+    swapchain_(swapchain),
+    render_attachments_(render_attachments),
+    graphics_queue_family_index_(graphics_queue_family_index),
+    graphics_command_pool_(graphics_command_pool),
+    render_pass_(render_pass) {
   graphics_queue_ = context_.device.getQueue(graphics_queue_family_index, 0);
 }
 
-VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept {
-  *this = std::move(other);
-}
+VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept { *this = std::move(other); }
 
 VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
   if (this != &other) {
