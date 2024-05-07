@@ -362,7 +362,7 @@ void VulkanRenderer::SetupScene(objects::Scene &scene) {
   vertex_shader.AddDescriptorSetLayout(
       {vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex}});
   constexpr vk::VertexInputBindingDescription vertex_binding_description{
-      0, static_cast<uint32_t>(sizeof(Mesh::Vertex)), vk::VertexInputRate::eVertex};
+      0, sizeof(Mesh::Vertex), vk::VertexInputRate::eVertex};
   const vk::VertexInputAttributeDescription position_attribute_description{
       0, 0, vk::Format::eR32G32B32Sfloat, static_cast<uint32_t>(offsetof(Mesh::Vertex, position))};
   const vk::VertexInputAttributeDescription normal_attribute_description{
