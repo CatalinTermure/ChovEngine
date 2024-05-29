@@ -1,8 +1,8 @@
 #ifndef CHOVENGINE_INCLUDE_RENDERING_MESH_H_
 #define CHOVENGINE_INCLUDE_RENDERING_MESH_H_
 
-#include <vector>
 #include <filesystem>
+#include <vector>
 
 #include <glm/glm.hpp>
 
@@ -20,9 +20,7 @@ struct Mesh {
     glm::vec3 min;
     glm::vec3 max;
 
-    [[nodiscard]] glm::vec3 center() const {
-      return (min + max) / 2.0f;
-    }
+    [[nodiscard]] glm::vec3 center() const { return (min + max) / 2.0F; }
   };
   std::vector<Vertex> vertices;
   std::vector<glm::vec3> color;
@@ -32,6 +30,6 @@ struct Mesh {
 
   static std::vector<Mesh> ImportFromObj(const std::filesystem::path& path);
 };
-} // namespace chove::rendering
+}  // namespace chove::rendering
 
-#endif //CHOVENGINE_INCLUDE_RENDERING_MESH_H_
+#endif  // CHOVENGINE_INCLUDE_RENDERING_MESH_H_
