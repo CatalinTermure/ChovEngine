@@ -1,14 +1,14 @@
 ---
 Language: Cpp
 BasedOnStyle: Google
-AccessModifierOffset: 0
+AccessModifierOffset: -1
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignOperands: false
 AlignTrailingComments: false
 BinPackArguments: false
 BinPackParameters: false
-BraceWrapping: 
+BraceWrapping:
   AfterCaseLabel: false
   AfterClass: false
   AfterControlStatement: false
@@ -29,7 +29,7 @@ BreakBeforeBraces: Custom
 BreakConstructorInitializers: AfterColon
 ColumnLimit: 120
 IncludeBlocks: Preserve
-IncludeCategories: 
+IncludeCategories:
   - Regex: '^<.*'
     Priority: 1
   - Regex: '^".*'
@@ -41,7 +41,8 @@ InsertNewlineAtEOF: true
 MacroBlockBegin: ''
 MacroBlockEnd: ''
 SpaceAfterTemplateKeyword: false
-SpacesBeforeTrailingComments: 1
+SpacesBeforeTrailingComments: 2
 SpacesInAngles: false
 TabWidth: 4
+AlignAfterOpenBracket: BlockIndent
 ...

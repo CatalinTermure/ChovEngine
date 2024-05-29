@@ -19,7 +19,6 @@ class StdoutLogSink final : public absl::LogSink {
     }
   }
 
- private:
   std::ofstream log_file_{"log.txt"};
 };
 
@@ -28,8 +27,7 @@ int main() {
   absl::AddLogSink(&log_sink);
   absl::InitializeLog();
 
-  chove::DemoGame game{chove::windowing::RendererType::kOpenGL};
+  chove::DemoGame game{chove::windowing::RendererType::kVulkan};
   game.Run();
-
   return 0;
 }

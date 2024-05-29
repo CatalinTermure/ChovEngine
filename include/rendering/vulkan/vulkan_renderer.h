@@ -11,8 +11,9 @@
 #include <vulkan/vulkan.hpp>
 
 namespace chove::rendering::vulkan {
-class VulkanRenderer : public Renderer {
+class VulkanRenderer final : public Renderer {
  public:
+  VulkanRenderer() = delete;
   VulkanRenderer(const VulkanRenderer &) = delete;
   VulkanRenderer &operator=(const VulkanRenderer &) = delete;
   VulkanRenderer(VulkanRenderer &&other) noexcept;
@@ -26,6 +27,7 @@ class VulkanRenderer : public Renderer {
   ~VulkanRenderer() override;
 
   static constexpr int kMaxFramesInFlight = 3;
+
  private:
   struct RenderAttachments {
     vk::Image depth_attachment;
@@ -34,17 +36,25 @@ class VulkanRenderer : public Renderer {
     vk::Framebuffer framebuffer;
   };
 
-  VulkanRenderer(windowing::Window *window,
-                 vk::Instance instance,
-                 vk::SurfaceKHR surface,
-                 vk::PhysicalDevice physical_device,
-                 vk::Device device,
-                 uint32_t graphics_queue_family_index,
-                 vk::CommandPool graphics_command_pool,
-                 vk::RenderPass render_pass,
-                 vk::SwapchainKHR swapchain,
-                 Allocator allocator,
-                 const std::array<RenderAttachments, kMaxFramesInFlight>& render_attachments);
+  struct SynchronizationInfo {
+    vk::Semaphore image_available;
+    vk::Semaphore render_finished;
+    vk::Fence in_flight_fence;
+  };
+
+  VulkanRenderer(
+      windowing::Window *window,
+      vk::Instance instance,
+      vk::SurfaceKHR surface,
+      vk::PhysicalDevice physical_device,
+      vk::Device device,
+      uint32_t graphics_queue_family_index,
+      vk::CommandPool graphics_command_pool,
+      vk::RenderPass render_pass,
+      vk::SwapchainKHR swapchain,
+      Allocator allocator,
+      const std::array<RenderAttachments, kMaxFramesInFlight> &render_attachments
+  );
 
   Context context_;
   vk::SurfaceKHR surface_ = VK_NULL_HANDLE;
@@ -55,6 +65,8 @@ class VulkanRenderer : public Renderer {
 
   vk::SwapchainKHR swapchain_ = VK_NULL_HANDLE;
   std::array<RenderAttachments, kMaxFramesInFlight> render_attachments_;
+  std::array<SynchronizationInfo, kMaxFramesInFlight> synchronization_info_;
+  std::array<std::vector<vk::CommandBuffer>, kMaxFramesInFlight> command_buffers_;
 
   vk::Queue graphics_queue_ = VK_NULL_HANDLE;
   uint32_t graphics_queue_family_index_ = 0;
@@ -69,13 +81,16 @@ class VulkanRenderer : public Renderer {
 
   objects::Scene *scene_ = nullptr;
 
-  static std::array<RenderAttachments, kMaxFramesInFlight>
-  CreateFramebuffers(const windowing::WindowExtent &window_extent,
-                     const vk::Device &device,
-                     Allocator &allocator,
-                     const vk::RenderPass &render_pass,
-                     const vk::SwapchainKHR &swapchain);
-};
-} // namespace chove::rendering::vulkan
+  uint32_t current_frame_ = 0;
 
-#endif //CHOVENGINE_INCLUDE_RENDERING_VULKAN_VULKAN_RENDERER_H_
+  static std::array<RenderAttachments, kMaxFramesInFlight> CreateFramebuffers(
+      const windowing::WindowExtent &window_extent,
+      const vk::Device &device,
+      Allocator &allocator,
+      const vk::RenderPass &render_pass,
+      const vk::SwapchainKHR &swapchain
+  );
+};
+}  // namespace chove::rendering::vulkan
+
+#endif  // CHOVENGINE_INCLUDE_RENDERING_VULKAN_VULKAN_RENDERER_H_

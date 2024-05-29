@@ -7,7 +7,6 @@
 #include <entt/entt.hpp>
 
 #include "objects/camera.h"
-#include "objects/lights.h"
 #include "objects/transform.h"
 #include "rendering/mesh.h"
 
@@ -31,7 +30,7 @@ class Scene {
   GameObject AddObject(std::vector<rendering::Mesh> &meshes, Transform transform);
   GameObject AddObject(Transform transform);
 
-  template<typename ...Components>
+  template<typename... Components>
   auto GetAllObjectsWith() {
     return registry_.view<Components...>();
   }
@@ -50,6 +49,7 @@ class Scene {
 
   [[nodiscard]] bool dirty_bit() const { return dirty_bit_; };
   void ClearDirtyBit() { dirty_bit_ = false; };
+
  private:
   void SetDirtyBit() { dirty_bit_ = true; };
   bool dirty_bit_{};
@@ -57,6 +57,6 @@ class Scene {
   entt::registry registry_{};
 };
 
-} // namespace chove::objects
+}  // namespace chove::objects
 
-#endif //CHOVENGINE_INCLUDE_OBJECTS_SCENE_H_
+#endif  // CHOVENGINE_INCLUDE_OBJECTS_SCENE_H_

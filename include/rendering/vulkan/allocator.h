@@ -10,7 +10,7 @@ namespace chove::rendering::vulkan {
 
 class Allocator {
  public:
-  Allocator() = default; // TODO: this seems like not a good idea, need to think about it
+  Allocator() = default;  // TODO: this seems like not a good idea, need to think about it
   Allocator(const Allocator &) = delete;
   Allocator &operator=(const Allocator &) = delete;
   Allocator(Allocator &&other) noexcept;
@@ -23,18 +23,26 @@ class Allocator {
   void Deallocate(vk::Buffer buffer);
 
   vk::Image AllocateImage(vk::ImageCreateInfo image_create_info, const VmaAllocationCreateInfo &allocation_create_info);
-  vk::Buffer AllocateBuffer(vk::BufferCreateInfo buffer_create_info,
-                            const VmaAllocationCreateInfo &allocation_create_info);
+  vk::Buffer AllocateBuffer(
+      vk::BufferCreateInfo buffer_create_info, const VmaAllocationCreateInfo &allocation_create_info
+  );
+  void *GetMappedMemory(vk::Buffer buffer);
+
+  vk::Semaphore CreateSemaphore();
+  vk::Fence CreateFence(vk::FenceCreateFlags flags = vk::FenceCreateFlags{});
 
  private:
-  explicit Allocator(VmaAllocator allocator);
+  explicit Allocator(VmaAllocator allocator, vk::Device device);
 
   VmaAllocator allocator_ = VK_NULL_HANDLE;
+  vk::Device device_;
 
   std::unordered_map<VkImage, VmaAllocation> image_allocations_;
   std::unordered_map<VkBuffer, VmaAllocation> buffer_allocations_;
+  std::vector<vk::Semaphore> semaphores_;
+  std::vector<vk::Fence> fences_;
 };
 
-} // namespace chove::rendering::vulkan
+}  // namespace chove::rendering::vulkan
 
-#endif //CHOVENGINE_INCLUDE_RENDERING_VULKAN_ALLOCATOR_H_
+#endif  // CHOVENGINE_INCLUDE_RENDERING_VULKAN_ALLOCATOR_H_

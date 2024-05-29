@@ -13,6 +13,16 @@ find_package(GLEW CONFIG REQUIRED)
 find_package(Vulkan)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(
+        tracy
+        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+        GIT_TAG master
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(tracy)
+
 add_library(ProjectObjects src/objects/scene.cpp
         src/objects/object_manager.cpp
         src/objects/game_object.cpp)
@@ -85,3 +95,9 @@ add_dependencies(ChovEngine shaders)
 
 target_link_libraries(ChovEngine ProjectApplication glm::glm absl::base absl::log absl::status)
 target_include_directories(ChovEngine PUBLIC include)
+
+if (MSVC)
+    target_compile_options(ChovEngine PRIVATE /W4 /WX)
+else ()
+    target_compile_options(ChovEngine PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif ()

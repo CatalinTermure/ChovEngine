@@ -39,8 +39,7 @@ class Application {
 
   bool is_running_ = false;
   int target_frame_rate_ = 60;
-
 };
 }  // namespace chove
 
-#endif //CHOVENGINE_INCLUDE_OBJECTS_APPLICATION_H_
+#endif  // CHOVENGINE_INCLUDE_OBJECTS_APPLICATION_H_
