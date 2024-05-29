@@ -112,7 +112,7 @@ vk::RenderPass CreateRenderPass(const vk::Device &device) {
       vk::AttachmentDescriptionFlags{},
       kColorFormat,
       vk::SampleCountFlagBits::e1,
-      vk::AttachmentLoadOp::eDontCare,
+      vk::AttachmentLoadOp::eClear,  // TODO: Change to eDontCare when possible
       vk::AttachmentStoreOp::eStore,
       vk::AttachmentLoadOp::eDontCare,
       vk::AttachmentStoreOp::eDontCare,
