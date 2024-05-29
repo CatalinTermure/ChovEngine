@@ -547,7 +547,7 @@ void VulkanRenderer::SetupScene(objects::Scene &scene) {
     render_info.index_buffer_memory = allocator_.GetMappedMemory(render_info.index_buffer);
     render_info.model = transform.GetMatrix();
 
-    scene_->AddComponent<RenderInfo>(entity, std::move(render_info));
+    scene_->AddComponent(entity, render_info);
   }
 
   shaders_.push_back(std::move(vertex_shader));

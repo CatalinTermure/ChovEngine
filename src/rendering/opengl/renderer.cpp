@@ -44,13 +44,15 @@ using objects::Transform;
 using windowing::Window;
 
 namespace {
-void GLAPIENTRY MessageCallback(GLenum source,
-                                GLenum type,
-                                unsigned int id,
-                                GLenum severity,
-                                [[maybe_unused]] GLsizei length,
-                                const char *message,
-                                [[maybe_unused]] const void *userParam) {
+void GLAPIENTRY MessageCallback(
+    GLenum source,
+    GLenum type,
+    unsigned int id,
+    GLenum severity,
+    [[maybe_unused]] GLsizei length,
+    const char *message,
+    [[maybe_unused]] const void *userParam
+) {
   // ignore non-significant error/warning codes
   if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
@@ -175,19 +177,23 @@ constexpr int kLightSpaceMatricesUBOBindingPoint = 3;
 
 constexpr int kShadowMapSize = 2048;
 
-constexpr std::array<glm::vec3, 6> kCubeMapDirections = {glm::vec3(1.0F, 0.0F, 0.0F),
-                                                         glm::vec3(-1.0F, 0.0F, 0.0F),
-                                                         glm::vec3(0.0F, 1.0F, 0.0F),
-                                                         glm::vec3(0.0F, -1.0F, 0.0F),
-                                                         glm::vec3(0.0F, 0.0F, 1.0F),
-                                                         glm::vec3(0.0F, 0.0F, -1.0F)};
+constexpr std::array<glm::vec3, 6> kCubeMapDirections = {
+    glm::vec3(1.0F, 0.0F, 0.0F),
+    glm::vec3(-1.0F, 0.0F, 0.0F),
+    glm::vec3(0.0F, 1.0F, 0.0F),
+    glm::vec3(0.0F, -1.0F, 0.0F),
+    glm::vec3(0.0F, 0.0F, 1.0F),
+    glm::vec3(0.0F, 0.0F, -1.0F)
+};
 
-constexpr std::array<glm::vec3, 6> kCubeMapUpVectors = {glm::vec3(0.0F, -1.0F, 0.0F),
-                                                        glm::vec3(0.0F, -1.0F, 0.0F),
-                                                        glm::vec3(0.0F, 0.0F, 1.0F),
-                                                        glm::vec3(0.0F, 0.0F, -1.0F),
-                                                        glm::vec3(0.0F, -1.0F, 0.0F),
-                                                        glm::vec3(0.0F, -1.0F, 0.0F)};
+constexpr std::array<glm::vec3, 6> kCubeMapUpVectors = {
+    glm::vec3(0.0F, -1.0F, 0.0F),
+    glm::vec3(0.0F, -1.0F, 0.0F),
+    glm::vec3(0.0F, 0.0F, 1.0F),
+    glm::vec3(0.0F, 0.0F, -1.0F),
+    glm::vec3(0.0F, -1.0F, 0.0F),
+    glm::vec3(0.0F, -1.0F, 0.0F)
+};
 
 auto GetRenderInfo(Scene *scene) { return scene->GetAllObjectsWith<RenderObject, Transform, Mesh *>(); }
 
@@ -204,7 +210,7 @@ auto GetPointLightsInfo(Scene *scene) { return scene->GetAllObjectsWith<PointLig
 
 auto GetSpotLightsInfo(Scene *scene) { return scene->GetAllObjectsWith<SpotLight, Texture, GLuint>(); }
 
-} // namespace
+}  // namespace
 
 Renderer::Renderer(const Window *window) : window_(window), scene_(nullptr) {
   glewExperimental = GL_TRUE;
@@ -229,14 +235,17 @@ Renderer::Renderer(const Window *window) : window_(window), scene_(nullptr) {
   texture_allocator_ = std::make_unique<TextureAllocator>();
   shader_allocator_ = std::make_unique<ShaderAllocator>();
 
-  depth_map_shader_ = std::make_unique<Shader>("shaders/depth_map.vert",
-                                               std::vector<ShaderFlag>{},
-                                               "shaders/depth_map.frag",
-                                               std::vector<ShaderFlag>{},
-                                               *shader_allocator_);
+  depth_map_shader_ = std::make_unique<Shader>(
+      "shaders/depth_map.vert",
+      std::vector<ShaderFlag>{},
+      "shaders/depth_map.frag",
+      std::vector<ShaderFlag>{},
+      *shader_allocator_
+  );
 
   white_pixel_ = std::make_unique<Texture>(
-      std::filesystem::current_path() / "models" / "textures" / "white_pixel.png", "whitePixel", *texture_allocator_);
+      std::filesystem::current_path() / "models" / "textures" / "white_pixel.png", "whitePixel", *texture_allocator_
+  );
 }
 
 void Renderer::RenderDepthMap() {
@@ -245,9 +254,10 @@ void Renderer::RenderDepthMap() {
     glUniform1f(glGetUniformLocation(depth_map_shader_->program(), "dissolve"), mesh->material.dissolve);
 
     // find alphaTexture in textures
-    auto alphaTexture = std::find_if(render_info.textures.begin(),
-                                     render_info.textures.end(),
-                                     [](const Texture &texture) { return texture.name() == "alphaTexture"; });
+    auto alphaTexture =
+        std::find_if(render_info.textures.begin(), render_info.textures.end(), [](const Texture &texture) {
+          return texture.name() == "alphaTexture";
+        });
     if (alphaTexture == render_info.textures.end()) {
       glBindTexture(GL_TEXTURE_2D, white_pixel_->texture());
     }
@@ -277,8 +287,9 @@ void Renderer::Render() {
 
     render_info.dist = glm::distance2(scene_->camera().position(), transform.location + mesh->bounding_box.center());
   });
-  scene_->registry().sort<RenderObject>(
-      [](const RenderObject &lhs, const RenderObject &rhs) { return lhs.dist < rhs.dist; });
+  scene_->registry().sort<RenderObject>([](const RenderObject &lhs, const RenderObject &rhs) {
+    return lhs.dist < rhs.dist;
+  });
 
   // Start depth map render pass
 
@@ -293,14 +304,16 @@ void Renderer::Render() {
         glm::perspective(glm::radians(90.0F), 1.0F, point_light.near_plane, point_light.far_plane);
     for (int j = 0; j < 6; j++) {
       glFramebufferTexture2D(
-          GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP_POSITIVE_X + j, depth_map.texture(), 0);
+          GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP_POSITIVE_X + j, depth_map.texture(), 0
+      );
       glClear(GL_DEPTH_BUFFER_BIT);
 
       const glm::mat4 light_view =
           glm::lookAt(point_light.position, point_light.position + kCubeMapDirections.at(j), kCubeMapUpVectors.at(j));
       const glm::mat4 light_space_matrix = light_projection * light_view;
       Uniform<glm::mat4> light_space_matrix_uniform(
-          depth_map_shader_->program(), "lightSpaceMatrix", light_space_matrix);
+          depth_map_shader_->program(), "lightSpaceMatrix", light_space_matrix
+      );
       light_space_matrix_uniform.UpdateValue(light_space_matrix);
 
       RenderDepthMap();
@@ -424,9 +437,12 @@ void Renderer::Render() {
     int array_index = 0;
     for (auto &&[_, point_light, depth_map, framebuffer] : GetPointLightsInfo(scene_).each()) {
       glActiveTexture(GL_TEXTURE0 + texture_index);
-      glUniform1i(glGetUniformLocation(shaders_[render_info.shader_index].program(),
-                                       std::format("{}[{}]", depth_map.name(), array_index).c_str()),
-                  texture_index);
+      glUniform1i(
+          glGetUniformLocation(
+              shaders_[render_info.shader_index].program(), std::format("{}[{}]", depth_map.name(), array_index).c_str()
+          ),
+          texture_index
+      );
       glBindTexture(GL_TEXTURE_CUBE_MAP, depth_map.texture());
       texture_index++;
       array_index++;
@@ -435,9 +451,12 @@ void Renderer::Render() {
     {
       auto [directional_light, depth_map, framebuffer] = GetDirectionalLightInfo(scene_);
       glActiveTexture(GL_TEXTURE0 + texture_index);
-      glUniform1i(glGetUniformLocation(shaders_[render_info.shader_index].program(),
-                                       std::format("{}[{}]", depth_map.name(), 0).c_str()),
-                  texture_index);
+      glUniform1i(
+          glGetUniformLocation(
+              shaders_[render_info.shader_index].program(), std::format("{}[{}]", depth_map.name(), 0).c_str()
+          ),
+          texture_index
+      );
       glBindTexture(GL_TEXTURE_2D, depth_map.texture());
       texture_index++;
     }
@@ -445,9 +464,12 @@ void Renderer::Render() {
     array_index = 0;
     for (auto &&[_, spot_light, depth_map, framebuffer] : GetSpotLightsInfo(scene_).each()) {
       glActiveTexture(GL_TEXTURE0 + texture_index);
-      glUniform1i(glGetUniformLocation(shaders_[render_info.shader_index].program(),
-                                       std::format("{}[{}]", depth_map.name(), array_index).c_str()),
-                  texture_index);
+      glUniform1i(
+          glGetUniformLocation(
+              shaders_[render_info.shader_index].program(), std::format("{}[{}]", depth_map.name(), array_index).c_str()
+          ),
+          texture_index
+      );
       glBindTexture(GL_TEXTURE_2D, depth_map.texture());
       texture_index++;
       array_index++;
@@ -496,8 +518,9 @@ void Renderer::SetupScene(Scene &scene) {
   size_t spot_light_count = scene_->GetAllObjectsWith<SpotLight>().size();
 
   light_space_matrices_ = UniformBuffer((1 + spot_light_count) * sizeof(glm::mat4));
-  lights_ = UniformBuffer(sizeof(DirectionalLight) + point_light_count * sizeof(PointLight) +
-                          spot_light_count * sizeof(SpotLight));
+  lights_ = UniformBuffer(
+      sizeof(DirectionalLight) + point_light_count * sizeof(PointLight) + spot_light_count * sizeof(SpotLight)
+  );
 
   for (auto &&[entity, _] : scene_->GetAllObjectsWith<PointLight>().each()) {
     GLuint framebuffer = 0;
@@ -507,8 +530,8 @@ void Renderer::SetupScene(Scene &scene) {
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     Texture depth_map(kShadowMapSize, "pointDepthMaps", *texture_allocator_);
-    scene_->AddComponent<GLuint>(entity, std::move(framebuffer)); // TODO
-    scene_->AddComponent<Texture>(entity, std::move(depth_map));
+    scene_->AddComponent(entity, framebuffer);
+    scene_->AddComponent(entity, std::move(depth_map));
   }
 
   {
@@ -521,8 +544,8 @@ void Renderer::SetupScene(Scene &scene) {
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     Texture depth_map(kShadowMapSize, kShadowMapSize, "directionalDepthMaps", *texture_allocator_);
-    scene_->AddComponent<GLuint>(entity, std::move(framebuffer)); // TODO
-    scene_->AddComponent<Texture>(entity, std::move(depth_map));
+    scene_->AddComponent(entity, framebuffer);
+    scene_->AddComponent(entity, std::move(depth_map));
   }
 
   for (auto &&[entity, _] : scene_->GetAllObjectsWith<SpotLight>().each()) {
@@ -533,8 +556,8 @@ void Renderer::SetupScene(Scene &scene) {
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     Texture depth_map(kShadowMapSize, kShadowMapSize, "spotDepthMaps", *texture_allocator_);
-    scene_->AddComponent<GLuint>(entity, std::move(framebuffer)); // TODO
-    scene_->AddComponent<Texture>(entity, std::move(depth_map));
+    scene_->AddComponent(entity, framebuffer);
+    scene_->AddComponent(entity, std::move(depth_map));
   }
 
   int index = 0;
@@ -567,35 +590,42 @@ void Renderer::SetupScene(Scene &scene) {
 
     glBindVertexArray(render_info.vao);
     glBindBuffer(GL_ARRAY_BUFFER, render_info.vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(mesh->vertices.size() * sizeof(Mesh::Vertex)),
-                 mesh->vertices.data(),
-                 GL_STATIC_DRAW);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(mesh->vertices.size() * sizeof(Mesh::Vertex)),
+        mesh->vertices.data(),
+        GL_STATIC_DRAW
+    );
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_info.ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(mesh->indices.size() * sizeof(GLuint)),
-                 mesh->indices.data(),
-                 GL_STATIC_DRAW);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(mesh->indices.size() * sizeof(GLuint)),
+        mesh->indices.data(),
+        GL_STATIC_DRAW
+    );
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Mesh::Vertex), nullptr);
 
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(
-        1, 3, GL_FLOAT, GL_FALSE, sizeof(Mesh::Vertex), reinterpret_cast<void *>(offsetof(Mesh::Vertex, normal)));
+        1, 3, GL_FLOAT, GL_FALSE, sizeof(Mesh::Vertex), reinterpret_cast<void *>(offsetof(Mesh::Vertex, normal))
+    );
 
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(
-        2, 2, GL_FLOAT, GL_FALSE, sizeof(Mesh::Vertex), reinterpret_cast<void *>(offsetof(Mesh::Vertex, texcoord)));
+        2, 2, GL_FLOAT, GL_FALSE, sizeof(Mesh::Vertex), reinterpret_cast<void *>(offsetof(Mesh::Vertex, texcoord))
+    );
 
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(
-        3, 3, GL_FLOAT, GL_FALSE, sizeof(Mesh::Vertex), reinterpret_cast<void *>(offsetof(Mesh::Vertex, tangent)));
+        3, 3, GL_FLOAT, GL_FALSE, sizeof(Mesh::Vertex), reinterpret_cast<void *>(offsetof(Mesh::Vertex, tangent))
+    );
 
     glBindVertexArray(0);
 
-    scene_->AddComponent<RenderObject>(entity, std::move(render_info));
+    scene_->AddComponent(entity, std::move(render_info));
     index++;
   }
 
@@ -653,32 +683,39 @@ void Renderer::AttachMaterial(RenderObject &render_object, const Material &mater
 
   if (material.displacement_texture.has_value()) {
     render_object.textures.emplace_back(
-        material.displacement_texture.value(), "displacementTexture", *texture_allocator_);
+        material.displacement_texture.value(), "displacementTexture", *texture_allocator_
+    );
   }
   else {
     fragment_shader_flags.emplace_back(ShaderFlagTypes::kNoDisplacementTexture, 1);
   }
 
-  fragment_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount,
-                                     static_cast<int>(scene_->GetAllObjectsWith<PointLight>().size()));
+  fragment_shader_flags.emplace_back(
+      ShaderFlagTypes::kPointLightCount, static_cast<int>(scene_->GetAllObjectsWith<PointLight>().size())
+  );
   fragment_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
-  fragment_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount,
-                                     static_cast<int>(scene_->GetAllObjectsWith<SpotLight>().size()));
+  fragment_shader_flags.emplace_back(
+      ShaderFlagTypes::kSpotLightCount, static_cast<int>(scene_->GetAllObjectsWith<SpotLight>().size())
+  );
 
-  vertex_shader_flags.emplace_back(ShaderFlagTypes::kPointLightCount,
-                                   static_cast<int>(scene_->GetAllObjectsWith<PointLight>().size()));
+  vertex_shader_flags.emplace_back(
+      ShaderFlagTypes::kPointLightCount, static_cast<int>(scene_->GetAllObjectsWith<PointLight>().size())
+  );
   vertex_shader_flags.emplace_back(ShaderFlagTypes::kDirectionalLightCount, 1);
-  vertex_shader_flags.emplace_back(ShaderFlagTypes::kSpotLightCount,
-                                   static_cast<int>(scene_->GetAllObjectsWith<SpotLight>().size()));
+  vertex_shader_flags.emplace_back(
+      ShaderFlagTypes::kSpotLightCount, static_cast<int>(scene_->GetAllObjectsWith<SpotLight>().size())
+  );
 
-  shaders_.emplace_back("shaders/render_shader.vert",
-                        vertex_shader_flags,
-                        "shaders/render_shader.frag",
-                        fragment_shader_flags,
-                        *shader_allocator_);
+  shaders_.emplace_back(
+      "shaders/render_shader.vert",
+      vertex_shader_flags,
+      "shaders/render_shader.frag",
+      fragment_shader_flags,
+      *shader_allocator_
+  );
   shaders_.back().Use();
 
   render_object.material_data = UniformBuffer(sizeof(MaterialUBOData));
   render_object.material_data.Bind(shaders_.back().program(), "Material", kMaterialUBOBindingPoint);
 }
-} // namespace chove::rendering::opengl
+}  // namespace chove::rendering::opengl

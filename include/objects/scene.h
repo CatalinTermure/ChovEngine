@@ -37,7 +37,7 @@ class Scene {
 
   template<typename T>
   void AddComponent(entt::entity entity, T &&component) {
-    registry_.emplace<T>(entity, std::forward<decltype(component)>(component));
+    registry_.emplace<std::remove_reference_t<T>>(entity, std::forward<T>(component));
   }
 
   template<typename T>
