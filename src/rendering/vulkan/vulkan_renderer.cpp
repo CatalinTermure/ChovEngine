@@ -535,7 +535,7 @@ void VulkanRenderer::RenderLoop() {
           VK_NULL_HANDLE,
           1
       });
-      if (result.result != vk::Result::eSuccess) {
+      if (result.result != vk::Result::eSuccess && result.result != vk::Result::eSuboptimalKHR) {
         return std::numeric_limits<uint32_t>::max();
       }
       return result.value;
