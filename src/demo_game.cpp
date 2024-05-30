@@ -42,13 +42,13 @@ void DemoGame::HandleInput() {
   );
   last_mouse_position_ = current_mouse_position;
 
-  Event *event = window_.GetEvent();
+  std::unique_ptr<Event> event = window_.GetEvent();
   while (event != nullptr) {
     if (event->type() == EventType::kWindowClose) {
       is_running_ = false;
     }
     else if (event->type() == EventType::kKeyPressed) {
-      auto *key_event = dynamic_cast<KeyPressedEvent *>(event);
+      const auto *key_event = dynamic_cast<KeyPressedEvent *>(event.get());
       switch (key_event->key_code()) {
         case KeyCode::kEscape:
           is_running_ = false;
@@ -82,12 +82,15 @@ void DemoGame::HandleInput() {
               },
               current_scene()
           );
+        case KeyCode::kLeftAlt:
+          locked_cursor_ = !locked_cursor_;
+          window_.SetLockedCursor(locked_cursor_);
         default:
           break;
       }
     }
     else if (event->type() == EventType::kKeyReleased) {
-      auto *key_event = dynamic_cast<windowing::KeyReleasedEvent *>(event);
+      const auto *key_event = dynamic_cast<windowing::KeyReleasedEvent *>(event.get());
       switch (key_event->key_code()) {
         case KeyCode::kS:
         case KeyCode::kW:
@@ -121,11 +124,6 @@ void DemoGame::HandleInput() {
     else if (event->type() == EventType::kMouseButtonPressed || event->type() == EventType::kMouseButtonReleased) {
       // pass
     }
-    else {
-      window_.ReturnEvent(event);
-      break;
-    }
-    window_.HandleEvent(event);
     event = window_.GetEvent();
   }
 }
@@ -161,11 +159,11 @@ DemoGame::DemoGame(windowing::RendererType renderer_type) : Application(renderer
       Transform{cube_position, glm::identity<glm::quat>(), glm::vec3(1.0F), nullptr},
       scene
   );
-  object_manager_.ImportObject(
-      std::filesystem::current_path() / "models" / "sponza.obj",
-      Transform{sponza_position, glm::identity<glm::quat>(), sponza_scale, nullptr},
-      scene
-  );
+  // object_manager_.ImportObject(
+  //     std::filesystem::current_path() / "models" / "sponza.obj",
+  //     Transform{sponza_position, glm::identity<glm::quat>(), sponza_scale, nullptr},
+  //     scene
+  // );
 
   GameObject camera = scene.AddObject(Transform{glm::vec3(0.0F, 0.0F, -1.0F)});
   camera.AddComponent<Camera>(

@@ -8,6 +8,8 @@
 #include "rendering/vulkan/shader.h"
 #include "windowing/window.h"
 
+#include <thread>
+
 #include <vulkan/vulkan.hpp>
 
 namespace chove::rendering::vulkan {
@@ -29,6 +31,9 @@ class VulkanRenderer final : public Renderer {
   static constexpr int kMaxFramesInFlight = 3;
 
  private:
+  void RecreateSwapchainIfNeeded();
+  void RenderLoop();
+
   struct RenderAttachments {
     vk::Image depth_attachment;
     vk::ImageView color_attachment_view;
@@ -80,6 +85,9 @@ class VulkanRenderer final : public Renderer {
   std::vector<vk::PipelineLayout> pipeline_layouts_;
 
   objects::Scene *scene_ = nullptr;
+  bool is_running_ = false;
+  bool render_thread_finished_ = false;
+  std::thread render_thread_;
 
   uint32_t current_frame_ = 0;
 

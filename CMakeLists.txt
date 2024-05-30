@@ -23,6 +23,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tracy)
 
+FetchContent_Declare(
+        readerwriterqueue
+        GIT_REPOSITORY https://github.com/cameron314/readerwriterqueue
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(readerwriterqueue)
+
 add_library(ProjectObjects src/objects/scene.cpp
         src/objects/object_manager.cpp
         src/objects/game_object.cpp)
@@ -32,7 +39,7 @@ target_link_libraries(ProjectObjects glm::glm absl::base absl::hash absl::log ab
 add_library(ProjectWindowing src/windowing/events.cpp
         src/windowing/window.cpp)
 target_include_directories(ProjectWindowing PUBLIC include)
-target_link_libraries(ProjectWindowing glfw GLEW::GLEW Vulkan::Vulkan absl::base absl::hash absl::log absl::status)
+target_link_libraries(ProjectWindowing glfw GLEW::GLEW Vulkan::Vulkan absl::base absl::hash absl::log absl::status readerwriterqueue)
 
 add_library(ProjectRendering src/rendering/mesh.cpp
         src/rendering/camera.cpp

@@ -10,7 +10,7 @@ namespace chove::windowing {
 
 namespace {
 
-KeyCode GLFWKeyCodeToFsimKeyCode(int key) {
+KeyCode GLFWKeyCodeToChovEKeyCode(int key) {
   switch (key) {
     case GLFW_KEY_A:
       return KeyCode::kA;
@@ -119,7 +119,7 @@ KeyCode GLFWKeyCodeToFsimKeyCode(int key) {
   }
 }
 
-MouseButton GLFWMouseButtonToFsimMouseButton(int button) {
+MouseButton GLFWMouseButtonToChovEMouseButton(int button) {
   switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
       return MouseButton::kLeft;
@@ -142,39 +142,7 @@ MouseButton GLFWMouseButtonToFsimMouseButton(int button) {
   }
 }
 
-void KeyCallback(GLFWwindow *window, int key, int  /*scancode*/, int action, int  /*mods*/) {
-  auto *fsim_window =
-      reinterpret_cast<Window *>(glfwGetWindowUserPointer(window)); // NOLINT(*-pro-type-reinterpret-cast)
-  switch (action) {
-    case GLFW_PRESS:
-      fsim_window->PushEvent(std::make_unique<KeyPressedEvent>(GLFWKeyCodeToFsimKeyCode(key)));
-      break;
-    case GLFW_RELEASE:
-      fsim_window->PushEvent(std::make_unique<KeyReleasedEvent>(GLFWKeyCodeToFsimKeyCode(key)));
-      break;
-    default:
-      break;
-  }
-}
-
-void MouseButtonCallback(GLFWwindow *window, int button, int action, int  /*mods*/) {
-  auto *fsim_window =
-      reinterpret_cast<Window *>(glfwGetWindowUserPointer(window)); // NOLINT(*-pro-type-reinterpret-cast)
-  switch (action) {
-    case GLFW_PRESS:
-      fsim_window->PushEvent(std::make_unique<MouseButtonPressedEvent>(GLFWMouseButtonToFsimMouseButton(button)));
-      break;
-    case GLFW_RELEASE:
-      fsim_window->PushEvent(std::make_unique<MouseButtonReleasedEvent>(GLFWMouseButtonToFsimMouseButton(button)));
-      break;
-    default:
-      break;
-  }
-}
-
-constexpr size_t kMaxQueueSize = 100;
-
-} // namespace
+}  // namespace
 
 Window Window::Create(const std::string &title, WindowExtent extent, RendererType renderer_type) {
   if (glfwInit() != GLFW_TRUE) {
@@ -183,14 +151,17 @@ Window Window::Create(const std::string &title, WindowExtent extent, RendererTyp
 
   if (renderer_type == RendererType::kVulkan) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  } else if (renderer_type == RendererType::kOpenGL) {
+  }
+  else if (renderer_type == RendererType::kOpenGL) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  } else {
+  }
+  else {
     throw std::runtime_error("Invalid renderer type");
   }
 
-  GLFWwindow *window_ptr = glfwCreateWindow(extent.width, extent.height, title.data(), nullptr, nullptr);
+  GLFWwindow *window_ptr =
+      glfwCreateWindow(static_cast<int>(extent.width), static_cast<int>(extent.height), title.data(), nullptr, nullptr);
   if (window_ptr == nullptr) {
     throw std::runtime_error("Failed to create window");
   }
@@ -200,27 +171,51 @@ Window Window::Create(const std::string &title, WindowExtent extent, RendererTyp
     glfwSwapInterval(1);
   }
 
-  glfwSetKeyCallback(window_ptr, KeyCallback);
-  glfwSetMouseButtonCallback(window_ptr, MouseButtonCallback);
+  glfwSetKeyCallback(window_ptr, [](GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/) {
+    auto *chove_window = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    switch (action) {
+      case GLFW_PRESS:
+        chove_window->application_event_queue_.push_back(std::make_unique<KeyPressedEvent>(GLFWKeyCodeToChovEKeyCode(key
+        )));
+        break;
+      case GLFW_RELEASE:
+        chove_window->application_event_queue_.push_back(
+            std::make_unique<KeyReleasedEvent>(GLFWKeyCodeToChovEKeyCode(key))
+        );
+        break;
+      default:
+        break;
+    }
+  });
+
+  glfwSetMouseButtonCallback(window_ptr, [](GLFWwindow *window, int button, int action, int /*mods*/) {
+    auto *chove_window = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    switch (action) {
+      case GLFW_PRESS:
+        chove_window->application_event_queue_.push_back(
+            std::make_unique<MouseButtonPressedEvent>(GLFWMouseButtonToChovEMouseButton(button))
+        );
+        break;
+      case GLFW_RELEASE:
+        chove_window->application_event_queue_.push_back(
+            std::make_unique<MouseButtonReleasedEvent>(GLFWMouseButtonToChovEMouseButton(button))
+        );
+        break;
+      default:
+        break;
+    }
+  });
+
   glfwSetWindowSizeCallback(window_ptr, [](GLFWwindow *window, int width, int height) {
-    auto *fsim_window =
-        reinterpret_cast<Window *>(glfwGetWindowUserPointer(window)); // NOLINT(*-pro-type-reinterpret-cast)
-    while (!fsim_window->event_queue_mutex_.try_lock()) {
-      // Wait for the event queue to be unlocked
-    }
-    while (!fsim_window->event_queue_.empty()
-        && fsim_window->event_queue_.front()->type() == EventType::kWindowResize) {
-      fsim_window->event_queue_.pop_front();
-    }
-    fsim_window->PushEvent(std::make_unique<WindowResizeEvent>(WindowExtent{static_cast<uint32_t>(width),
-                                                                            static_cast<uint32_t>(height)}));
-    fsim_window->event_queue_mutex_.unlock();
+    auto *chove_window = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    chove_window->renderer_event_queue_.enqueue(
+        std::make_unique<WindowResizeEvent>(WindowExtent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)})
+    );
   });
 
   glfwSetCursorPosCallback(window_ptr, [](GLFWwindow *window, double x_pos, double y_pos) {
-    auto *fsim_window =
-        reinterpret_cast<Window *>(glfwGetWindowUserPointer(window)); // NOLINT(*-pro-type-reinterpret-cast)
-    fsim_window->mouse_position_ = {static_cast<int>(x_pos), static_cast<int>(y_pos)};
+    auto *chove_window = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    chove_window->mouse_position_ = {static_cast<int>(x_pos), static_cast<int>(y_pos)};
   });
 
   return Window{window_ptr};
@@ -233,42 +228,35 @@ WindowExtent Window::extent() const {
   return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 }
 
-Event *Window::GetEvent() {
-  if (!event_queue_mutex_.try_lock()) {
-    return nullptr;
-  }
-  if (event_queue_.empty()) {
-    event_queue_mutex_.unlock();
-    return nullptr;
-  }
-  return event_queue_.front().get();
+std::unique_ptr<Event> Window::GetEvent() {
+  if (application_event_queue_.empty()) return nullptr;
+  std::unique_ptr<Event> result = std::move(application_event_queue_.front());
+  application_event_queue_.pop_front();
+  return result;
 }
+
+std::unique_ptr<Event> Window::GetRendererEvent() {
+  std::unique_ptr<Event> event;
+  const bool dequeued = renderer_event_queue_.try_dequeue(event);
+  if (!dequeued) return nullptr;
+
+  return event;
+}
+
+Event *Window::PeekRendererEvent() const { return renderer_event_queue_.peek()->get(); }
 
 void Window::PollEvents() {
   glfwPollEvents();
 
   if (glfwWindowShouldClose(window_ptr_) != 0) {
-    PushEvent(std::make_unique<WindowCloseEvent>());
+    application_event_queue_.push_back(std::make_unique<WindowCloseEvent>());
   }
 }
 
-void Window::PushEvent(std::unique_ptr<Event> event) {
-  event_queue_.push_back(std::move(event));
-  if (event_queue_.size() > kMaxQueueSize) {
-    event_queue_.erase(event_queue_.begin());
-  }
-}
+WindowPosition Window::mouse_position() const { return mouse_position_; }
 
-WindowPosition Window::mouse_position() const {
-  return mouse_position_;
-}
-
-void Window::HandleEvent(Event *event) {
-  if (event != event_queue_.front().get()) {
-    throw std::runtime_error("Event is not the front of the queue");
-  }
-  event_queue_.pop_front();
-  event_queue_mutex_.unlock();
+void Window::SetLockedCursor(bool locked) const {
+  glfwSetInputMode(window_ptr_, GLFW_CURSOR, locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
 
 VkSurfaceKHR Window::CreateSurface(VkInstance instance) const {
@@ -286,8 +274,8 @@ VkSurfaceKHR Window::CreateSurface(VkInstance instance) const {
 std::vector<const char *> Window::GetRequiredVulkanExtensions() {
   uint32_t glfw_extension_count = 0;
   const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
-  std::span<const char *> extensions(glfw_extensions, glfw_extension_count);
-  std::vector<const char *> result(extensions.begin(), extensions.end());
+  std::span extensions(glfw_extensions, glfw_extension_count);
+  std::vector result(extensions.begin(), extensions.end());
   return result;
 }
 
@@ -309,12 +297,6 @@ Window::~Window() {
   glfwTerminate();
 }
 
-void Window::SwapBuffers() const {
-  glfwSwapBuffers(window_ptr_);
-}
+void Window::SwapBuffers() const { glfwSwapBuffers(window_ptr_); }
 
-void Window::ReturnEvent(Event * /*event*/) {
-  event_queue_mutex_.unlock();
-}
-
-} // namespace chove::windowing
+}  // namespace chove::windowing

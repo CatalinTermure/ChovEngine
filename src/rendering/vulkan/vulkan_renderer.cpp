@@ -3,6 +3,7 @@
 #include "rendering/mesh.h"
 #include "rendering/vulkan/allocator.h"
 #include "rendering/vulkan/pipeline_builder.h"
+#include "rendering/vulkan/render_info.h"
 #include "rendering/vulkan/shader.h"
 #include "windowing/events.h"
 #include "windowing/window.h"
@@ -14,8 +15,6 @@
 
 #include <absl/log/log.h>
 #include <vulkan/vulkan.hpp>
-
-#include "rendering/vulkan/render_info.h"
 
 namespace chove::rendering::vulkan {
 
@@ -47,7 +46,7 @@ vk::PhysicalDevice PickPhysicalDevice(const vk::Instance &instance) {
   vk::PhysicalDevice physical_device = physical_devices.front();
   for (const auto &potential_device : physical_devices) {
     const vk::PhysicalDeviceProperties properties = potential_device.getProperties();
-    if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+    if (properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu) {
       LOG(INFO) << "Using discrete GPU: " << properties.deviceName;
       physical_device = potential_device;
       break;
@@ -181,11 +180,13 @@ vk::SwapchainKHR CreateSwapchain(
     const vk::Device &device
 ) {
   auto [swapchain_width, swapchain_height] = window.extent();
+  LOG(INFO) << "Swapchain size is " << swapchain_width << "x" << swapchain_height;
   const vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
   if (surface_capabilities.currentExtent.width != UINT32_MAX) {
     swapchain_width = surface_capabilities.currentExtent.width;
     swapchain_height = surface_capabilities.currentExtent.height;
   }
+  LOG(INFO) << "Swapchain size after querying surface capabilities is " << swapchain_width << "x" << swapchain_height;
 
   const std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
   vk::SurfaceFormatKHR surface_format;
@@ -338,129 +339,11 @@ std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight
 
 void VulkanRenderer::Render() {
   // Check if resizing is necessary
-  windowing::Event *event = window_->GetEvent();
-  if (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
-    for (const auto &[depth_attachment, color_attachment_view, depth_attachment_view, framebuffer] :
-         render_attachments_) {
-      context_.device.destroyImageView(color_attachment_view);
-      context_.device.destroyImageView(depth_attachment_view);
-      allocator_.Deallocate(depth_attachment);
-      context_.device.destroyFramebuffer(framebuffer);
-    }
-    context_.device.destroySwapchainKHR(swapchain_);
-
-    swapchain_ = CreateSwapchain(*window_, surface_, physical_device_, graphics_queue_family_index_, context_.device);
-    render_attachments_ = CreateFramebuffers(window_->extent(), context_.device, allocator_, render_pass_, swapchain_);
-    window_->HandleEvent(event);
-  }
-  else if (event != nullptr) {
-    window_->ReturnEvent(event);
-  }
-
-  current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
-
-  const auto [window_width, window_height] = window_->extent();
-
-  {
-    const vk::Result result =
-        context_.device.waitForFences(synchronization_info_.at(current_frame_).in_flight_fence, vk::True, UINT64_MAX);
-    if (result != vk::Result::eSuccess) {
-      LOG(INFO) << "Failed to wait for frame in flight at frame " << current_frame_ << ".";
-      return;
-    }
-  }
-
-  context_.device.resetFences(synchronization_info_.at(current_frame_).in_flight_fence);
-
-  command_buffers_.at(current_frame_) = context_.device.allocateCommandBuffers(
-      vk::CommandBufferAllocateInfo{graphics_command_pool_, vk::CommandBufferLevel::ePrimary, 1}
-  );
-  const vk::CommandBuffer draw_cmd = command_buffers_.at(current_frame_).front();
-
-  const uint32_t image_index = [&] {
-    const vk::ResultValue<uint32_t> result = context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{
-        swapchain_,
-        std::numeric_limits<uint64_t>::max(),
-        synchronization_info_.at(current_frame_).image_available,
-        VK_NULL_HANDLE,
-        1
-    });
-    if (result.result != vk::Result::eSuccess) {
-      return std::numeric_limits<uint32_t>::max();
-    }
-    return result.value;
-  }();
-
-  if (image_index == std::numeric_limits<uint32_t>::max()) {
-    LOG(INFO) << "Skipped frame.";
-    return;
-  }
-
-  draw_cmd.begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr});
-
-  {
-    constexpr vk::ClearValue clear_color{std::array{0.0F, 0.0F, 0.0F, 1.0F}};
-    constexpr vk::ClearValue clear_depth{vk::ClearDepthStencilValue{1.0F, 0}};
-    std::vector clear_values = {clear_color, clear_depth};
-    draw_cmd.beginRenderPass(
-        vk::RenderPassBeginInfo{
-            render_pass_,
-            render_attachments_.at(image_index).framebuffer,
-            vk::Rect2D{{0, 0}, {window_width, window_height}},
-            clear_values
-        },
-        vk::SubpassContents::eInline
-    );
-
-    draw_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines_.front());
-
-    const glm::mat4 camera_matrix = scene_->camera().GetProjectionMatrix() * scene_->camera().GetViewMatrix();
-
-    for (const auto &&[_, mesh, render_info] : scene_->GetAllObjectsWith<Mesh *, RenderInfo>().each()) {
-      const auto index_count = mesh->indices.size();
-      memcpy(render_info.vertex_buffer_memory, mesh->vertices.data(), mesh->vertices.size() * sizeof(Mesh::Vertex));
-      memcpy(render_info.index_buffer_memory, mesh->indices.data(), index_count * sizeof(uint32_t));
-      draw_cmd.bindVertexBuffers(
-          0,
-          {render_info.vertex_buffer, render_info.vertex_buffer},
-          {offsetof(Mesh::Vertex, position), offsetof(Mesh::Vertex, normal)}
-      );
-      draw_cmd.bindIndexBuffer(render_info.index_buffer, vk::DeviceSize{0}, vk::IndexType::eUint32);
-      const glm::mat4 model_view_projection = camera_matrix * render_info.model;
-      draw_cmd.pushConstants(
-          pipeline_layouts_.front(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &model_view_projection
-      );
-      draw_cmd.drawIndexed(index_count, 1, 0, 0, 0);
-    }
-
-    draw_cmd.endRenderPass();
-  }
-
-  draw_cmd.end();
-
-  {
-    vk::CommandBufferSubmitInfo draw_submit_info{draw_cmd, 1};
-    const vk::SemaphoreSubmitInfo wait_for_image_acquisition{
-        synchronization_info_.at(current_frame_).image_available, 1, vk::PipelineStageFlagBits2::eColorAttachmentOutput
-    };
-    std::array wait_semaphores = {wait_for_image_acquisition};
-
-    vk::SemaphoreSubmitInfo signal_semaphore_info{
-        synchronization_info_.at(current_frame_).render_finished, 1, vk::PipelineStageFlagBits2::eAllGraphics
-    };
-    graphics_queue_.submit2(
-        vk::SubmitInfo2{vk::SubmitFlags{}, wait_semaphores, draw_submit_info, signal_semaphore_info},
-        synchronization_info_.at(current_frame_).in_flight_fence
-    );
-  }
-
-  const vk::Result result = graphics_queue_.presentKHR(
-      vk::PresentInfoKHR{synchronization_info_.at(current_frame_).render_finished, swapchain_, image_index, nullptr}
-  );
-
-  if (result != vk::Result::eSuccess) {
-    LOG(INFO) << "Failed to present frame.";
-  }
+  if (is_running_) return;
+  is_running_ = true;
+  auto render_func = [this] { RenderLoop(); };
+  render_thread_ = std::thread(render_func);
+  render_thread_.detach();
 }
 
 void VulkanRenderer::SetupScene(objects::Scene &scene) {
@@ -558,6 +441,13 @@ VulkanRenderer::~VulkanRenderer() {
   if (!context_.device) {
     return;
   }
+  if (is_running_) {
+    is_running_ = false;
+    while (!render_thread_finished_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
+
   context_.device.waitIdle();
 
   for (const auto &pipeline : pipelines_) {
@@ -590,6 +480,156 @@ VulkanRenderer::~VulkanRenderer() {
   if (surface_) {
     context_.instance.destroySurfaceKHR(surface_);
   }
+}
+
+void VulkanRenderer::RecreateSwapchainIfNeeded() {  // TODO: Fix render surface not changing the size
+  std::unique_ptr<windowing::Event> event = window_->GetRendererEvent();
+  while (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
+    while (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
+      context_.device.waitIdle();
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      event = window_->GetRendererEvent();
+    }
+    LOG(INFO) << "Cleaning up swapchain";
+
+    for (const auto &[depth_attachment, color_attachment_view, depth_attachment_view, framebuffer] :
+         render_attachments_) {
+      context_.device.destroyImageView(color_attachment_view);
+      context_.device.destroyImageView(depth_attachment_view);
+      allocator_.Deallocate(depth_attachment);
+      context_.device.destroyFramebuffer(framebuffer);
+    }
+    context_.device.destroySwapchainKHR(swapchain_);
+
+    LOG(INFO) << "Recreating swapchain.";
+
+    swapchain_ = CreateSwapchain(*window_, surface_, physical_device_, graphics_queue_family_index_, context_.device);
+    render_attachments_ = CreateFramebuffers(window_->extent(), context_.device, allocator_, render_pass_, swapchain_);
+
+    LOG(INFO) << "Swapchain recreated.";
+    event = window_->GetRendererEvent();
+  }
+}
+
+void VulkanRenderer::RenderLoop() {
+  while (is_running_) {
+    RecreateSwapchainIfNeeded();
+
+    current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
+
+    const auto [window_width, window_height] = window_->extent();
+
+    {
+      const vk::Result result =
+          context_.device.waitForFences(synchronization_info_.at(current_frame_).in_flight_fence, vk::True, UINT64_MAX);
+      if (result != vk::Result::eSuccess) {
+        LOG(INFO) << "Failed to wait for frame in flight at frame " << current_frame_ << ".";
+        return;
+      }
+    }
+
+    context_.device.resetFences(synchronization_info_.at(current_frame_).in_flight_fence);
+
+    command_buffers_.at(current_frame_) = context_.device.allocateCommandBuffers(
+        vk::CommandBufferAllocateInfo{graphics_command_pool_, vk::CommandBufferLevel::ePrimary, 1}
+    );
+    const vk::CommandBuffer draw_cmd = command_buffers_.at(current_frame_).front();
+
+    const uint32_t image_index = [&] {
+      const vk::ResultValue<uint32_t> result = context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{
+          swapchain_,
+          std::numeric_limits<uint64_t>::max(),
+          synchronization_info_.at(current_frame_).image_available,
+          VK_NULL_HANDLE,
+          1
+      });
+      if (result.result != vk::Result::eSuccess) {
+        return std::numeric_limits<uint32_t>::max();
+      }
+      return result.value;
+    }();
+
+    if (image_index == std::numeric_limits<uint32_t>::max()) {
+      LOG(INFO) << "Skipped frame.";
+      continue;
+    }
+
+    draw_cmd.begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr});
+
+    {
+      constexpr vk::ClearValue clear_color{std::array{0.0F, 0.0F, 0.0F, 1.0F}};
+      constexpr vk::ClearValue clear_depth{vk::ClearDepthStencilValue{1.0F, 0}};
+      std::vector clear_values = {clear_color, clear_depth};
+      draw_cmd.beginRenderPass(
+          vk::RenderPassBeginInfo{
+              render_pass_,
+              render_attachments_.at(image_index).framebuffer,
+              vk::Rect2D{{0, 0}, {window_width, window_height}},
+              clear_values
+          },
+          vk::SubpassContents::eInline
+      );
+
+      draw_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines_.front());
+
+      const glm::mat4 camera_matrix = scene_->camera().GetProjectionMatrix() * scene_->camera().GetViewMatrix();
+
+      for (const auto &&[_, mesh, render_info] : scene_->GetAllObjectsWith<Mesh *, RenderInfo>().each()) {
+        const auto index_count = mesh->indices.size();
+        memcpy(render_info.vertex_buffer_memory, mesh->vertices.data(), mesh->vertices.size() * sizeof(Mesh::Vertex));
+        memcpy(render_info.index_buffer_memory, mesh->indices.data(), index_count * sizeof(uint32_t));
+        draw_cmd.bindVertexBuffers(
+            0,
+            {render_info.vertex_buffer, render_info.vertex_buffer},
+            {offsetof(Mesh::Vertex, position), offsetof(Mesh::Vertex, normal)}
+        );
+        draw_cmd.bindIndexBuffer(render_info.index_buffer, vk::DeviceSize{0}, vk::IndexType::eUint32);
+        const glm::mat4 model_view_projection = camera_matrix * render_info.model;
+        draw_cmd.pushConstants(
+            pipeline_layouts_.front(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &model_view_projection
+        );
+        draw_cmd.drawIndexed(index_count, 1, 0, 0, 0);
+      }
+
+      draw_cmd.endRenderPass();
+    }
+
+    draw_cmd.end();
+
+    {
+      vk::CommandBufferSubmitInfo draw_submit_info{draw_cmd, 1};
+      const vk::SemaphoreSubmitInfo wait_for_image_acquisition{
+          synchronization_info_.at(current_frame_).image_available,
+          1,
+          vk::PipelineStageFlagBits2::eColorAttachmentOutput
+      };
+      std::array wait_semaphores = {wait_for_image_acquisition};
+
+      vk::SemaphoreSubmitInfo signal_semaphore_info{
+          synchronization_info_.at(current_frame_).render_finished, 1, vk::PipelineStageFlagBits2::eAllGraphics
+      };
+      graphics_queue_.submit2(
+          vk::SubmitInfo2{vk::SubmitFlags{}, wait_semaphores, draw_submit_info, signal_semaphore_info},
+          synchronization_info_.at(current_frame_).in_flight_fence
+      );
+    }
+
+    auto result = vk::Result::eSuccess;
+    try {
+      result = graphics_queue_.presentKHR(
+          vk::PresentInfoKHR{synchronization_info_.at(current_frame_).render_finished, swapchain_, image_index, nullptr}
+      );
+    }
+    catch (vk::OutOfDateKHRError &) {
+      LOG(INFO) << "Swapchain out of date.";
+      continue;
+    }
+
+    if (result != vk::Result::eSuccess) {
+      LOG(INFO) << "Failed to present frame.";
+    }
+  }
+  render_thread_finished_ = true;
 }
 
 VulkanRenderer::VulkanRenderer(
@@ -647,7 +687,10 @@ VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
     descriptor_sets_ = std::move(other.descriptor_sets_);
     synchronization_info_ = other.synchronization_info_;
     scene_ = other.scene_;
+    render_thread_ = std::move(other.render_thread_);
+    is_running_ = other.is_running_;
 
+    other.is_running_ = false;
     other.window_ = nullptr;
     other.surface_ = VK_NULL_HANDLE;
     other.physical_device_ = VK_NULL_HANDLE;

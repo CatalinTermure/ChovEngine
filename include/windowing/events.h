@@ -1,5 +1,5 @@
-#ifndef FLUIDSIM_INCLUDE_WINDOWING_EVENTS_H_
-#define FLUIDSIM_INCLUDE_WINDOWING_EVENTS_H_
+#ifndef CHOVENGINE_INCLUDE_WINDOWING_EVENTS_H_
+#define CHOVENGINE_INCLUDE_WINDOWING_EVENTS_H_
 
 #include <cstdint>
 
@@ -117,15 +117,22 @@ enum class EventType : std::uint8_t {
 class Event {
  public:
   [[nodiscard]] virtual EventType type() const = 0;
+
+  Event() = default;
+  Event(const Event &) = default;
+  Event &operator=(const Event &) = default;
+  Event(Event &&) = default;
+  Event &operator=(Event &&) = default;
+
   virtual ~Event() = default;
 };
 
-class WindowCloseEvent : public Event {
+class WindowCloseEvent final : public Event {
  public:
   [[nodiscard]] EventType type() const override;
 };
 
-class WindowResizeEvent : public Event {
+class WindowResizeEvent final : public Event {
  public:
   explicit WindowResizeEvent(WindowExtent new_extent);
 
@@ -134,54 +141,59 @@ class WindowResizeEvent : public Event {
   [[nodiscard]] uint32_t new_width() const;
   [[nodiscard]] uint32_t new_height() const;
   [[nodiscard]] WindowExtent new_extent() const;
+
  private:
   WindowExtent new_extent_;
 };
 
-class KeyPressedEvent : public Event {
+class KeyPressedEvent final : public Event {
  public:
   explicit KeyPressedEvent(KeyCode key_code);
 
   [[nodiscard]] EventType type() const override;
 
   [[nodiscard]] KeyCode key_code() const;
+
  private:
   KeyCode key_code_;
 };
 
-class KeyReleasedEvent : public Event {
+class KeyReleasedEvent final : public Event {
  public:
   explicit KeyReleasedEvent(KeyCode key_code);
 
   [[nodiscard]] EventType type() const override;
 
   [[nodiscard]] KeyCode key_code() const;
+
  private:
   KeyCode key_code_;
 };
 
-class MouseButtonPressedEvent : public Event {
+class MouseButtonPressedEvent final : public Event {
  public:
   explicit MouseButtonPressedEvent(MouseButton button);
 
   [[nodiscard]] EventType type() const override;
 
   [[nodiscard]] MouseButton button() const;
+
  private:
   MouseButton button_;
 };
 
-class MouseButtonReleasedEvent : public Event {
+class MouseButtonReleasedEvent final : public Event {
  public:
   explicit MouseButtonReleasedEvent(MouseButton button);
 
   [[nodiscard]] EventType type() const override;
 
   [[nodiscard]] MouseButton button() const;
+
  private:
   MouseButton button_;
 };
 
-} // namespace chove::windowing
+}  // namespace chove::windowing
 
-#endif //FLUIDSIM_INCLUDE_WINDOWING_EVENTS_H_
+#endif  // CHOVENGINE_INCLUDE_WINDOWING_EVENTS_H_
