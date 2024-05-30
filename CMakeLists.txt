@@ -104,7 +104,7 @@ target_link_libraries(ChovEngine ProjectApplication glm::glm absl::base absl::lo
 target_include_directories(ChovEngine PUBLIC include)
 
 if (MSVC)
-    target_compile_options(ChovEngine PRIVATE /W4 /WX)
+    add_compile_options(/W4 /WX /fsanitize=address)
 else ()
-    target_compile_options(ChovEngine PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif ()
