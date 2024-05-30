@@ -38,7 +38,7 @@ class PipelineBuilder {
   std::vector<vk::VertexInputAttributeDescription> vertex_input_attribute_descriptions_;
 
   vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info_;
-  vk::PipelineTessellationStateCreateInfo tessellation_state_create_info_{};
+  vk::PipelineTessellationStateCreateInfo tessellation_state_create_info_;
   vk::Viewport viewport_;
   vk::Rect2D scissor_;
 

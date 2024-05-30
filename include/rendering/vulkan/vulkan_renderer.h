@@ -31,7 +31,7 @@ class VulkanRenderer final : public Renderer {
   static constexpr int kMaxFramesInFlight = 3;
 
  private:
-  void RecreateSwapchainIfNeeded();
+  void HandleWindowResize();
   void RenderLoop();
 
   struct RenderAttachments {

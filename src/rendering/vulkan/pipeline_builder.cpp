@@ -82,6 +82,10 @@ std::pair<vk::Pipeline, vk::PipelineLayout> PipelineBuilder::build(
   const vk::PipelineColorBlendStateCreateInfo pipeline_color_blend_state{
       vk::PipelineColorBlendStateCreateFlags{}, false, vk::LogicOp::eNoOp, pipeline_color_attachment_blend_state_
   };
+  constexpr std::array dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+  const vk::PipelineDynamicStateCreateInfo dynamic_state_create_info{
+      vk::PipelineDynamicStateCreateFlags{}, dynamic_states
+  };
   std::vector<vk::DescriptorSetLayout> descriptor_set_layouts;
   std::vector<vk::PushConstantRange> push_constant_ranges;
   for (const auto &shader : shaders_) {
@@ -109,7 +113,7 @@ std::pair<vk::Pipeline, vk::PipelineLayout> PipelineBuilder::build(
           &pipeline_multisample_state_,
           &pipeline_depth_stencil_state_,
           &pipeline_color_blend_state,
-          nullptr,
+          &dynamic_state_create_info,
           layout,
           render_pass,
           subpass,

@@ -370,15 +370,6 @@ void VulkanRenderer::SetupScene(objects::Scene &scene) {
           .AddInputBufferDescription(
               vertex_binding_description, {position_attribute_description, normal_attribute_description}
           )
-          .SetViewport(vk::Viewport{
-              0.0F,
-              0.0F,
-              static_cast<float>(window_->extent().width),
-              static_cast<float>(window_->extent().height),
-              0.0F,
-              1.0F
-          })
-          .SetScissor(vk::Rect2D{{0, 0}, vk::Extent2D{window_->extent().width, window_->extent().height}})
           .SetFillMode(vk::PolygonMode::eFill)
           .SetColorBlendEnable(false)
           .SetDepthTestEnable(true)
@@ -482,7 +473,7 @@ VulkanRenderer::~VulkanRenderer() {
   }
 }
 
-void VulkanRenderer::RecreateSwapchainIfNeeded() {  // TODO: Fix render surface not changing the size
+void VulkanRenderer::HandleWindowResize() {
   std::unique_ptr<windowing::Event> event = window_->GetRendererEvent();
   while (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
     while (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
@@ -513,22 +504,23 @@ void VulkanRenderer::RecreateSwapchainIfNeeded() {  // TODO: Fix render surface 
 
 void VulkanRenderer::RenderLoop() {
   while (is_running_) {
-    RecreateSwapchainIfNeeded();
-
+    HandleWindowResize();
     current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 
     const auto [window_width, window_height] = window_->extent();
+
+    LOG(INFO) << "Started waiting for frame " << current_frame_;
 
     {
       const vk::Result result =
           context_.device.waitForFences(synchronization_info_.at(current_frame_).in_flight_fence, vk::True, UINT64_MAX);
       if (result != vk::Result::eSuccess) {
-        LOG(INFO) << "Failed to wait for frame in flight at frame " << current_frame_ << ".";
+        LOG(WARNING) << "Failed to wait for frame in flight at frame " << current_frame_ << ".";
         return;
       }
     }
 
-    context_.device.resetFences(synchronization_info_.at(current_frame_).in_flight_fence);
+    LOG(INFO) << "Rendering started for frame " << current_frame_;
 
     command_buffers_.at(current_frame_) = context_.device.allocateCommandBuffers(
         vk::CommandBufferAllocateInfo{graphics_command_pool_, vk::CommandBufferLevel::ePrimary, 1}
@@ -550,9 +542,13 @@ void VulkanRenderer::RenderLoop() {
     }();
 
     if (image_index == std::numeric_limits<uint32_t>::max()) {
-      LOG(INFO) << "Skipped frame.";
+      LOG(WARNING) << "Skipped frame.";
       continue;
     }
+
+    LOG(INFO) << "Starting command recording for frame " << current_frame_;
+
+    context_.device.resetFences(synchronization_info_.at(current_frame_).in_flight_fence);
 
     draw_cmd.begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr});
 
@@ -571,6 +567,10 @@ void VulkanRenderer::RenderLoop() {
       );
 
       draw_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines_.front());
+      draw_cmd.setViewport(
+          0, {vk::Viewport{0.0F, 0.0F, static_cast<float>(window_width), static_cast<float>(window_height), 0.0F, 1.0F}}
+      );
+      draw_cmd.setScissor(0, {vk::Rect2D{{0, 0}, {window_width, window_height}}});
 
       const glm::mat4 camera_matrix = scene_->camera().GetProjectionMatrix() * scene_->camera().GetViewMatrix();
 
@@ -596,6 +596,8 @@ void VulkanRenderer::RenderLoop() {
 
     draw_cmd.end();
 
+    LOG(INFO) << "Finished command recording for frame " << current_frame_;
+
     {
       vk::CommandBufferSubmitInfo draw_submit_info{draw_cmd, 1};
       const vk::SemaphoreSubmitInfo wait_for_image_acquisition{
@@ -614,6 +616,8 @@ void VulkanRenderer::RenderLoop() {
       );
     }
 
+    LOG(INFO) << "Starting presentation for frame " << current_frame_;
+
     auto result = vk::Result::eSuccess;
     try {
       result = graphics_queue_.presentKHR(
@@ -621,13 +625,16 @@ void VulkanRenderer::RenderLoop() {
       );
     }
     catch (vk::OutOfDateKHRError &) {
-      LOG(INFO) << "Swapchain out of date.";
+      LOG(WARNING) << "Swapchain out of date.";
       continue;
     }
 
     if (result != vk::Result::eSuccess) {
-      LOG(INFO) << "Failed to present frame.";
+      LOG(WARNING) << "Failed to present frame.";
+      continue;
     }
+
+    LOG(INFO) << "Finished presentation for frame " << current_frame_;
   }
   render_thread_finished_ = true;
 }
