@@ -256,7 +256,14 @@ void Window::PollEvents() {
 WindowPosition Window::mouse_position() const { return mouse_position_; }
 
 void Window::SetLockedCursor(bool locked) const {
-  glfwSetInputMode(window_ptr_, GLFW_CURSOR, locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+  if (locked) {
+    glfwSetInputMode(window_ptr_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  }
+  else {
+    auto [width, height] = extent();
+    glfwSetInputMode(window_ptr_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetCursorPos(window_ptr_, width / 2.0, height / 2.0);
+  }
 }
 
 VkSurfaceKHR Window::CreateSurface(VkInstance instance) const {

@@ -34,12 +34,14 @@ void DemoGame::HandleInput() {
   const WindowPosition mouse_delta = {
       current_mouse_position.x - last_mouse_position_.x, current_mouse_position.y - last_mouse_position_.y
   };
-  current_scene().camera().Rotate(
-      Camera::RotationDirection::eRight, kCameraRotationSpeed * static_cast<float>(mouse_delta.x)
-  );
-  current_scene().camera().Rotate(
-      Camera::RotationDirection::eUpward, kCameraRotationSpeed * static_cast<float>(mouse_delta.y)
-  );
+  if (locked_cursor_) {
+    current_scene().camera().Rotate(
+        Camera::RotationDirection::eRight, kCameraRotationSpeed * static_cast<float>(mouse_delta.x)
+    );
+    current_scene().camera().Rotate(
+        Camera::RotationDirection::eUpward, kCameraRotationSpeed * static_cast<float>(mouse_delta.y)
+    );
+  }
   last_mouse_position_ = current_mouse_position;
 
   std::unique_ptr<Event> event = window_.GetEvent();
@@ -159,11 +161,11 @@ DemoGame::DemoGame(windowing::RendererType renderer_type) : Application(renderer
       Transform{cube_position, glm::identity<glm::quat>(), glm::vec3(1.0F), nullptr},
       scene
   );
-  // object_manager_.ImportObject(
-  //     std::filesystem::current_path() / "models" / "sponza.obj",
-  //     Transform{sponza_position, glm::identity<glm::quat>(), sponza_scale, nullptr},
-  //     scene
-  // );
+  object_manager_.ImportObject(
+      std::filesystem::current_path() / "models" / "sponza.obj",
+      Transform{sponza_position, glm::identity<glm::quat>(), sponza_scale, nullptr},
+      scene
+  );
 
   GameObject camera = scene.AddObject(Transform{glm::vec3(0.0F, 0.0F, -1.0F)});
   camera.AddComponent<Camera>(

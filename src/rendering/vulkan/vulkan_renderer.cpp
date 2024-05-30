@@ -46,7 +46,7 @@ vk::PhysicalDevice PickPhysicalDevice(const vk::Instance &instance) {
   vk::PhysicalDevice physical_device = physical_devices.front();
   for (const auto &potential_device : physical_devices) {
     const vk::PhysicalDeviceProperties properties = potential_device.getProperties();
-    if (properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu) {
+    if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
       LOG(INFO) << "Using discrete GPU: " << properties.deviceName;
       physical_device = potential_device;
       break;
@@ -408,6 +408,8 @@ void VulkanRenderer::SetupScene(objects::Scene &scene) {
         allocation_create_info
     );
     render_info.vertex_buffer_memory = allocator_.GetMappedMemory(render_info.vertex_buffer);
+    memcpy(render_info.vertex_buffer_memory, mesh->vertices.data(), mesh->vertices.size() * sizeof(Mesh::Vertex));
+
     render_info.index_buffer = allocator_.AllocateBuffer(
         vk::BufferCreateInfo{
             vk::BufferCreateFlags{},
@@ -419,6 +421,8 @@ void VulkanRenderer::SetupScene(objects::Scene &scene) {
         allocation_create_info
     );
     render_info.index_buffer_memory = allocator_.GetMappedMemory(render_info.index_buffer);
+    memcpy(render_info.index_buffer_memory, mesh->indices.data(), mesh->indices.size() * sizeof(uint32_t));
+
     render_info.model = transform.GetMatrix();
 
     scene_->AddComponent(entity, render_info);
@@ -575,9 +579,6 @@ void VulkanRenderer::RenderLoop() {
       const glm::mat4 camera_matrix = scene_->camera().GetProjectionMatrix() * scene_->camera().GetViewMatrix();
 
       for (const auto &&[_, mesh, render_info] : scene_->GetAllObjectsWith<Mesh *, RenderInfo>().each()) {
-        const auto index_count = mesh->indices.size();
-        memcpy(render_info.vertex_buffer_memory, mesh->vertices.data(), mesh->vertices.size() * sizeof(Mesh::Vertex));
-        memcpy(render_info.index_buffer_memory, mesh->indices.data(), index_count * sizeof(uint32_t));
         draw_cmd.bindVertexBuffers(
             0,
             {render_info.vertex_buffer, render_info.vertex_buffer},
@@ -588,7 +589,7 @@ void VulkanRenderer::RenderLoop() {
         draw_cmd.pushConstants(
             pipeline_layouts_.front(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &model_view_projection
         );
-        draw_cmd.drawIndexed(index_count, 1, 0, 0, 0);
+        draw_cmd.drawIndexed(mesh->indices.size(), 1, 0, 0, 0);
       }
 
       draw_cmd.endRenderPass();
