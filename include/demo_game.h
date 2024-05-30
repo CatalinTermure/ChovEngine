@@ -6,9 +6,14 @@
 #include "objects/transform.h"
 
 namespace chove {
-class DemoGame : public Application {
+class DemoGame final : public Application {
  public:
   explicit DemoGame(windowing::RendererType renderer_type);
+  DemoGame(const DemoGame &) = delete;
+  DemoGame &operator=(const DemoGame &) = delete;
+  DemoGame(DemoGame &&) noexcept = delete;
+  DemoGame &operator=(DemoGame &&) noexcept = delete;
+  ~DemoGame() override = default;
 
   void HandleInput() override;
   void HandlePhysics(Duration delta_time) override;

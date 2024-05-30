@@ -8,7 +8,9 @@
 #include "rendering/vulkan/shader.h"
 #include "windowing/window.h"
 
+#include <stack>
 #include <thread>
+#include <vector>
 
 #include <vulkan/vulkan.hpp>
 
@@ -18,8 +20,8 @@ class VulkanRenderer final : public Renderer {
   VulkanRenderer() = delete;
   VulkanRenderer(const VulkanRenderer &) = delete;
   VulkanRenderer &operator=(const VulkanRenderer &) = delete;
-  VulkanRenderer(VulkanRenderer &&other) noexcept;
-  VulkanRenderer &operator=(VulkanRenderer &&other) noexcept;
+  VulkanRenderer(VulkanRenderer &&other) noexcept = default;
+  VulkanRenderer &operator=(VulkanRenderer &&other) noexcept = default;
 
   static VulkanRenderer Create(windowing::Window &window);
 
@@ -62,22 +64,23 @@ class VulkanRenderer final : public Renderer {
   );
 
   Context context_;
-  vk::SurfaceKHR surface_ = VK_NULL_HANDLE;
-  vk::PhysicalDevice physical_device_ = VK_NULL_HANDLE;
+  vk::SurfaceKHR surface_;
+  vk::PhysicalDevice physical_device_;
 
   Allocator allocator_;
-  windowing::Window *window_ = nullptr;
+  windowing::Window *window_;
+  vk::Extent2D window_extent_;
 
-  vk::SwapchainKHR swapchain_ = VK_NULL_HANDLE;
+  vk::SwapchainKHR swapchain_;
   std::array<RenderAttachments, kMaxFramesInFlight> render_attachments_;
   std::array<SynchronizationInfo, kMaxFramesInFlight> synchronization_info_;
   std::array<std::vector<vk::CommandBuffer>, kMaxFramesInFlight> command_buffers_;
 
-  vk::Queue graphics_queue_ = VK_NULL_HANDLE;
-  uint32_t graphics_queue_family_index_ = 0;
-  vk::CommandPool graphics_command_pool_ = VK_NULL_HANDLE;
-  vk::RenderPass render_pass_ = VK_NULL_HANDLE;
-  vk::DescriptorPool descriptor_pool_ = VK_NULL_HANDLE;
+  vk::Queue graphics_queue_;
+  uint32_t graphics_queue_family_index_;
+  vk::CommandPool graphics_command_pool_;
+  vk::RenderPass render_pass_;
+  vk::DescriptorPool descriptor_pool_;
   std::vector<vk::DescriptorSet> descriptor_sets_;
 
   std::vector<Shader> shaders_;
@@ -85,18 +88,20 @@ class VulkanRenderer final : public Renderer {
   std::vector<vk::PipelineLayout> pipeline_layouts_;
 
   objects::Scene *scene_ = nullptr;
+
   bool is_running_ = false;
   bool render_thread_finished_ = false;
   std::thread render_thread_;
 
   uint32_t current_frame_ = 0;
+  std::array<std::stack<std::function<void()>>, kMaxFramesInFlight> deferred_deletions_;
 
   static std::array<RenderAttachments, kMaxFramesInFlight> CreateFramebuffers(
-      const windowing::WindowExtent &window_extent,
-      const vk::Device &device,
+      vk::Extent2D window_extent,
+      vk::Device device,
       Allocator &allocator,
-      const vk::RenderPass &render_pass,
-      const vk::SwapchainKHR &swapchain
+      vk::RenderPass render_pass,
+      vk::SwapchainKHR swapchain
   );
 };
 }  // namespace chove::rendering::vulkan

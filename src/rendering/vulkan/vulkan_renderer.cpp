@@ -24,6 +24,7 @@ using windowing::WindowExtent;
 
 namespace {
 constexpr auto kColorFormat = vk::Format::eB8G8R8A8Unorm;
+constexpr auto kColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 constexpr auto kDepthFormat = vk::Format::eD24UnormS8Uint;
 
 vk::Instance CreateInstance() {
@@ -173,13 +174,13 @@ vk::RenderPass CreateRenderPass(const vk::Device &device) {
 }
 
 vk::SwapchainKHR CreateSwapchain(
-    const windowing::Window &window,
+    const vk::Extent2D window_extent,
     const vk::SurfaceKHR &surface,
     const vk::PhysicalDevice &physical_device,
     const uint32_t graphics_queue_family_index,
     const vk::Device &device
 ) {
-  auto [swapchain_width, swapchain_height] = window.extent();
+  auto [swapchain_width, swapchain_height] = window_extent;
   LOG(INFO) << "Swapchain size is " << swapchain_width << "x" << swapchain_height;
   const vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
   if (surface_capabilities.currentExtent.width != UINT32_MAX) {
@@ -192,7 +193,7 @@ vk::SwapchainKHR CreateSwapchain(
   vk::SurfaceFormatKHR surface_format;
   bool found = false;
   for (const auto &format : formats) {
-    if (format.format == kColorFormat && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+    if (format.format == kColorFormat && format.colorSpace == kColorSpace) {
       surface_format = format;
       found = true;
       break;
@@ -223,7 +224,7 @@ vk::SwapchainKHR CreateSwapchain(
   return swapchain;
 }
 
-vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &allocator) {
+vk::Image CreateDepthBuffer(vk::Extent2D window_extent, Allocator &allocator) {
   const vk::ImageCreateInfo image_create_info{
       vk::ImageCreateFlags{},
       vk::ImageType::e2D,
@@ -249,7 +250,8 @@ vk::Image CreateDepthBuffer(const WindowExtent &window_extent, Allocator &alloca
 }  // namespace
 
 VulkanRenderer VulkanRenderer::Create(windowing::Window &window) {
-  const WindowExtent window_extent = window.extent();
+  const auto [window_width, window_height] = window.extent();
+  const vk::Extent2D window_extent{window_width, window_height};
 
   const vk::Instance instance = CreateInstance();
   const vk::SurfaceKHR surface = window.CreateSurface(instance);
@@ -263,7 +265,7 @@ VulkanRenderer VulkanRenderer::Create(windowing::Window &window) {
   const vk::RenderPass render_pass = CreateRenderPass(device);
 
   const vk::SwapchainKHR swapchain =
-      CreateSwapchain(window, surface, physical_device, graphics_queue_family_index, device);
+      CreateSwapchain(window_extent, surface, physical_device, graphics_queue_family_index, device);
   const std::array<RenderAttachments, kMaxFramesInFlight> render_attachments =
       CreateFramebuffers(window_extent, device, allocator, render_pass, swapchain);
 
@@ -283,11 +285,11 @@ VulkanRenderer VulkanRenderer::Create(windowing::Window &window) {
 }
 
 std::array<VulkanRenderer::RenderAttachments, VulkanRenderer::kMaxFramesInFlight> VulkanRenderer::CreateFramebuffers(
-    const WindowExtent &window_extent,
-    const vk::Device &device,
+    const vk::Extent2D window_extent,
+    const vk::Device device,
     Allocator &allocator,
-    const vk::RenderPass &render_pass,
-    const vk::SwapchainKHR &swapchain
+    const vk::RenderPass render_pass,
+    const vk::SwapchainKHR swapchain
 ) {
   const std::vector<vk::Image> swapchain_images = device.getSwapchainImagesKHR(swapchain);
   std::vector<vk::ImageView> swapchain_image_views;
@@ -432,51 +434,6 @@ void VulkanRenderer::SetupScene(objects::Scene &scene) {
   shaders_.push_back(std::move(fragment_shader));
 }
 
-VulkanRenderer::~VulkanRenderer() {
-  if (!context_.device) {
-    return;
-  }
-  if (is_running_) {
-    is_running_ = false;
-    while (!render_thread_finished_) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-  }
-
-  context_.device.waitIdle();
-
-  for (const auto &pipeline : pipelines_) {
-    context_.device.destroyPipeline(pipeline);
-  }
-  for (const auto &layout : pipeline_layouts_) {
-    context_.device.destroyPipelineLayout(layout);
-  }
-
-  for (const auto &[depth_attachment, color_attachment_view, depth_attachment_view, framebuffer] :
-       render_attachments_) {
-    context_.device.destroyImageView(color_attachment_view);
-    context_.device.destroyImageView(depth_attachment_view);
-    context_.device.destroyFramebuffer(framebuffer);
-  }
-
-  if (swapchain_) {
-    context_.device.destroySwapchainKHR(swapchain_);
-  }
-
-  if (render_pass_) {
-    context_.device.destroyRenderPass(render_pass_);
-  }
-  if (graphics_command_pool_) {
-    context_.device.destroyCommandPool(graphics_command_pool_);
-  }
-  if (descriptor_pool_) {
-    context_.device.destroyDescriptorPool(descriptor_pool_);
-  }
-  if (surface_) {
-    context_.instance.destroySurfaceKHR(surface_);
-  }
-}
-
 void VulkanRenderer::HandleWindowResize() {
   std::unique_ptr<windowing::Event> event = window_->GetRendererEvent();
   while (event != nullptr && event->type() == windowing::EventType::kWindowResize) {
@@ -498,8 +455,10 @@ void VulkanRenderer::HandleWindowResize() {
 
     LOG(INFO) << "Recreating swapchain.";
 
-    swapchain_ = CreateSwapchain(*window_, surface_, physical_device_, graphics_queue_family_index_, context_.device);
-    render_attachments_ = CreateFramebuffers(window_->extent(), context_.device, allocator_, render_pass_, swapchain_);
+    window_extent_ = vk::Extent2D{window_->extent().width, window_->extent().height};
+    swapchain_ =
+        CreateSwapchain(window_extent_, surface_, physical_device_, graphics_queue_family_index_, context_.device);
+    render_attachments_ = CreateFramebuffers(window_extent_, context_.device, allocator_, render_pass_, swapchain_);
 
     LOG(INFO) << "Swapchain recreated.";
     event = window_->GetRendererEvent();
@@ -511,7 +470,7 @@ void VulkanRenderer::RenderLoop() {
     HandleWindowResize();
     current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 
-    const auto [window_width, window_height] = window_->extent();
+    const auto [window_width, window_height] = window_extent_;
 
     LOG(INFO) << "Started waiting for frame " << current_frame_;
 
@@ -524,12 +483,20 @@ void VulkanRenderer::RenderLoop() {
       }
     }
 
+    while (!deferred_deletions_.at(current_frame_).empty()) {
+      deferred_deletions_.at(current_frame_).top()();
+      deferred_deletions_.at(current_frame_).pop();
+    }
+
     LOG(INFO) << "Rendering started for frame " << current_frame_;
 
     command_buffers_.at(current_frame_) = context_.device.allocateCommandBuffers(
         vk::CommandBufferAllocateInfo{graphics_command_pool_, vk::CommandBufferLevel::ePrimary, 1}
     );
     const vk::CommandBuffer draw_cmd = command_buffers_.at(current_frame_).front();
+    deferred_deletions_.at(current_frame_).emplace([this, draw_cmd] {
+      context_.device.freeCommandBuffers(graphics_command_pool_, draw_cmd);
+    });
 
     const uint32_t image_index = [&] {
       const vk::ResultValue<uint32_t> result = context_.device.acquireNextImage2KHR(vk::AcquireNextImageInfoKHR{
@@ -574,7 +541,7 @@ void VulkanRenderer::RenderLoop() {
       draw_cmd.setViewport(
           0, {vk::Viewport{0.0F, 0.0F, static_cast<float>(window_width), static_cast<float>(window_height), 0.0F, 1.0F}}
       );
-      draw_cmd.setScissor(0, {vk::Rect2D{{0, 0}, {window_width, window_height}}});
+      draw_cmd.setScissor(0, {vk::Rect2D{{0, 0}, window_extent_}});
 
       const glm::mat4 camera_matrix = scene_->camera().GetProjectionMatrix() * scene_->camera().GetViewMatrix();
 
@@ -658,6 +625,7 @@ VulkanRenderer::VulkanRenderer(
     physical_device_(physical_device),
     allocator_(std::move(allocator)),
     window_(window),
+    window_extent_(window->extent().width, window->extent().height),
     swapchain_(swapchain),
     render_attachments_(render_attachments),
     graphics_queue_family_index_(graphics_queue_family_index),
@@ -673,44 +641,45 @@ VulkanRenderer::VulkanRenderer(
   }
 }
 
-VulkanRenderer::VulkanRenderer(VulkanRenderer &&other) noexcept { *this = std::move(other); }
-
-VulkanRenderer &VulkanRenderer::operator=(VulkanRenderer &&other) noexcept {
-  if (this != &other) {
-    window_ = other.window_;
-    surface_ = other.surface_;
-    physical_device_ = other.physical_device_;
-    graphics_queue_ = other.graphics_queue_;
-    graphics_queue_family_index_ = other.graphics_queue_family_index_;
-    graphics_command_pool_ = other.graphics_command_pool_;
-    render_pass_ = other.render_pass_;
-    swapchain_ = other.swapchain_;
-    allocator_ = std::move(other.allocator_);
-    render_attachments_ = other.render_attachments_;
-    shaders_ = std::move(other.shaders_);
-    pipelines_ = std::move(other.pipelines_);
-    pipeline_layouts_ = std::move(other.pipeline_layouts_);
-    context_ = std::move(other.context_);
-    descriptor_pool_ = other.descriptor_pool_;
-    descriptor_sets_ = std::move(other.descriptor_sets_);
-    synchronization_info_ = other.synchronization_info_;
-    scene_ = other.scene_;
-    render_thread_ = std::move(other.render_thread_);
-    is_running_ = other.is_running_;
-
-    other.is_running_ = false;
-    other.window_ = nullptr;
-    other.surface_ = VK_NULL_HANDLE;
-    other.physical_device_ = VK_NULL_HANDLE;
-    other.graphics_queue_ = VK_NULL_HANDLE;
-    other.graphics_queue_family_index_ = -1;
-    other.graphics_command_pool_ = VK_NULL_HANDLE;
-    other.render_pass_ = VK_NULL_HANDLE;
-    other.swapchain_ = VK_NULL_HANDLE;
-    other.render_attachments_ = {};
-    other.descriptor_pool_ = VK_NULL_HANDLE;
-    other.scene_ = nullptr;
+VulkanRenderer::~VulkanRenderer() {
+  if (!context_.device) {
+    return;
   }
-  return *this;
+  if (is_running_) {
+    is_running_ = false;
+    while (!render_thread_finished_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
+
+  context_.device.waitIdle();
+
+  for (const auto &layout : pipeline_layouts_) {
+    context_.device.destroyPipelineLayout(layout);
+  }
+
+  for (const auto &[depth_attachment, color_attachment_view, depth_attachment_view, framebuffer] :
+       render_attachments_) {
+    context_.device.destroyImageView(color_attachment_view);
+    context_.device.destroyImageView(depth_attachment_view);
+    context_.device.destroyFramebuffer(framebuffer);
+  }
+
+  if (swapchain_) {
+    context_.device.destroySwapchainKHR(swapchain_);
+  }
+
+  if (render_pass_) {
+    context_.device.destroyRenderPass(render_pass_);
+  }
+  if (graphics_command_pool_) {
+    context_.device.destroyCommandPool(graphics_command_pool_);
+  }
+  if (descriptor_pool_) {
+    context_.device.destroyDescriptorPool(descriptor_pool_);
+  }
+  if (surface_) {
+    context_.instance.destroySurfaceKHR(surface_);
+  }
 }
 }  // namespace chove::rendering::vulkan

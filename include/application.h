@@ -17,6 +17,12 @@ using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 class Application {
  public:
   explicit Application(windowing::RendererType renderer_type);
+  Application(const Application &) = delete;
+  Application &operator=(const Application &) = delete;
+  Application(Application &&) noexcept = delete;
+  Application &operator=(Application &&) noexcept = delete;
+  virtual ~Application() = default;
+
   void Run();
 
   void SetCurrentScene(std::string scene_name);
