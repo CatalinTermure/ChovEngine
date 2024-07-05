@@ -87,6 +87,7 @@ in vec2 fragTexCoord;
 in vec4 fragPosEye;
 in vec4 fragPosWorld;
 in mat3 TBN;
+in mat3 inverseTBN;
 
 #if DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT > 0
 in vec4 fragPosLightSpace[DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT];
@@ -143,7 +144,7 @@ void ComputeDirectionalLight() {
         vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
     #else
         vec3 normalEye = normalize(texture(bumpTexture, texCoord).xyz * 2.0 - 1.0);
-        normalEye = normalize(inverse(TBN) * normalEye);
+        normalEye = normalize(inverseTBN * normalEye);
     #endif
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 
@@ -204,7 +205,7 @@ void ComputePointLight() {
         vec3 normalEye = normalize(fragNormal);  // interpolated normals are not normalized
     #else
         vec3 normalEye = normalize(texture(bumpTexture, texCoord).xyz * 2.0 - 1.0);
-        normalEye = normalize(inverse(TBN) * normalEye);
+        normalEye = normalize(inverseTBN * normalEye);
     #endif
     vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);  // compute view direction
 

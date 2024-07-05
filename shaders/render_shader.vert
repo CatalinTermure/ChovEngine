@@ -22,6 +22,7 @@ out vec2 fragTexCoord;
 out vec4 fragPosEye;
 out vec4 fragPosWorld;
 out mat3 TBN;
+out mat3 inverseTBN;
 
 #if DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT > 0
 out vec4 fragPosLightSpace[DIRECTIONAL_LIGHT_COUNT + SPOT_LIGHT_COUNT];
@@ -44,6 +45,7 @@ void main() {
     vec3 B = cross(N, T);
 
     TBN = transpose(mat3(T, B, N));
+    inverseTBN = inverse(TBN);
 
     gl_Position = projection * view * model * vec4(position, 1.0f);
 }
