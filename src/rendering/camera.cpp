@@ -8,21 +8,14 @@
 namespace chove::objects {
 
 namespace {
-bool IsAngleAcceptable(float angle) {
-  if (angle < 5.0f || angle > 175.0f) {
-    return false;
-  }
-  return true;
-}
+bool IsAngleAcceptable(float angle) { return angle >= 5.0F && angle <= 175.0F; }
 }  // namespace
 
-glm::mat4 Camera::GetViewMatrix() const {
-  return glm::lookAt(position_, position_ + look_direction_, glm::vec3(0.0f, 1.0f, 0.0f));
-}
+glm::mat4 Camera::GetViewMatrix() const { return lookAt(position_, position_ + look_direction_, up_direction); }
 
 glm::mat4 Camera::GetProjectionMatrix() const { return glm::perspective(fov_, aspect_ratio_, near_plane_, far_plane_); }
 
-void Camera::Move(Camera::Direction direction, float amount) {
+void Camera::Move(Direction direction, float amount) {
   switch (direction) {
     case Direction::eForward:
       position_ += look_direction_ * amount;
@@ -31,10 +24,10 @@ void Camera::Move(Camera::Direction direction, float amount) {
       position_ -= look_direction_ * amount;
       break;
     case Direction::eLeft:
-      position_ -= glm::normalize(glm::cross(look_direction_, up_direction)) * amount;
+      position_ -= normalize(cross(look_direction_, up_direction)) * amount;
       break;
     case Direction::eRight:
-      position_ += glm::normalize(glm::cross(look_direction_, up_direction)) * amount;
+      position_ += normalize(cross(look_direction_, up_direction)) * amount;
       break;
     case Direction::eUp:
       position_ += up_direction * amount;
@@ -42,32 +35,30 @@ void Camera::Move(Camera::Direction direction, float amount) {
   }
 }
 
-void Camera::Rotate(Camera::RotationDirection direction, float degrees) {
+void Camera::Rotate(RotationDirection direction, float degrees) {
   glm::vec3 new_direction;
   switch (direction) {
     case RotationDirection::eUpward:
-      new_direction = glm::normalize(
-          glm::angleAxis(glm::radians(-degrees), glm::normalize(glm::cross(look_direction_, up_direction))) *
-          glm::vec4(look_direction_, 0.0f)
+      new_direction = normalize(
+          angleAxis(glm::radians(-degrees), normalize(cross(look_direction_, up_direction))) *
+          glm::vec4(look_direction_, 0.0F)
       );
-      if (!IsAngleAcceptable(glm::degrees(glm::angle(new_direction, up_direction)))) return;
+      if (!IsAngleAcceptable(glm::degrees(angle(new_direction, up_direction)))) return;
       look_direction_ = new_direction;
       break;
     case RotationDirection::eDownward:
-      new_direction = glm::normalize(
-          glm::angleAxis(glm::radians(degrees), glm::normalize(glm::cross(look_direction_, up_direction))) *
-          glm::vec4(look_direction_, 0.0f)
+      new_direction = normalize(
+          angleAxis(glm::radians(degrees), normalize(cross(look_direction_, up_direction))) *
+          glm::vec4(look_direction_, 0.0F)
       );
-      if (!IsAngleAcceptable(glm::degrees(glm::angle(new_direction, up_direction)))) return;
+      if (!IsAngleAcceptable(glm::degrees(angle(new_direction, up_direction)))) return;
       look_direction_ = new_direction;
       break;
     case RotationDirection::eLeft:
-      look_direction_ =
-          glm::normalize(glm::angleAxis(glm::radians(degrees), up_direction) * glm::vec4(look_direction_, 0.0f));
+      look_direction_ = angleAxis(glm::radians(degrees), up_direction) * glm::vec4(look_direction_, 0.0F);
       break;
     case RotationDirection::eRight:
-      look_direction_ =
-          glm::normalize(glm::angleAxis(glm::radians(-degrees), up_direction) * glm::vec4(look_direction_, 0.0f));
+      look_direction_ = angleAxis(glm::radians(-degrees), up_direction) * glm::vec4(look_direction_, 0.0F);
       break;
   }
 }
@@ -76,7 +67,7 @@ Camera::Camera(
     glm::vec4 position, glm::vec3 look_direction, float fov, float aspect_ratio, float near_plane, float far_plane
 ) :
     position_(position),
-    look_direction_(glm::normalize(look_direction)),
+    look_direction_(normalize(look_direction)),
     fov_(fov),
     aspect_ratio_(aspect_ratio),
     near_plane_(near_plane),
