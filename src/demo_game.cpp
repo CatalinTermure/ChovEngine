@@ -1,9 +1,7 @@
 #include "demo_game.h"
 
-#include <absl/log/log.h>
-
 #include "objects/lights.h"
-
+#include "utils/logging.h"
 namespace chove {
 
 namespace {
@@ -107,13 +105,13 @@ void DemoGame::HandleInput() {
           camera_velocity_.z = 0.0F;
           break;
         default:
-          LOG(INFO) << std::format(
+          log_info(
               "Camera position is: ({},{},{})",
               current_scene().camera().position().x,
               current_scene().camera().position().y,
               current_scene().camera().position().z
           );
-          LOG(INFO) << std::format(
+          log_info(
               "Camera look direction is: ({},{},{})",
               current_scene().camera().look_direction().x,
               current_scene().camera().look_direction().y,

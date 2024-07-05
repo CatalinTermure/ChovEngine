@@ -2,7 +2,7 @@
 
 namespace chove::rendering::opengl {
 
-UniformBuffer::UniformBuffer(UniformBuffer &&other) noexcept: buffer_(other.buffer_), binding_(other.binding_) {
+UniformBuffer::UniformBuffer(UniformBuffer &&other) noexcept : buffer_(other.buffer_), binding_(other.binding_) {
   other.buffer_ = 0;
 }
 
@@ -26,7 +26,7 @@ void UniformBuffer::Bind(GLuint shader_program, const std::string &name, GLint b
   glBindBufferBase(GL_UNIFORM_BUFFER, binding_, buffer_);
   GLuint block_index = glGetUniformBlockIndex(shader_program, name.c_str());
   if (block_index == GL_INVALID_INDEX) {
-    LOG(WARNING) << "Uniform block index not found for " << name;
+    log_warn("Uniform block index not found for {}", name);
   }
   glUniformBlockBinding(shader_program, block_index, binding_);
 }
@@ -37,9 +37,7 @@ void UniformBuffer::UpdateData(const void *data, size_t size) const {
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void UniformBuffer::Rebind() const {
-  glBindBufferBase(GL_UNIFORM_BUFFER, binding_, buffer_);
-}
+void UniformBuffer::Rebind() const { glBindBufferBase(GL_UNIFORM_BUFFER, binding_, buffer_); }
 
 UniformBuffer::~UniformBuffer() {
   if (buffer_ > 0) {
@@ -54,4 +52,4 @@ void UniformBuffer::UpdateSubData(const void *data, size_t offset, size_t size) 
   glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
-}
+}  // namespace chove::rendering::opengl

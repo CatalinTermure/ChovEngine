@@ -1,8 +1,9 @@
 #include "rendering/mesh.h"
 
 #include <absl/container/flat_hash_map.h>
-#include <absl/log/log.h>
 #include <external/tiny_obj_loader.h>
+
+#include "utils/logging.h"
 
 namespace chove::rendering {
 namespace {
@@ -25,28 +26,30 @@ std::optional<std::filesystem::path> GetPath(const std::filesystem::path &path, 
   return path.parent_path() / texture_name;
 }
 
-std::vector<Material> GetMeshMaterialsFromObj(const std::filesystem::path &path,
-                                              const std::vector<tinyobj::material_t> &obj_materials) {
+std::vector<Material> GetMeshMaterialsFromObj(
+    const std::filesystem::path &path, const std::vector<tinyobj::material_t> &obj_materials
+) {
   std::vector<Material> mesh_materials;
   mesh_materials.reserve(obj_materials.size());
   for (const auto &material : obj_materials) {
-    mesh_materials.push_back(
-        Material{.shininess = material.shininess,
-                 .optical_density = material.ior,
-                 .dissolve = material.dissolve,
-                 .transmission_filter_color =
-                     glm::vec3(material.transmittance[0], material.transmittance[1], material.transmittance[2]),
-                 .ambient_color = glm::vec3(material.ambient[0], material.ambient[1], material.ambient[2]),
-                 .diffuse_color = glm::vec3(material.diffuse[0], material.diffuse[1], material.diffuse[2]),
-                 .specular_color = glm::vec3(material.specular[0], material.specular[1], material.specular[2]),
-                 .ambient_texture = GetPath(path, material.ambient_texname),
-                 .diffuse_texture = GetPath(path, material.diffuse_texname),
-                 .specular_texture = GetPath(path, material.specular_texname),
-                 .shininess_texture = GetPath(path, material.specular_highlight_texname),
-                 .alpha_texture = GetPath(path, material.alpha_texname),
-                 .bump_texture = GetPath(path, material.bump_texname),
-                 .displacement_texture = GetPath(path, material.displacement_texname),
-                 .illumination_model = static_cast<IllumType>(material.illum)});
+    mesh_materials.push_back(Material{
+        .shininess = material.shininess,
+        .optical_density = material.ior,
+        .dissolve = material.dissolve,
+        .transmission_filter_color =
+            glm::vec3(material.transmittance[0], material.transmittance[1], material.transmittance[2]),
+        .ambient_color = glm::vec3(material.ambient[0], material.ambient[1], material.ambient[2]),
+        .diffuse_color = glm::vec3(material.diffuse[0], material.diffuse[1], material.diffuse[2]),
+        .specular_color = glm::vec3(material.specular[0], material.specular[1], material.specular[2]),
+        .ambient_texture = GetPath(path, material.ambient_texname),
+        .diffuse_texture = GetPath(path, material.diffuse_texname),
+        .specular_texture = GetPath(path, material.specular_texname),
+        .shininess_texture = GetPath(path, material.specular_highlight_texname),
+        .alpha_texture = GetPath(path, material.alpha_texname),
+        .bump_texture = GetPath(path, material.bump_texname),
+        .displacement_texture = GetPath(path, material.displacement_texname),
+        .illumination_model = static_cast<IllumType>(material.illum)
+    });
 
     if (mesh_materials.back().ambient_color == glm::vec3(0.0F, 0.0F, 0.0F)) {
       mesh_materials.back().ambient_color = mesh_materials.back().diffuse_color;
@@ -57,17 +60,21 @@ std::vector<Material> GetMeshMaterialsFromObj(const std::filesystem::path &path,
 }
 
 std::tuple<std::vector<Mesh::Vertex>, std::vector<glm::vec3>, std::vector<uint32_t>> ParseObjShape(
-    const tinyobj::attrib_t &attrib, const std::vector<tinyobj::shape_t>::value_type &shape) {
+    const tinyobj::attrib_t &attrib, const std::vector<tinyobj::shape_t>::value_type &shape
+) {
   std::vector<glm::vec3> colors;
   std::vector<Mesh::Vertex> final_vertices;
   std::vector<uint32_t> indices;
   absl::flat_hash_map<tinyobj::index_t, uint32_t, IndexHash, IndexEq> vertex_map;
 
   for (auto material_id : shape.mesh.material_ids) {
-    LOG_IF(ERROR, material_id != shape.mesh.material_ids[0])
-        << "Shape has multiple materials, decomposing into multiple meshes is not supported";
+    if (material_id != shape.mesh.material_ids[0]) {
+      log_error("Shape has multiple materials, decomposing into multiple meshes is not supported");
+    }
   }
-  LOG_IF(FATAL, shape.mesh.indices.size() % 3 != 0) << "Shape has non-triangular faces";
+  if (shape.mesh.indices.size() % 3 != 0) {
+    log_error("Shape has non-triangular indices");
+  }
 
   for (int i = 0; i < shape.mesh.indices.size(); i += 3) {
     for (int j = 0; j < 3; ++j) {
@@ -78,22 +85,29 @@ std::tuple<std::vector<Mesh::Vertex>, std::vector<glm::vec3>, std::vector<uint32
       }
 
       const Mesh::Vertex vertex = {
-          glm::vec3(attrib.vertices[3 * index.vertex_index],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]),
-          glm::vec3(attrib.normals[3 * index.normal_index],
-                    attrib.normals[3 * index.normal_index + 1],
-                    attrib.normals[3 * index.normal_index + 2]),
+          glm::vec3(
+              attrib.vertices[3 * index.vertex_index],
+              attrib.vertices[3 * index.vertex_index + 1],
+              attrib.vertices[3 * index.vertex_index + 2]
+          ),
+          glm::vec3(
+              attrib.normals[3 * index.normal_index],
+              attrib.normals[3 * index.normal_index + 1],
+              attrib.normals[3 * index.normal_index + 2]
+          ),
           index.texcoord_index == -1
               ? glm::vec2(0.0F, 0.0F)
               : glm::vec2(attrib.texcoords[2 * index.texcoord_index], attrib.texcoords[2 * index.texcoord_index + 1]),
-          glm::vec3(0.0F, 0.0F, 0.0F)};
+          glm::vec3(0.0F, 0.0F, 0.0F)
+      };
       vertex_map[index] = final_vertices.size();
       indices.push_back(final_vertices.size());
       final_vertices.push_back(vertex);
-      colors.emplace_back(attrib.colors[3 * index.vertex_index],
-                          attrib.colors[3 * index.vertex_index + 1],
-                          attrib.colors[3 * index.vertex_index + 2]);
+      colors.emplace_back(
+          attrib.colors[3 * index.vertex_index],
+          attrib.colors[3 * index.vertex_index + 1],
+          attrib.colors[3 * index.vertex_index + 2]
+      );
     }
     glm::vec3 edge1 = final_vertices[indices[i + 1]].position - final_vertices[indices[i]].position;
     glm::vec3 edge2 = final_vertices[indices[i + 2]].position - final_vertices[indices[i]].position;
@@ -130,18 +144,18 @@ Mesh::BoundingBox ComputeBoundingBox(const std::vector<Mesh::Vertex> &vertices) 
 
 void CheckErrors(const std::filesystem::path &path, const tinyobj::ObjReader &reader) {
   if (!reader.Error().empty()) {
-    LOG(FATAL) << "TinyObjReader error: " << reader.Error();
+    log_fatal("TinyObjReader error: {}", reader.Error());
   }
 
   if (!reader.Warning().empty()) {
-    LOG(ERROR) << "TinyObjReader warning: " << reader.Warning();
+    log_error("TinyObjReader warning: {}", reader.Warning());
   }
 
   if (reader.Valid()) {
-    LOG(INFO) << "TinyObjReader: successfully parsed " << path;
+    log_info("TinyObjReader: successfully parsed {}", path.string());
   }
   else {
-    LOG(FATAL) << "TinyObjReader: failed to parse " << path;
+    log_fatal("TinyObjReader: failed to parse {}", path.string());
   }
 }
 
@@ -155,7 +169,7 @@ std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path &path) {
   reader.ParseFromFile(path.string(), reader_config);
   CheckErrors(path, reader);
 
-  LOG(INFO) << "Started OBJ import from " << path << "...";
+  log_info("Starting OBJ import from {}", path.string());
 
   const tinyobj::attrib_t &attrib = reader.GetAttrib();
   const std::vector<tinyobj::shape_t> &obj_shapes = reader.GetShapes();
@@ -163,7 +177,7 @@ std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path &path) {
 
   std::vector<Material> mesh_materials = GetMeshMaterialsFromObj(path, obj_materials);
 
-  LOG(INFO) << "Imported materials, starting importing meshes...";
+  log_info("Imported materials, starting importing meshes...");
 
   // One mesh per shape, may merge
   std::vector<Mesh> meshes;
@@ -175,7 +189,7 @@ std::vector<Mesh> Mesh::ImportFromObj(const std::filesystem::path &path) {
     meshes.emplace_back(final_vertices, colors, indices, mesh_materials[shape.mesh.material_ids[0]], bounding_box);
   }
 
-  LOG(INFO) << "Finished importing meshes from " << path;
+  log_info("Finished importing meshes from {}", path.string());
 
   return meshes;
 }

@@ -34,18 +34,18 @@ add_library(ProjectObjects src/objects/scene.cpp
         src/objects/object_manager.cpp
         src/objects/game_object.cpp)
 target_include_directories(ProjectObjects PUBLIC include)
-target_link_libraries(ProjectObjects glm::glm absl::base absl::hash absl::log absl::status)
+target_link_libraries(ProjectObjects glm::glm absl::base absl::hash absl::status)
 
 add_library(ProjectWindowing src/windowing/events.cpp
         src/windowing/window.cpp)
 target_include_directories(ProjectWindowing PUBLIC include)
-target_link_libraries(ProjectWindowing glfw GLEW::GLEW Vulkan::Vulkan absl::base absl::hash absl::log absl::status readerwriterqueue)
+target_link_libraries(ProjectWindowing glfw GLEW::GLEW Vulkan::Vulkan absl::base absl::hash absl::status readerwriterqueue)
 
 add_library(ProjectRendering src/rendering/mesh.cpp
         src/rendering/camera.cpp
         src/rendering/libraries_initializer.cpp)
 target_include_directories(ProjectRendering PUBLIC include)
-target_link_libraries(ProjectRendering ProjectWindowing glm::glm absl::base absl::hash absl::log absl::status)
+target_link_libraries(ProjectRendering ProjectWindowing glm::glm absl::base absl::hash absl::status)
 
 add_library(ProjectRenderingOpenGL
         src/rendering/opengl/renderer.cpp
@@ -56,7 +56,7 @@ add_library(ProjectRenderingOpenGL
         src/rendering/opengl/render_object.cpp
         src/rendering/opengl/shader_allocator.cpp
         src/rendering/opengl/uniform.cpp)
-target_link_libraries(ProjectRenderingOpenGL ProjectRendering GLEW::GLEW absl::base absl::log)
+target_link_libraries(ProjectRenderingOpenGL ProjectRendering GLEW::GLEW absl::base)
 target_include_directories(ProjectRenderingOpenGL PUBLIC include)
 
 add_library(ProjectRenderingVulkan
@@ -66,12 +66,12 @@ add_library(ProjectRenderingVulkan
         src/rendering/vulkan/pipeline_builder.cpp
         src/rendering/vulkan/shader.cpp
         src/rendering/vulkan/context.cpp)
-target_link_libraries(ProjectRenderingVulkan ProjectRendering glm::glm Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator absl::base absl::log)
+target_link_libraries(ProjectRenderingVulkan ProjectRendering glm::glm Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator absl::base)
 target_include_directories(ProjectRenderingVulkan PUBLIC "${Vulkan_INCLUDE_DIRS}" include)
 
 add_library(ProjectApplication src/application.cpp)
 target_include_directories(ProjectApplication PUBLIC include)
-target_link_libraries(ProjectApplication ProjectObjects ProjectRenderingOpenGL ProjectRenderingVulkan absl::base absl::hash absl::log absl::status)
+target_link_libraries(ProjectApplication ProjectObjects ProjectRenderingOpenGL ProjectRenderingVulkan absl::base absl::hash absl::status)
 
 add_executable(ChovEngine src/main.cpp
         src/demo_game.cpp
@@ -100,7 +100,7 @@ add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
 
 add_dependencies(ChovEngine shaders)
 
-target_link_libraries(ChovEngine ProjectApplication glm::glm absl::base absl::log absl::status)
+target_link_libraries(ChovEngine ProjectApplication glm::glm absl::base absl::status)
 target_include_directories(ChovEngine PUBLIC include)
 
 if (MSVC)

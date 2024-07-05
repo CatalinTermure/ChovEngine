@@ -1,11 +1,10 @@
 #include "application.h"
 
-#include "rendering/opengl/renderer.h"
-#include "rendering/vulkan/vulkan_renderer.h"
-
 #include <thread>
 
-#include <absl/log/log.h>
+#include "rendering/opengl/renderer.h"
+#include "rendering/vulkan/vulkan_renderer.h"
+#include "utils/logging.h"
 
 namespace chove {
 void Application::SetCurrentScene(std::string scene_name) {
@@ -27,7 +26,7 @@ void Application::Run() {
 
     auto target_frame_time = std::chrono::nanoseconds(1'000'000'000 / target_frame_rate_);
     if (end_frame_time - start_frame_time > target_frame_time) {
-      LOG(INFO) << std::format(
+      log_info(
           "Frame time: {} ms.", duration_cast<std::chrono::milliseconds>(end_frame_time - start_frame_time).count()
       );
     }
@@ -42,7 +41,10 @@ Application::Application(windowing::RendererType renderer_type) :
     renderer_ = std::make_unique<rendering::vulkan::VulkanRenderer>(rendering::vulkan::VulkanRenderer::Create(window_));
   }
   else {
-    LOG(FATAL) << "Renderer type not supported.";
+    log_fatal(
+        "Renderer type not supported."
+        "Supported renderer types: OpenGL, Vulkan."
+    );
   }
 }
 }  // namespace chove

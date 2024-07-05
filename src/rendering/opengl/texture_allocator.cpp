@@ -1,20 +1,21 @@
 #include "rendering/opengl/texture_allocator.h"
 
+#include <ranges>
+
 #include "external/stb_image.h"
-#include <absl/log/log.h>
+
+#include "utils/logging.h"
 
 namespace chove::rendering::opengl {
 namespace {
 constexpr int kTexturesPerAllocation = 64;
-}
+}  // namespace
 
-TextureAllocator::TextureAllocator() {
-  AllocateUnmappedTextureBlockIfNeeded();
-}
+TextureAllocator::TextureAllocator() { AllocateUnmappedTextureBlockIfNeeded(); }
 
 TextureAllocator::~TextureAllocator() {
   std::vector<GLuint> textures;
-  for (auto &[texture, _] : texture_ref_counts_) {
+  for (const auto &texture : texture_ref_counts_ | std::views::keys) {
     textures.push_back(texture);
   }
   glDeleteTextures(static_cast<GLsizei>(textures.size()), textures.data());
@@ -28,9 +29,7 @@ void TextureAllocator::AllocateUnmappedTextureBlockIfNeeded() {
   glGenTextures(kTexturesPerAllocation, unmapped_textures_.data());
 }
 
-void TextureAllocator::InvalidateCache() {
-  texture_creation_cache_.clear();
-}
+void TextureAllocator::InvalidateCache() { texture_creation_cache_.clear(); }
 
 void TextureAllocator::DeallocateTexture(GLuint texture) {
   texture_ref_counts_.at(texture) -= 1;
@@ -54,12 +53,12 @@ GLuint TextureAllocator::AllocateTexture(const std::filesystem::path &path) {
   int width, height, channels;
   stbi_uc *image_data = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
   if (image_data == nullptr) {
-    LOG(ERROR) << "Failed to load texture " << path;
+    log_error("Failed to load texture {}", path.string());
     return -1;
   }
 
   if ((width & (width - 1)) != 0 || (height & (height - 1)) != 0) {
-    LOG(ERROR) << "Texture " << path << " is not a power of two";
+    log_error("Texture {} is not a power of two", path.string());
     return -1;
   }
 
@@ -125,15 +124,17 @@ GLuint TextureAllocator::AllocateCubeDepthMap(int cube_length) {
   glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
 
   for (int i = 0; i < 6; ++i) {
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                 0,
-                 GL_DEPTH_COMPONENT,
-                 cube_length,
-                 cube_length,
-                 0,
-                 GL_DEPTH_COMPONENT,
-                 GL_FLOAT,
-                 nullptr);
+    glTexImage2D(
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+        0,
+        GL_DEPTH_COMPONENT,
+        cube_length,
+        cube_length,
+        0,
+        GL_DEPTH_COMPONENT,
+        GL_FLOAT,
+        nullptr
+    );
   }
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -149,4 +150,4 @@ GLuint TextureAllocator::AllocateCubeDepthMap(int cube_length) {
   texture_ref_counts_[texture] = 1;
   return texture;
 }
-}
+}  // namespace chove::rendering::opengl

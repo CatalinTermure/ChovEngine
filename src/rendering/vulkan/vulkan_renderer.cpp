@@ -1,20 +1,20 @@
 #include "rendering/vulkan/vulkan_renderer.h"
 
-#include "rendering/mesh.h"
-#include "rendering/vulkan/allocator.h"
-#include "rendering/vulkan/pipeline_builder.h"
-#include "rendering/vulkan/render_info.h"
-#include "rendering/vulkan/shader.h"
-#include "windowing/events.h"
-#include "windowing/window.h"
-
 #include <cstdint>
 #include <filesystem>
 #include <utility>
 #include <vector>
 
-#include <absl/log/log.h>
 #include <vulkan/vulkan.hpp>
+
+#include "rendering/mesh.h"
+#include "rendering/vulkan/allocator.h"
+#include "rendering/vulkan/pipeline_builder.h"
+#include "rendering/vulkan/render_info.h"
+#include "rendering/vulkan/shader.h"
+#include "utils/logging.h"
+#include "windowing/events.h"
+#include "windowing/window.h"
 
 namespace chove::rendering::vulkan {
 
@@ -48,7 +48,7 @@ vk::PhysicalDevice PickPhysicalDevice(const vk::Instance &instance) {
   for (const auto &potential_device : physical_devices) {
     const vk::PhysicalDeviceProperties properties = potential_device.getProperties();
     if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
-      LOG(INFO) << "Using discrete GPU: " << properties.deviceName;
+      log_info("Using discrete GPU: {}", properties.deviceID);
       physical_device = potential_device;
       break;
     }
@@ -62,7 +62,7 @@ uint32_t GetGraphicsQueueFamilyIndex(const vk::SurfaceKHR &surface, const vk::Ph
   for (uint32_t family_index = 0; family_index < queue_family_properties.size(); ++family_index) {
     if ((queue_family_properties[family_index].queueFlags & vk::QueueFlagBits::eGraphics) &&
         physical_device.getSurfaceSupportKHR(family_index, surface) != 0) {
-      LOG(INFO) << "Found graphics queue family with presentation support at index " << family_index;
+      log_info("Found graphics queue family with presentation support at index ", family_index);
       graphics_queue_family_index = family_index;
       break;
     }
@@ -181,13 +181,13 @@ vk::SwapchainKHR CreateSwapchain(
     const vk::Device &device
 ) {
   auto [swapchain_width, swapchain_height] = window_extent;
-  LOG(INFO) << "Swapchain size is " << swapchain_width << "x" << swapchain_height;
+  log_info("Swapchain size before querying surface capabilities is {}x{}", swapchain_width, swapchain_height);
   const vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
   if (surface_capabilities.currentExtent.width != UINT32_MAX) {
     swapchain_width = surface_capabilities.currentExtent.width;
     swapchain_height = surface_capabilities.currentExtent.height;
   }
-  LOG(INFO) << "Swapchain size after querying surface capabilities is " << swapchain_width << "x" << swapchain_height;
+  log_info("Swapchain size after querying surface capabilities is {}x{}", swapchain_width, swapchain_height);
 
   const std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
   vk::SurfaceFormatKHR surface_format;
@@ -442,7 +442,7 @@ void VulkanRenderer::HandleWindowResize() {
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
       event = window_->GetRendererEvent();
     }
-    LOG(INFO) << "Cleaning up swapchain";
+    log_info("Cleaning up swapchain");
 
     for (const auto &[depth_attachment, color_attachment_view, depth_attachment_view, framebuffer] :
          render_attachments_) {
@@ -453,14 +453,14 @@ void VulkanRenderer::HandleWindowResize() {
     }
     context_.device.destroySwapchainKHR(swapchain_);
 
-    LOG(INFO) << "Recreating swapchain.";
+    log_info("Recreating swapchain.");
 
     window_extent_ = vk::Extent2D{window_->extent().width, window_->extent().height};
     swapchain_ =
         CreateSwapchain(window_extent_, surface_, physical_device_, graphics_queue_family_index_, context_.device);
     render_attachments_ = CreateFramebuffers(window_extent_, context_.device, allocator_, render_pass_, swapchain_);
 
-    LOG(INFO) << "Swapchain recreated.";
+    log_info("Swapchain recreated.");
     event = window_->GetRendererEvent();
   }
 }
@@ -472,13 +472,13 @@ void VulkanRenderer::RenderLoop() {
 
     const auto [window_width, window_height] = window_extent_;
 
-    LOG(INFO) << "Started waiting for frame " << current_frame_;
+    log_info("Started waiting for frame {}", current_frame_);
 
     {
       const vk::Result result =
           context_.device.waitForFences(synchronization_info_.at(current_frame_).in_flight_fence, vk::True, UINT64_MAX);
       if (result != vk::Result::eSuccess) {
-        LOG(WARNING) << "Failed to wait for frame in flight at frame " << current_frame_ << ".";
+        log_warn("Failed to wait for frame in flight at frame {}", current_frame_);
         return;
       }
     }
@@ -488,7 +488,7 @@ void VulkanRenderer::RenderLoop() {
       deferred_deletions_.at(current_frame_).pop();
     }
 
-    LOG(INFO) << "Rendering started for frame " << current_frame_;
+    log_info("Rendering started for frame {}", current_frame_);
 
     command_buffers_.at(current_frame_) = context_.device.allocateCommandBuffers(
         vk::CommandBufferAllocateInfo{graphics_command_pool_, vk::CommandBufferLevel::ePrimary, 1}
@@ -513,11 +513,11 @@ void VulkanRenderer::RenderLoop() {
     }();
 
     if (image_index == std::numeric_limits<uint32_t>::max()) {
-      LOG(WARNING) << "Skipped frame.";
+      log_warn("Skipped frame");
       continue;
     }
 
-    LOG(INFO) << "Starting command recording for frame " << current_frame_;
+    log_info("Starting command recording for frame {}", current_frame_);
 
     context_.device.resetFences(synchronization_info_.at(current_frame_).in_flight_fence);
 
@@ -564,7 +564,7 @@ void VulkanRenderer::RenderLoop() {
 
     draw_cmd.end();
 
-    LOG(INFO) << "Finished command recording for frame " << current_frame_;
+    log_info("Finished command recording for frame {}", current_frame_);
 
     {
       vk::CommandBufferSubmitInfo draw_submit_info{draw_cmd, 1};
@@ -584,7 +584,7 @@ void VulkanRenderer::RenderLoop() {
       );
     }
 
-    LOG(INFO) << "Starting presentation for frame " << current_frame_;
+    log_info("Starting presentation for frame {}", current_frame_);
 
     auto result = vk::Result::eSuccess;
     try {
@@ -593,16 +593,16 @@ void VulkanRenderer::RenderLoop() {
       );
     }
     catch (vk::OutOfDateKHRError &) {
-      LOG(WARNING) << "Swapchain out of date.";
+      log_warn("Swapchain out of date.");
       continue;
     }
 
     if (result != vk::Result::eSuccess) {
-      LOG(WARNING) << "Failed to present frame.";
+      log_warn("Failed to present frame.");
       continue;
     }
 
-    LOG(INFO) << "Finished presentation for frame " << current_frame_;
+    log_info("Finished presentation for frame {}", current_frame_);
   }
   render_thread_finished_ = true;
 }

@@ -13,12 +13,12 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/log.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/geometric.hpp"
 #include "glm/gtx/norm.hpp"
 #include "glm/trigonometric.hpp"
+
 #include "objects/game_object.h"
 #include "objects/lights.h"
 #include "objects/scene.h"
@@ -31,6 +31,7 @@
 #include "rendering/opengl/texture.h"
 #include "rendering/opengl/texture_allocator.h"
 #include "rendering/opengl/uniform.h"
+#include "utils/logging.h"
 #include "windowing/window.h"
 
 namespace chove::rendering::opengl {
@@ -138,19 +139,19 @@ void GLAPIENTRY MessageCallback(
   msg += "\n-------------------------------------------------------------";
   switch (severity) {
     case GL_DEBUG_SEVERITY_HIGH:
-      LOG(ERROR) << msg;
+      log_error(msg);
       break;
     case GL_DEBUG_SEVERITY_MEDIUM:
-      LOG(WARNING) << msg;
+      log_warn(msg);
       break;
     case GL_DEBUG_SEVERITY_LOW:
-      LOG(INFO) << msg;
+      log_info(msg);
       break;
     case GL_DEBUG_SEVERITY_NOTIFICATION:
-      LOG(INFO) << msg;
+      log_info(msg);
       break;
     default:
-      LOG(INFO) << msg;
+      log_info(msg);
       break;
   }
 }
@@ -498,7 +499,7 @@ void Renderer::Render() {
 }
 
 void Renderer::SetupScene(Scene &scene) {
-  LOG(INFO) << "Starting setup scene";
+  log_info("Starting setup scene");
   scene_ = &scene;
   scene_->ClearDirtyBit();
 
@@ -562,7 +563,7 @@ void Renderer::SetupScene(Scene &scene) {
 
   int index = 0;
   for (auto &&[entity, transform, mesh] : scene_->GetAllObjectsWith<Transform, Mesh *>().each()) {
-    LOG(INFO) << "Setting up object " << index;
+    log_info("Setting up object {}", index);
     RenderObject render_info;
 
     AttachMaterial(render_info, mesh->material);
@@ -629,7 +630,7 @@ void Renderer::SetupScene(Scene &scene) {
     index++;
   }
 
-  LOG(INFO) << "Finished setup scene";
+  log_info("Finished setup scene");
 }
 
 void Renderer::AttachMaterial(RenderObject &render_object, const Material &material) {

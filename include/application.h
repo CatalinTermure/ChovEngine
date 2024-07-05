@@ -34,6 +34,8 @@ class Application {
   virtual void HandleInput() = 0;
   virtual void HandlePhysics(Duration delta_time) = 0;
 
+  std::unique_ptr<rendering::Renderer> renderer_;
+
   absl::flat_hash_map<std::string, objects::Scene> scenes_;
   std::string current_scene_name_;
 
@@ -43,8 +45,6 @@ class Application {
 
   bool is_running_ = false;
   int target_frame_rate_ = 60;
-
-  std::unique_ptr<rendering::Renderer> renderer_;
 };
 }  // namespace chove
 

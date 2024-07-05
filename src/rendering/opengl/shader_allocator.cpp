@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include <absl/log/log.h>
+#include <utils/logging.h>
 
 namespace chove::rendering::opengl {
 
@@ -27,7 +27,7 @@ void LogShaderCompileIssues(GLuint shader) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader, 512, nullptr, log);
-    LOG(ERROR) << "Shader compilation error: " << log;
+    log_error("Shader compilation error: {}", log);
   }
 }
 
@@ -38,7 +38,7 @@ void LogShaderLinkIssues(GLuint program) {
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(program, 512, nullptr, log);
-    LOG(ERROR) << "Shader linking error: " << log;
+    log_error("Shader linking error: {}", log);
   }
 }
 
@@ -46,19 +46,26 @@ std::vector<std::string> GetDefinesForFlags(std::vector<ShaderFlag> flags) {
   std::vector<std::string> result;
   for (const ShaderFlag &flag : flags) {
     switch (flag.type) {
-      case ShaderFlagTypes::kNoDiffuseTexture:result.emplace_back("#define NO_DIFFUSE_TEXTURE\n");
+      case ShaderFlagTypes::kNoDiffuseTexture:
+        result.emplace_back("#define NO_DIFFUSE_TEXTURE\n");
         break;
-      case ShaderFlagTypes::kNoAmbientTexture:result.emplace_back("#define NO_AMBIENT_TEXTURE\n");
+      case ShaderFlagTypes::kNoAmbientTexture:
+        result.emplace_back("#define NO_AMBIENT_TEXTURE\n");
         break;
-      case ShaderFlagTypes::kNoSpecularTexture:result.emplace_back("#define NO_SPECULAR_TEXTURE\n");
+      case ShaderFlagTypes::kNoSpecularTexture:
+        result.emplace_back("#define NO_SPECULAR_TEXTURE\n");
         break;
-      case ShaderFlagTypes::kNoShininessTexture:result.emplace_back("#define NO_SHININESS_TEXTURE\n");
+      case ShaderFlagTypes::kNoShininessTexture:
+        result.emplace_back("#define NO_SHININESS_TEXTURE\n");
         break;
-      case ShaderFlagTypes::kNoAlphaTexture:result.emplace_back("#define NO_ALPHA_TEXTURE\n");
+      case ShaderFlagTypes::kNoAlphaTexture:
+        result.emplace_back("#define NO_ALPHA_TEXTURE\n");
         break;
-      case ShaderFlagTypes::kNoBumpTexture:result.emplace_back("#define NO_BUMP_TEXTURE\n");
+      case ShaderFlagTypes::kNoBumpTexture:
+        result.emplace_back("#define NO_BUMP_TEXTURE\n");
         break;
-      case ShaderFlagTypes::kNoDisplacementTexture:result.emplace_back("#define NO_DISPLACEMENT_TEXTURE\n");
+      case ShaderFlagTypes::kNoDisplacementTexture:
+        result.emplace_back("#define NO_DISPLACEMENT_TEXTURE\n");
         break;
       case ShaderFlagTypes::kPointLightCount:
         result.emplace_back("#define POINT_LIGHT_COUNT " + std::to_string(flag.value) + "\n");
@@ -85,7 +92,7 @@ std::string StringifyFlags(std::vector<ShaderFlag> flags) {
 
 constexpr const char *kShaderVersion = "#version 420 core\n";
 
-}
+}  // namespace
 
 ShaderAllocator::~ShaderAllocator() {
   std::vector<GLuint> shaders;
@@ -94,12 +101,18 @@ ShaderAllocator::~ShaderAllocator() {
   }
 }
 
-GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shader_path,
-                                       const std::vector<ShaderFlag> &vertex_shader_flags,
-                                       const std::filesystem::path &fragment_shader_path,
-                                       const std::vector<ShaderFlag> &fragment_shader_flags) {
-  ShaderInfo info = {vertex_shader_path, StringifyFlags(vertex_shader_flags), fragment_shader_path,
-                     StringifyFlags(fragment_shader_flags)};
+GLuint ShaderAllocator::AllocateShader(
+    const std::filesystem::path &vertex_shader_path,
+    const std::vector<ShaderFlag> &vertex_shader_flags,
+    const std::filesystem::path &fragment_shader_path,
+    const std::vector<ShaderFlag> &fragment_shader_flags
+) {
+  ShaderInfo info = {
+      vertex_shader_path,
+      StringifyFlags(vertex_shader_flags),
+      fragment_shader_path,
+      StringifyFlags(fragment_shader_flags)
+  };
 
   if (shader_creation_cache_.contains(info) && shader_ref_counts.contains(shader_creation_cache_.at(info))) {
     // second check is needed because the shader might have been deallocated
@@ -107,7 +120,6 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
     return shader_creation_cache_.at(info);
   }
 
-  LOG(INFO) << "Reading vertex shader from " << vertex_shader_path;
   GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 
   std::vector<const GLchar *> sources;
@@ -126,9 +138,7 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
 
   glCompileShader(vertex_shader);
   LogShaderCompileIssues(vertex_shader);
-  LOG(INFO) << "Compiled vertex shader";
 
-  LOG(INFO) << "Reading fragment shader from " << fragment_shader_path;
   GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
   sources.clear();
@@ -147,7 +157,6 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
 
   glCompileShader(fragment_shader);
   LogShaderCompileIssues(fragment_shader);
-  LOG(INFO) << "Compiled fragment shader";
 
   GLuint program = glCreateProgram();
   glAttachShader(program, vertex_shader);
@@ -163,15 +172,20 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
   return program;
 }
 
-
-GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shader_path,
-                                       const std::vector<ShaderFlag> &vertex_shader_flags,
-                                       const std::filesystem::path &fragment_shader_path,
-                                       const std::vector<ShaderFlag> &fragment_shader_flags,
-                                       const std::filesystem::path &geometry_shader_path,
-                                       const std::vector<ShaderFlag> &geometry_shader_flags) {
-  ShaderInfo info = {vertex_shader_path, StringifyFlags(vertex_shader_flags), fragment_shader_path,
-                     StringifyFlags(fragment_shader_flags)};
+GLuint ShaderAllocator::AllocateShader(
+    const std::filesystem::path &vertex_shader_path,
+    const std::vector<ShaderFlag> &vertex_shader_flags,
+    const std::filesystem::path &fragment_shader_path,
+    const std::vector<ShaderFlag> &fragment_shader_flags,
+    const std::filesystem::path &geometry_shader_path,
+    const std::vector<ShaderFlag> &geometry_shader_flags
+) {
+  ShaderInfo info = {
+      vertex_shader_path,
+      StringifyFlags(vertex_shader_flags),
+      fragment_shader_path,
+      StringifyFlags(fragment_shader_flags)
+  };
 
   if (shader_creation_cache_.contains(info) && shader_ref_counts.contains(shader_creation_cache_.at(info))) {
     // second check is needed because the shader might have been deallocated
@@ -179,7 +193,6 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
     return shader_creation_cache_.at(info);
   }
 
-  LOG(INFO) << "Reading vertex shader from " << vertex_shader_path;
   GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 
   std::vector<const GLchar *> sources;
@@ -198,9 +211,7 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
 
   glCompileShader(vertex_shader);
   LogShaderCompileIssues(vertex_shader);
-  LOG(INFO) << "Compiled vertex shader";
 
-  LOG(INFO) << "Reading fragment shader from " << fragment_shader_path;
   GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
   sources.clear();
@@ -219,10 +230,7 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
 
   glCompileShader(fragment_shader);
   LogShaderCompileIssues(fragment_shader);
-  LOG(INFO) << "Compiled fragment shader";
 
-
-  LOG(INFO) << "Reading geometry shader from " << vertex_shader_path;
   GLuint geometry_shader = glCreateShader(GL_GEOMETRY_SHADER);
 
   sources.clear();
@@ -241,7 +249,6 @@ GLuint ShaderAllocator::AllocateShader(const std::filesystem::path &vertex_shade
 
   glCompileShader(geometry_shader);
   LogShaderCompileIssues(geometry_shader);
-  LOG(INFO) << "Compiled geometry shader";
 
   GLuint program = glCreateProgram();
   glAttachShader(program, vertex_shader);
@@ -267,7 +274,5 @@ void ShaderAllocator::DeallocateShader(GLuint shader) {
   }
 }
 
-void ShaderAllocator::InvalidateCache() {
-  shader_creation_cache_.clear();
-}
-}
+void ShaderAllocator::InvalidateCache() { shader_creation_cache_.clear(); }
+}  // namespace chove::rendering::opengl

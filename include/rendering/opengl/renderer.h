@@ -1,17 +1,15 @@
 #ifndef CHOVENGINE_INCLUDE_RENDERING_OPENGL_RENDERER_H_
 #define CHOVENGINE_INCLUDE_RENDERING_OPENGL_RENDERER_H_
 
-#include "rendering/renderer.h"
+#include <memory>
+
 #include "objects/scene.h"
 #include "rendering/opengl/pipeline.h"
 #include "rendering/opengl/render_object.h"
 #include "rendering/opengl/texture_allocator.h"
 #include "rendering/opengl/uniform.h"
+#include "rendering/renderer.h"
 #include "windowing/window.h"
-
-#include <memory>
-
-#include <absl/log/log.h>
 
 namespace chove::rendering::opengl {
 class Renderer : public rendering::Renderer {
@@ -46,6 +44,6 @@ class Renderer : public rendering::Renderer {
   void AttachMaterial(RenderObject &render_object, const Material &material);
   void RenderDepthMap();
 };
-} // namespace chove::rendering::opengl
+}  // namespace chove::rendering::opengl
 
-#endif //CHOVENGINE_INCLUDE_RENDERING_OPENGL_RENDERER_H_
+#endif  // CHOVENGINE_INCLUDE_RENDERING_OPENGL_RENDERER_H_

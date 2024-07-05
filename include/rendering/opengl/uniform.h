@@ -1,22 +1,19 @@
 #ifndef CHOVENGINE_INCLUDE_RENDERING_OPENGL_UNIFORM_H_
 #define CHOVENGINE_INCLUDE_RENDERING_OPENGL_UNIFORM_H_
 
-#include <absl/log/log.h>
+#include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <GL/glew.h>
+
+#include "utils/logging.h"
 
 namespace chove::rendering::opengl {
 template<typename T>
 class Uniform {
  public:
-  Uniform() {
-    LOG(FATAL) << "Uniform not implemented for type.";
-  }
+  Uniform() { log_fatal("Uniform not implemented for type."); }
 
-  void UpdateValue() {
-    LOG(FATAL) << "Uniform not implemented for type.";
-  }
+  void UpdateValue() { log_fatal("Uniform not implemented for type."); }
 };
 
 template<>
@@ -26,7 +23,7 @@ class Uniform<glm::mat4> {
   Uniform(GLuint shader_program, const std::string &name, const glm::mat4 &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(WARNING) << "Uniform location not found for " << name;
+      log_warn("Uniform location not found for ", name);
     }
   }
 
@@ -35,9 +32,8 @@ class Uniform<glm::mat4> {
     glUniformMatrix4fv(location_, 1, GL_FALSE, glm::value_ptr(value));
   }
 
-  void Rebind() {
-    glUniformMatrix4fv(location_, 1, GL_FALSE, glm::value_ptr(value_));
-  }
+  void Rebind() { glUniformMatrix4fv(location_, 1, GL_FALSE, glm::value_ptr(value_)); }
+
  private:
   glm::mat4 value_;
   GLint location_;
@@ -51,7 +47,7 @@ class Uniform<glm::mat3> {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
       if (name != "normalMatrix") {
-        LOG(WARNING) << "Uniform location not found for " << name;
+        log_warn("Uniform location not found for ", name);
       }
     }
   }
@@ -61,9 +57,8 @@ class Uniform<glm::mat3> {
     glUniformMatrix3fv(location_, 1, GL_FALSE, glm::value_ptr(value));
   }
 
-  void Rebind() {
-    glUniformMatrix3fv(location_, 1, GL_FALSE, glm::value_ptr(value_));
-  }
+  void Rebind() { glUniformMatrix3fv(location_, 1, GL_FALSE, glm::value_ptr(value_)); }
+
  private:
   glm::mat3 value_;
   GLint location_;
@@ -76,7 +71,7 @@ class Uniform<glm::vec3> {
   Uniform(GLuint shader_program, const std::string &name, const glm::vec3 &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(WARNING) << "Uniform location not found for " << name;
+      log_warn("Uniform location not found for ", name);
     }
   }
 
@@ -85,9 +80,8 @@ class Uniform<glm::vec3> {
     glUniform3fv(location_, 1, glm::value_ptr(value));
   }
 
-  void Rebind() {
-    glUniform3fv(location_, 1, glm::value_ptr(value_));
-  }
+  void Rebind() { glUniform3fv(location_, 1, glm::value_ptr(value_)); }
+
  private:
   glm::vec3 value_;
   GLint location_;
@@ -100,7 +94,7 @@ class Uniform<glm::vec4> {
   Uniform(GLuint shader_program, const std::string &name, const glm::vec4 &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(WARNING) << "Uniform location not found for " << name;
+      log_warn("Uniform location not found for ", name);
     }
   }
 
@@ -109,9 +103,8 @@ class Uniform<glm::vec4> {
     glUniform4fv(location_, 1, glm::value_ptr(value));
   }
 
-  void Rebind() {
-    glUniform4fv(location_, 1, glm::value_ptr(value_));
-  }
+  void Rebind() { glUniform4fv(location_, 1, glm::value_ptr(value_)); }
+
  private:
   glm::vec4 value_;
   GLint location_;
@@ -124,7 +117,7 @@ class Uniform<float> {
   Uniform(GLuint shader_program, const std::string &name, const float &value) : value_(value) {
     location_ = glGetUniformLocation(shader_program, name.c_str());
     if (location_ == -1) {
-      LOG(WARNING) << "Uniform location not found for " << name;
+      log_warn("Uniform location not found for ", name);
     }
   }
 
@@ -133,9 +126,8 @@ class Uniform<float> {
     glUniform1f(location_, value_);
   }
 
-  void Rebind() const {
-    glUniform1f(location_, value_);
-  }
+  void Rebind() const { glUniform1f(location_, value_); }
+
  private:
   float value_;
   GLint location_;
@@ -163,6 +155,6 @@ class UniformBuffer {
   GLuint buffer_;
   GLint binding_;
 };
-}
+}  // namespace chove::rendering::opengl
 
-#endif //CHOVENGINE_INCLUDE_RENDERING_OPENGL_UNIFORM_H_
+#endif  // CHOVENGINE_INCLUDE_RENDERING_OPENGL_UNIFORM_H_
